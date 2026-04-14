@@ -1,0 +1,368 @@
+:root {
+  --primary: rgb(25, 13, 199);
+  --secondary: #1fc509c7;
+  --accent: #1abc9c;
+  --light: #f8f9fa;
+  --dark: #212529;
+  --gray: #6c757d;
+  --light-gray: #e9ecef;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Poppins", sans-serif;
+  background: url(https://i.pinimg.com/736x/04/a2/eb/04a2ebeefd745704da9056388e8f1c46.jpg);
+  color: var(--dark);
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* Layout principal */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Header */
+.app-header {
+  background: url("imagenes/Disebar.jpeg");
+  color: white;
+  padding: 15px 25px;
+  display: flex;
+  align-items: center;
+  box-shadow: var(--shadow);
+  z-index: 100;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  margin-right: 25px;
+}
+
+.logo-container img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: var(--transition);
+  margin-right: 15px;
+}
+
+.logo-container img:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+.user-info {
+  flex: 1;
+  text-align: right;
+  padding-right: 20px;
+}
+
+.user-info h1 {
+  font-size: 1.4rem;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.user-info p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Menú principal */
+.main-menu {
+   background: linear-gradient(to right, var(--primary), var(--secondary));
+  display: flex;
+  overflow-x: auto;
+  padding: 0 15px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.menu-item {
+  padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+  min-width: 100px;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.menu-item:hover,
+.menu-item.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.menu-item i {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.menu-item.active:after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  width: 60%;
+  height: 3px;
+  background: var(--accent);
+}
+
+/* Contenido principal */
+.main-content {
+  flex: 1;
+  padding: 25px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-top: 20px;
+}
+
+/* Tarjetas */
+.card {
+  background: rgba(255, 255, 255, 0.747);
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  padding: 18px 20px;
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.card-header i {
+  margin-right: 10px;
+  font-size: 1.2rem;
+}
+
+.card-body {
+  padding: 20px;
+  
+}
+.card-Alert {
+  display: flex;
+  flex-direction: column;  
+  flex-wrap: wrap;         
+  height: calc((80px + 20px) * 3);
+  gap: 10px;               
+}
+
+/* Estadísticas */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+ background: rgba(255, 255, 255, 0.747);
+  border-radius: 12px;
+  padding: 15px;
+  text-align: center;
+  transition: var(--transition);
+}
+
+.stat-card:hover {
+  background: #e0e0e0;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 10px 0;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: var(--dark);
+}
+
+/* Gráficos */
+.chart-container {
+  height: 250px;
+  position: relative;
+}
+
+/* Alertas */
+.alert-card {
+  background: #fff8e1;
+  border-left: 4px solid #c99806;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.alert-card i {
+  color: #ffc107;
+  font-size: 1.5rem;
+  margin-right: 15px;
+}
+
+.alert-card.critical {
+  background: #ffebee;
+  border-left: 4px solid #f44336;
+}
+
+.alert-card.critical i {
+  color: #f44336;
+}
+
+/* Lista de tareas */
+.task-list {
+  list-style: none;
+}
+
+.task-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--light-gray);
+  display: flex;
+  align-items: center;
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-check {
+  margin-right: 12px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--gray);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.task-check i {
+  display: none;
+  font-size: 0.8rem;
+  color: white;
+}
+
+.task-item.completed .task-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.task-item.completed .task-check i {
+  display: block;
+}
+
+.task-item.completed .task-text {
+  text-decoration: line-through;
+  color: var(--gray);
+}
+
+.task-text {
+  flex: 1;
+}
+
+.task-priority {
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.priority-high {
+  background: #ffebee;
+  color: #f44336;
+}
+
+.priority-medium {
+  background: #fff8e1;
+  color: #ff9800;
+}
+
+/* Footer */
+.app-footer {
+  background: var(--dark);
+  color: white;
+  padding: 15px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 15px;
+  }
+
+  .logo-container {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+
+  .user-info {
+    text-align: center;
+    padding-right: 0;
+  }
+
+  .main-menu {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .menu-item {
+    min-width: 80px;
+    padding: 12px 15px;
+  }
+
+  .menu-item i {
+    font-size: 18px;
+  }
+
+  .main-content {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-item span {
+    font-size: 0.8rem;
+  }
+}

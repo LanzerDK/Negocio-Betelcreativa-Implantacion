@@ -1,0 +1,10 @@
+RewriteEngine On  # Activa el Motor de Reescritura
+
+
+# Condiciones: solo reescribe si NO es un archivo o directorio existente
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+
+RewriteRule ^([a-zA-Z0-9/ñÑ-]+)$ index.php?views=$1 [QSA,L] # Reescribe URLs amigables
+

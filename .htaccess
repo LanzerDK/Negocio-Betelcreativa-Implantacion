@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteBase /BetelCreativa/
+RewriteCond %{REQUEST_URI} !^/BetelCreativa/Public/
+RewriteRule ^(.*)$ Public/$1 [L]
