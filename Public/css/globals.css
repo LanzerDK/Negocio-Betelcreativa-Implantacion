@@ -48,7 +48,7 @@ body {
 
 /* Header */
 .app-header {
-  background: url("imagenes/Disebar.jpeg");
+  background: url("images/Disebar.jpeg");
   display: flex;
   justify-content: space-between;
   align-items: center;

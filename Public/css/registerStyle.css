@@ -1,7 +1,7 @@
 /* registerStyle.css - Estilos específicos para registro de usuarios */
 
 body {
-  background: url("../images/inicio.jpg") no-repeat center center fixed;
+  background: url("<?php echo APP_URL; ?>Public/images/BetEl.png") no-repeat center center fixed;
   background-size: cover;
   min-height: 100vh;
   display: flex;

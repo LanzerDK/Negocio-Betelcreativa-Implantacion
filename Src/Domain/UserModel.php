@@ -1,7 +1,8 @@
 <?php
+
 namespace BetelCreativa\Domain;
 
-class UserModel 
+class UserModel
 {
     private ?int $id;
     private string $name;
@@ -9,12 +10,11 @@ class UserModel
     private string $user;
     private string $email;
     private string $ci;
+    private string $phone; 
     private string $passwordHash;
-    private ?string $passwordUnique;
-    private ?string $checkinTime;  // mantengo string por simplicidad, puedes cambiar a DateTime
-    
-    // Constructor con parámetros opcionales usando array (más flexible)
-    public function __construct(array $data = []) 
+    private ?string $checkinTime;
+
+    public function __construct(array $data = [])
     {
         $this->id = $data['id'] ?? null;
         $this->name = $data['name'] ?? '';
@@ -22,11 +22,12 @@ class UserModel
         $this->user = $data['user'] ?? '';
         $this->email = $data['email'] ?? '';
         $this->ci = $data['ci'] ?? '';
+        // EXPLICACIÓN: Mapeamos el teléfono desde el array que envía el controlador.
+        $this->phone = $data['phone'] ?? ''; 
         $this->passwordHash = $data['passwordHash'] ?? '';
-        $this->passwordUnique = $data['passwordUnique'] ?? null;
         $this->checkinTime = $data['checkinTime'] ?? null;
     }
-    
+
     // Getters
     public function getId(): ?int { return $this->id; }
     public function getName(): string { return $this->name; }
@@ -34,16 +35,22 @@ class UserModel
     public function getUser(): string { return $this->user; }
     public function getEmail(): string { return $this->email; }
     public function getCi(): string { return $this->ci; }
+    public function getPhone(): string { return $this->phone; } 
     public function getPasswordHash(): string { return $this->passwordHash; }
-    public function getPasswordUnique(): ?string { return $this->passwordUnique; }
     public function getCheckinTime(): ?string { return $this->checkinTime; }
+
+    // Setters
+    public function setName(string $name): void { $this->name = $name; }
+    public function setLastName(string $lastName): void { $this->lastName = $lastName; }
+    public function setUser(string $user): void { $this->user = $user; }
+    public function setEmail(string $email): void { $this->email = $email; }
     
-    // Setters (opcionales, solo los que necesites)
+    public function setPhone(string $phone): void { $this->phone = $phone; }
     public function setPasswordHash(string $hash): void { $this->passwordHash = $hash; }
     public function setCheckinTime(?string $time): void { $this->checkinTime = $time; }
-    
-    // Verificar contraseña
-    public function verificarPassword(string $passwordPlana): bool {
+
+    public function verificarPassword(string $passwordPlana): bool
+    {
         return password_verify($passwordPlana, $this->passwordHash);
     }
 }
