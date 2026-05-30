@@ -162,14 +162,10 @@
     </div> -->
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="<?php echo APP_URL; ?>Public/js/register.js"></script>
-<script>
-    window.APP_URL = "<?php echo APP_URL; ?>";
-    window.securityCodeHash = "<?php echo addslashes(\BetelCreativa\Controllers\ControllerRegister::getSecurityCodeHash()); ?>";
-</script>
-
-
-
+    <script>
+        window.APP_URL = "<?php echo APP_URL; ?>";
+    </script>
+    <script src="<?php echo APP_URL; ?>Public/js/register.js?v=1"></script>
 </body>
 
 </html>

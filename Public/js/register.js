@@ -192,8 +192,8 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
     if (formIsValid) {
         const formData = new FormData(this);
 
-        // Asegúrate de que APP_URL termine en barra '/' desde PHP, si no, ponla aquí: `${APP_URL}/Src/...`
-        fetch(`${window.APP_URL}register`, {
+        // Usamos un endpoint JSON dedicado para que la respuesta del servidor no sea la vista HTML.
+        fetch(`${window.APP_URL}Public/api/register.php`, {
             method: 'POST',
             body: formData
         })

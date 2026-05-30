@@ -2,8 +2,6 @@
 
 namespace BetelCreativa\Controllers;
 
-require_once __DIR__ . '/../../autoload.php';
-
 use BetelCreativa\Domain\UserModel;
 use BetelCreativa\Infrastructure\UserRepository;
 
@@ -48,13 +46,14 @@ class ControllerRegister
             exit;
         }
 
-        $cedulaCompleta = $tipoCedula . '-' . $cedulaNum;
+
         // VALIDACIÓN: Comprobar que los campos esenciales no estén vacíos
-        if (empty($nombre) || empty($usuario) || empty($correo) || empty($password)) {
+        if (empty($nombre) || empty($apellido) || empty($usuario) || empty($correo) || empty($cedulaNum) || empty($telefono) || empty($password)) {
             echo json_encode(['success' => false, 'message' => 'Por favor, complete todos los campos obligatorios del formulario.']);
             exit;
         }
-
+        // Concatenamos el formato final (Ej: V-12345678)
+        $cedulaCompleta = $tipoCedula . '-' . $cedulaNum;
         //SEGURIDAD: Encriptar la contraseña usando el algoritmo BCRYPT
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
