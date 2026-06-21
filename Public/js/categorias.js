@@ -1,116 +1,226 @@
+let editingCategoryId = null;
 
-        // Menú activo
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.menu-item').forEach(i => {
-                    i.classList.remove('active');
-                });
-                this.classList.add('active');
-            });
+document.addEventListener('DOMContentLoaded', function () {
+    cargarCategorias();
+
+    document.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', function () {
+            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
         });
-        // Abrir modal para nueva categoría
-        document.getElementById('newCategoryBtn').addEventListener('click', function() {
-            // Cambiar título del modal
-            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Nueva Categoría';
-            // Resetear formulario
-            document.getElementById('categoryName').value = '';
-            document.getElementById('categoryDescription').value = '';
-            document.getElementById('categoryStatus').value = 'active';
-            
-            // Mostrar modal
-            document.getElementById('categoryModal').style.display = 'flex';
-        });
+    });
 
-        // Botones de editar
-        document.querySelectorAll('.edit-btn').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const card = this.closest('.category-card');
-                const id = card.dataset.id;
-                const name = card.dataset.name;
-                const description = card.dataset.description;
-                const status = card.dataset.status;
+    document.getElementById('newCategoryBtn').addEventListener('click', function () {
+        editingCategoryId = null;
+        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Nueva Categoría';
+        document.getElementById('categoryName').value = '';
+        document.getElementById('categoryDescription').value = '';
+        document.getElementById('categoryStatus').value = 'Active';
+        document.getElementById('categoryModal').style.display = 'flex';
+    });
 
-                // Cambiar título del modal
-                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
+    document.getElementById('closeModalBtn').addEventListener('click', function () {
+        document.getElementById('categoryModal').style.display = 'none';
+    });
 
-                // Llenar formulario con datos
-                document.getElementById('categoryName').value = name;
-                document.getElementById('categoryDescription').value = description;
-                document.getElementById('categoryStatus').value = status;
+    document.getElementById('cancelModalBtn').addEventListener('click', function () {
+        document.getElementById('categoryModal').style.display = 'none';
+    });
 
-                // Mostrar modal
-                document.getElementById('categoryModal').style.display = 'flex';
-            });
-        });
+    document.getElementById('saveCategoryBtn').addEventListener('click', guardarCategoria);
 
-        // Cerrar modal
-        document.getElementById('closeModalBtn').addEventListener('click', function() {
-            document.getElementById('categoryModal').style.display = 'none';
-        });
+    document.getElementById('searchInput')?.addEventListener('input', filtrarCategorias);
+});
 
-        document.getElementById('cancelModalBtn').addEventListener('click', function() {
-            document.getElementById('categoryModal').style.display = 'none';
-        });
-
-        // Guardar categoría (simulado)
-        document.getElementById('saveCategoryBtn').addEventListener('click', function() {
-            const categoryName = document.getElementById('categoryName').value;
-            const isEdit = document.getElementById('modalTitle').innerHTML.includes('Editar');
-
-            if (isEdit) {
-                alert(`Categoría "${categoryName}" actualizada correctamente`);
-            } else {
-                alert(`Categoría "${categoryName}" creada correctamente`);
+function cargarCategorias() {
+    Promise.all([
+        fetch(APP_URL + 'api/categories.php').then(r => r.json()),
+        fetch(APP_URL + 'api/materials.php').then(r => r.json())
+    ])
+        .then(([catRes, matRes]) => {
+            if (catRes.success) {
+                renderizarCategorias(catRes.data, matRes.success ? matRes.data : []);
             }
-
-            document.getElementById('categoryModal').style.display = 'none';
-        });
-
-        // Interacción con las categorías
-        const categoryItems = document.querySelectorAll('.category-item');
-        categoryItems.forEach(item => {
-            item.addEventListener('click', function() {
-                categoryItems.forEach(i => i.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-
-        // Interacción con las tarjetas de material
-        const materialCards = document.querySelectorAll('.category-card');
-        materialCards.forEach(card => {
-            card.addEventListener('click', function(e) {
-                if (!e.target.classList.contains('action-btn')) {
-                    // Aquí iría la lógica para mostrar detalles del material
-                    console.log('Mostrar detalles del material');
-                }
-            });
-        });
-        function toggleEstadoCategoria(boton) {
-    
-    const tarjeta = boton.closest('.category-card');
-    
-   
-    tarjeta.classList.toggle('inhabilitado');
-    
-    
-    if (tarjeta.classList.contains('inhabilitado')) {
-        boton.classList.add('is-disabled');
-        boton.innerHTML = '<i class="fas fa-check-circle"></i> Habilitar';
-        // También podemos cambiar el badge de "Activa" a "Inactiva" si lo deseas
-        const statusBadge = tarjeta.querySelector('.category-status');
-        if(statusBadge) {
-            statusBadge.textContent = 'Inactiva';
-            statusBadge.className = 'category-status status-inactive';
-        }
-    } else {
-        boton.classList.remove('is-disabled');
-        boton.innerHTML = '<i class="fas fa-eye-slash"></i> Inhabilitar';
-        const statusBadge = tarjeta.querySelector('.category-status');
-        if(statusBadge) {
-            statusBadge.textContent = 'Activa';
-            statusBadge.className = 'category-status status-active';
-        }
-    }
+        })
+        .catch(err => console.error('Error de red:', err));
 }
-    
+
+function renderizarCategorias(categorias, materiales) {
+    const container = document.getElementById('categoriesContainer');
+    container.innerHTML = '';
+
+    materiales = materiales || [];
+
+    const total = categorias.length;
+    const activas = categorias.filter(c => c.status === 'Active').length;
+    const totalMateriales = materiales.length;
+
+    // Cuenta materiales por categoría
+    const matCountByCat = {};
+    materiales.forEach(m => {
+        const cid = m.category_id;
+        matCountByCat[cid] = (matCountByCat[cid] || 0) + 1;
+    });
+
+    // Encuentra la categoría con más materiales
+    let popularCat = '—';
+    let maxCount = 0;
+    categorias.forEach(c => {
+        const count = matCountByCat[c.id] || 0;
+        if (count > maxCount) {
+            maxCount = count;
+            popularCat = c.name;
+        }
+    });
+
+    document.querySelector('.stat-card:nth-child(1) .stat-value').textContent = total;
+    document.querySelector('.stat-card:nth-child(2) .stat-value').textContent = totalMateriales;
+    document.querySelector('.stat-card:nth-child(3) .stat-value').textContent = activas;
+    document.querySelector('.stat-card:nth-child(4) .stat-value').textContent = popularCat;
+
+    if (categorias.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-layer-group"></i><p>No hay categorías registradas</p></div>';
+        return;
+    }
+
+    categorias.forEach(cat => {
+        const card = document.createElement('div');
+        card.className = 'category-card' + (cat.status !== 'Active' ? ' inhabilitado' : '');
+        card.dataset.id = cat.id;
+        card.dataset.name = cat.name;
+        card.dataset.description = cat.description;
+        card.dataset.status = cat.status;
+
+        const isActive = cat.status === 'Active';
+        const matCount = matCountByCat[cat.id] || 0;
+
+        card.innerHTML = `
+            <div class="category-image" style="background-image: url('${cat.imageUrl || 'https://via.placeholder.com/600x400?text=' + encodeURIComponent(cat.name)}');">
+                <div class="category-count">${matCount} materiales</div>
+            </div>
+            <div class="category-info">
+                <div class="category-title">
+                    <h3>${escapeHtml(cat.name)}</h3>
+                    <div class="category-status ${isActive ? 'status-active' : 'status-inactive'}">${isActive ? 'Activa' : 'Inactiva'}</div>
+                </div>
+                <div class="category-description">${escapeHtml(cat.description)}</div>
+                <div class="category-actions">
+                    <button class="action-btn edit-btn"><i class="fas fa-edit"></i> Editar</button>
+                    <button class="action-btn toggle-btn">
+                        <i class="fas ${isActive ? 'fa-eye-slash' : 'fa-check-circle'}"></i> ${isActive ? 'Inhabilitar' : 'Habilitar'}
+                    </button>
+                </div>
+            </div>
+        `;
+
+        card.querySelector('.edit-btn').addEventListener('click', function (e) {
+            e.stopPropagation();
+            editarCategoria(cat);
+        });
+
+        card.querySelector('.toggle-btn').addEventListener('click', function (e) {
+            e.stopPropagation();
+            toggleEstadoCategoria(cat.id, cat.status, card, this);
+        });
+
+        container.appendChild(card);
+    });
+}
+
+function editarCategoria(cat) {
+    editingCategoryId = cat.id;
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
+    document.getElementById('categoryName').value = cat.name;
+    document.getElementById('categoryDescription').value = cat.description;
+    document.getElementById('categoryStatus').value = cat.status;
+    document.getElementById('categoryModal').style.display = 'flex';
+}
+
+function guardarCategoria() {
+    const name = document.getElementById('categoryName').value.trim();
+    const description = document.getElementById('categoryDescription').value.trim();
+    const status = document.getElementById('categoryStatus').value;
+
+    if (!name) {
+        alert('El nombre de la categoría es obligatorio.');
+        return;
+    }
+
+    const url = APP_URL + 'api/categories.php' + (editingCategoryId ? '?id=' + editingCategoryId : '');
+    const method = editingCategoryId ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+        },
+        body: JSON.stringify({ name, description, status })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('categoryModal').style.display = 'none';
+                cargarCategorias();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(err => {
+            alert('Error de conexión. Intente de nuevo.');
+            console.error(err);
+        });
+}
+
+function toggleEstadoCategoria(id, currentStatus, card, button) {
+    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+
+    fetch(APP_URL + 'api/categories.php?id=' + id, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': CSRF_TOKEN
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                card.classList.toggle('inhabilitado');
+                const isActive = newStatus === 'Active';
+                button.innerHTML = `<i class="fas ${isActive ? 'fa-eye-slash' : 'fa-check-circle'}"></i> ${isActive ? 'Inhabilitar' : 'Habilitar'}`;
+                const badge = card.querySelector('.category-status');
+                badge.textContent = isActive ? 'Activa' : 'Inactiva';
+                badge.className = 'category-status ' + (isActive ? 'status-active' : 'status-inactive');
+                card.dataset.status = newStatus;
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(err => {
+            alert('Error de conexión. Intente de nuevo.');
+            console.error(err);
+        });
+}
+
+function filtrarCategorias() {
+    const term = document.getElementById('searchInput').value.toLowerCase().trim();
+    document.querySelectorAll('.category-card').forEach(card => {
+        const name = card.dataset.name.toLowerCase();
+        if (!term) {
+            card.style.display = '';
+        } else {
+            // Busca coincidencia exacta de palabra (no substrings parciales)
+            // Ej: "Globos" NO debe coincidir con "Globos de animales"
+            const words = name.split(/\s+/);
+            const matches = words.some(w => w === term);
+            card.style.display = matches ? '' : 'none';
+        }
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

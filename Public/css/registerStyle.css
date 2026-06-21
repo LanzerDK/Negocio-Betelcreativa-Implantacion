@@ -1,7 +1,7 @@
 /* registerStyle.css - Estilos específicos para registro de usuarios */
 
 body {
-  background: url("<?php echo APP_URL; ?>Public/images/BetEl.png") no-repeat center center fixed;
+  background: url("../images/BetEl.png") no-repeat center center fixed;
   background-size: cover;
   min-height: 100vh;
   display: flex;
@@ -167,9 +167,21 @@ input::placeholder {
 
 .password-strength-bar {
   height: 100%;
-  width: 0;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.password-strength-bar.weak {
   background: #dc3545;
-  transition: width 0.5s, background 0.5s;
+  width: 25% !important;
+}
+
+.password-strength-bar.medium {
+  background: #ffc107;
+}
+
+.password-strength-bar.strong {
+  background: #28a745;
 }
 
 .password-hint {

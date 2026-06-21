@@ -30,4 +30,17 @@ class SessionHelpers
                 $_SESSION = [];
                 session_destroy();
         }
+
+        public static function requireAuth(): void
+        {
+                if (self::get('user_id') === null) {
+                        http_response_code(401);
+                        header('Content-Type: application/json');
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Debe iniciar sesión para acceder a este recurso.'
+                        ]);
+                        exit;
+                }
+        }
 }

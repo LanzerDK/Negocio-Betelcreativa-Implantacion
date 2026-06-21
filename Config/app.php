@@ -1,14 +1,21 @@
 <?php
-// Configuración global para el Sitio Web Betel Creativa
 
-// URL base del proyecto. Se usa para generar rutas absolutas 
-const APP_URL = "http://localhost/BetelCreativa/";
+require_once __DIR__ . '/EnvLoader.php';
 
-// Nombre público de la aplicación, útil para mostrarlo en el título de las páginas o en la interfaz
-const APP_NAME = "BETEL CREATIVA";
+use BetelCreativa\Config\EnvLoader;
 
-// Nombre que se usará para la sesión (identificador único para evitar conflictos con otras apps en el mismo servidor)
-const APP_SESSION_NAME = "BetEl";
+EnvLoader::load();
 
-// Establece la zona horaria predeterminada para todas las funciones de fecha/hora en PHP 
-date_default_timezone_set("America/Caracas");
+define('APP_URL', EnvLoader::get('APP_URL', 'http://localhost/BetelCreativa/'));
+define('APP_NAME', EnvLoader::get('APP_NAME', 'BETEL CREATIVA'));
+define('APP_SESSION_NAME', EnvLoader::get('APP_SESSION_NAME', 'BetEl'));
+date_default_timezone_set(EnvLoader::get('APP_TIMEZONE', 'America/Caracas'));
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_name(EnvLoader::get('APP_SESSION_NAME', 'BetEl'));
+    session_start();
+}
+
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}

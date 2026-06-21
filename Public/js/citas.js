@@ -1,566 +1,528 @@
+// =============================================
+// citas.js - Gestión de Citas (Appointments)
+// =============================================
 
-        // Menú activo
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.menu-item').forEach(i => {
-                    i.classList.remove('active');
-                });
-                this.classList.add('active');
-            });
+let appointmentsList = [];
+let customersList = [];
+
+let currentPage = 1;
+const appointmentsPerPage = 10;
+let calendar = null;
+
+async function fetchCustomers()
+{
+    try {
+        const res = await fetch(APP_URL + 'api/customers.php');
+        const data = await res.json();
+        if (data.success) {
+            customersList = data.data;
+            populateClientSelectors();
+        }
+    } catch (err) {
+        console.error('Error al cargar clientes:', err);
+    }
+}
+
+async function fetchAppointments()
+{
+    try {
+        const res = await fetch(APP_URL + 'api/appointments.php');
+        const data = await res.json();
+        if (data.success) {
+            appointmentsList = data.data;
+            renderAppointmentsTable(currentPage);
+            if (calendar) calendar.refetchEvents();
+        }
+    } catch (err) {
+        console.error('Error al cargar citas:', err);
+    }
+}
+
+async function createAppointment(appData)
+{
+    try {
+        const res = await fetch(APP_URL + 'api/appointments.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF_TOKEN
+            },
+            body: JSON.stringify(appData)
         });
+        const data = await res.json();
+        if (data.success) {
+            await fetchAppointments();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Error al crear cita:', err);
+        alert('Error de conexión');
+    }
+}
 
-        // Datos de clientes (simulando una base de datos)
-        const clientsData = {
-            "001": {
-                id: "001",
-                firstName: "Carlos ",
-                lastName: "Linares",
-                email: "carlos@example.com",
-                phone: "+58 212 567 890",
-                category: "frecuente",
-                status: "active",
-                lastVisit: "2023-06-15",
-                type: "individual",
-                notes: "Cliente frecuente, siempre pide decoraciones elegantes.",
-                enabled: true,
-                image: "https://i.imgur.com/1As0akH.jpg"
+async function updateAppointment(id, appData)
+{
+    try {
+        const res = await fetch(APP_URL + 'api/appointments.php?id=' + id, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF_TOKEN
             },
-            "002": {
-                id: "002",
-                firstName: "Carolina",
-                lastName: "Graterol",
-                email: "carolina@example.com",
-                phone: "+58 414 654 321",
-                category: "nuevo",
-                status: "active",
-                lastVisit: "2023-06-20",
-                type: "individual",
-                notes: "Nueva cliente, interesada en decoración para cumpleaños.",
-                enabled: true,
-                image: "https://i.imgur.com/2C8QO3F.jpg"
-            },
-            "003": {
-                id: "003",
-                firstName: "David",
-                lastName: "Sánchez",
-                email: "david@example.com",
-                phone: "+58 412 123 456",
-                category: "frecuente",
-                status: "active",
-                lastVisit: "2023-06-10",
-                type: "empresa",
-                notes: "Cliente corporativo frecuente.",
-                enabled: true,
-                image: "https://i.pinimg.com/736x/b6/b5/f6/b6b5f6a11ed39d8ce80afe0df2cd0065.jpg"
-            },
-            "004": {
-                id: "004",
-                firstName: "Karelys",
-                lastName: "Maestre",
-                email: "karelys@example.com",
-                phone: "+58 424 333 444",
-                category: "preferencial",
-                status: "active",
-                lastVisit: "2023-06-12",
-                type: "organizacion",
-                notes: "Cliente VIP con descuento especial.",
-                enabled: true,
-                image: "https://i.pinimg.com/736x/46/9a/9e/469a9eeb942c61a8442b06b0313266db.jpg"
-            },
-            "005": {
-                id: "005",
-                firstName: "Josiel",
-                lastName: "Benitez",
-                email: "josiel@example.com",
-                phone: "+58 212 567 890",
-                category: "nuevo",
-                status: "active",
-                lastVisit: "2023-06-25",
-                type: "individual",
-                notes: "Nuevo cliente, primera cita.",
-                enabled: true,
-                image: "https://i.imgur.com/5b3Q7bC.png"
-            }
-        };
+            body: JSON.stringify(appData)
+        });
+        const data = await res.json();
+        if (data.success) {
+            await fetchAppointments();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Error al actualizar cita:', err);
+        alert('Error de conexión');
+    }
+}
 
-        // Datos de citas (simulando una base de datos)
-        const appointmentsData = {
-            "001": {
-                id: "001",
-                clientId: "001",
-                date: "2025-07-15",
-                startTime: "18:00",
-                endTime: "06:00",
-                eventType: "Pool Party",
-                location: "Centro de eventos en Valencia \"Quinta Mayaudon\"",
-                status: "confirmed",
-                notes: "Decoración floral para ceremonia",
-                enabled: true
-            },
-            "002": {
-                id: "002",
-                clientId: "002",
-                date: "2025-07-18",
-                startTime: "16:00",
-                endTime: "19:00",
-                eventType: "cumpleanos",
-                location: "Salón para eventos \"FANTASY WORLD LG\"",
-                status: "pending",
-                notes: "Cumpleaños infantil con tema de superhéroes",
-                enabled: true
-            },
-            "003": {
-                id: "003",
-                clientId: "003",
-                date: "2025-07-02",
-                startTime: "09:00",
-                endTime: "17:00",
-                eventType: "corporativo",
-                location: "Salón para eventos \"Villa Amistad\"",
-                status: "in-progress",
-                notes: "Evento corporativo anual",
-                enabled: true
-            },
-            "004": {
-                id: "004",
-                clientId: "004",
-                date: "2025-05-12",
-                startTime: "16:00",
-                endTime: "20:00",
-                eventType: "quince",
-                location: "Salón de Eventos \"Club Las Tinajas\"",
-                status: "completed",
-                notes: "Quinceañero con tema princesa",
-                enabled: true
-            },
-            "005": {
-                id: "005",
-                clientId: "005",
-                date: "2025-07-25",
-                startTime: "11:00",
-                endTime: "13:00",
-                eventType: "otro",
-                location: "Casa del Cliente",
-                status: "cancelled",
-                notes: "Reunión cancelada por el cliente",
-                enabled: true
-            }
-        };
+async function deleteAppointment(id)
+{
+    if (!confirm('¿Estás seguro de eliminar esta cita?')) return;
+    try {
+        const res = await fetch(APP_URL + 'api/appointments.php?id=' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-Token': CSRF_TOKEN }
+        });
+        const data = await res.json();
+        if (data.success) {
+            await fetchAppointments();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Error al eliminar cita:', err);
+        alert('Error de conexión');
+    }
+}
 
-        // Variables globales
-        let currentPage = 1;
-        const appointmentsPerPage = 5;
-        let calendar;
+function populateClientSelectors()
+{
+    const newSelect = document.getElementById('newClient');
+    const editSelect = document.getElementById('editClient');
+    const selects = [];
+    if (newSelect) selects.push(newSelect);
+    if (editSelect) selects.push(editSelect);
 
-        // Inicializar FullCalendar
-        function initCalendar() {
-            const calendarEl = document.getElementById('calendar');
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'es',
-                headerToolbar: false,
-                eventSources: [{
-                    events: function(fetchInfo, successCallback, failureCallback) {
-                        const events = Object.values(appointmentsData)
-                            .filter(appointment => appointment.enabled)
-                            .map(appointment => {
-                                const client = clientsData[appointment.clientId];
-                                return {
-                                    id: appointment.id,
-                                    title: `${client.firstName} ${client.lastName} - ${appointment.eventType}`,
-                                    start: `${appointment.date}T${appointment.startTime}:00`,
-                                    end: `${appointment.date}T${appointment.endTime}:00`,
-                                    className: `fc-event-${appointment.status}`,
-                                    extendedProps: {
-                                        location: appointment.location,
-                                        status: appointment.status,
-                                        notes: appointment.notes
-                                    }
-                                };
-                            });
-                        successCallback(events);
-                    }
-                }],
-                eventClick: function(info) {
-                    const id = info.event.id;
-                    const appointment = appointmentsData[id];
+    selects.forEach(sel => {
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Seleccionar cliente...</option>';
+        if (customersList.length === 0) {
+            sel.innerHTML = '<option value="">No hay clientes registrados</option>';
+            return;
+        }
+        customersList.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = (c.firstName || '') + ' ' + (c.lastName || '');
+            sel.appendChild(opt);
+        });
+    });
+}
 
-                    if (appointment) {
-                        openEditModal(appointment);
-                    }
-                },
-                datesSet: function(dateInfo) {
-                    const startDate = dateInfo.start;
-                    const options = {
-                        year: 'numeric',
-                        month: 'long'
-                    };
-                    document.getElementById('calendarTitle').textContent = startDate.toLocaleDateString('es-ES', options);
-                }
+function getCustomerName(id)
+{
+    const c = customersList.find(c => c.id === id);
+    return c ? (c.firstName + ' ' + c.lastName).trim() : 'Cliente #' + id;
+}
+
+function getCustomerAvatar(id)
+{
+    const c = customersList.find(c => c.id === id);
+    return c?.avatar || 'https://i.imgur.com/1As0akH.jpg';
+}
+
+function getCustomerPhone(id)
+{
+    const c = customersList.find(c => c.id === id);
+    return c?.phone || '';
+}
+
+function renderAppointmentsTable(page)
+{
+    const table = document.querySelector('.appointments-table');
+    if (!table) return;
+
+    const existingRows = document.querySelectorAll('.table-row:not(.table-header)');
+    existingRows.forEach(r => r.remove());
+
+    const total = appointmentsList.length;
+    const totalPages = Math.ceil(total / appointmentsPerPage) || 1;
+    const start = (page - 1) * appointmentsPerPage;
+    const end = Math.min(start + appointmentsPerPage, total);
+    const pageItems = appointmentsList.slice(start, end);
+
+    const showStart = document.getElementById('showingStart');
+    const showEnd = document.getElementById('showingEnd');
+    const totalSpan = document.getElementById('totalAppointments');
+    if (showStart) showStart.textContent = total > 0 ? start + 1 : 0;
+    if (showEnd) showEnd.textContent = end;
+    if (totalSpan) totalSpan.textContent = total;
+
+    pageItems.forEach(app => {
+        const name = getCustomerName(app.customerId);
+        const phone = getCustomerPhone(app.customerId);
+        const avatar = getCustomerAvatar(app.customerId);
+        const dateObj = new Date(app.date + 'T' + (app.startTime || '00:00'));
+        const formattedDate = dateObj.toLocaleDateString('es-ES');
+        const eventType = app.eventType ? app.eventType.charAt(0).toUpperCase() + app.eventType.slice(1) : '—';
+
+        const row = document.createElement('div');
+        row.className = 'table-row';
+        row.dataset.id = app.id;
+        row.dataset.type = app.eventType || '';
+        row.dataset.status = app.status;
+
+        row.innerHTML = `
+            <div class="col-1">#${app.id}</div>
+            <div class="col-2" style="display:flex;align-items:center;gap:15px;">
+                <div class="client-img">
+                    <img src="${avatar}" alt="Cliente" onerror="this.src='https://i.imgur.com/1As0akH.jpg'">
+                </div>
+                <div>
+                    <strong>${name}</strong>
+                    <div style="font-size:0.85rem;color:var(--gray)">${phone}</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div>${formattedDate}</div>
+                <div style="font-size:0.85rem;color:var(--gray)">${app.startTime || '—'} - ${app.endTime || '—'}</div>
+            </div>
+            <div class="col-4"><span class="event-type">${eventType}</span></div>
+            <div class="col-5">${app.location || '—'}</div>
+            <div class="col-6"><span class="status ${app.status}">${getStatusText(app.status)}</span></div>
+            <div class="col-7" style="display:flex;gap:10px;">
+                <button class="action-btn edit" data-id="${app.id}"><i class="fas fa-edit"></i></button>
+                <button class="action-btn delete-btn" data-id="${app.id}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+
+        table.appendChild(row);
+        addEventListenersToRow(row, app.id);
+    });
+}
+
+function addEventListenersToRow(row, id)
+{
+    const editBtn = row.querySelector('.action-btn.edit');
+    if (editBtn) {
+        editBtn.addEventListener('click', () => {
+            const app = appointmentsList.find(a => a.id === id);
+            if (app) openEditModal(app);
+        });
+    }
+
+    const deleteBtn = row.querySelector('.action-btn.delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', () => deleteAppointment(id));
+    }
+}
+
+function getStatusText(status)
+{
+    const map = {
+        pending: 'Pendiente', confirmed: 'Confirmada',
+        'in-progress': 'En Progreso', completed: 'Completada', cancelled: 'Cancelada'
+    };
+    return map[status] || status;
+}
+
+function initCalendar()
+{
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'es',
+        headerToolbar: false,
+        editable: true,
+        eventDrop: function(info) {
+            const id = parseInt(info.event.id);
+            const app = appointmentsList.find(a => a.id === id);
+            if (!app) return;
+            const newDate = info.event.startStr.split('T')[0];
+            const newStart = info.event.startStr.split('T')[1] || app.startTime;
+            const newEnd = info.event.endStr ? info.event.endStr.split('T')[1] || app.endTime : app.endTime;
+            updateAppointment(id, {
+                customerId: app.customerId,
+                date: newDate,
+                startTime: newStart,
+                endTime: newEnd,
+                eventType: app.eventType,
+                location: app.location,
+                status: app.status,
+                notes: app.notes
             });
-
-            calendar.render();
+        },
+        eventResize: function(info) {
+            const id = parseInt(info.event.id);
+            const app = appointmentsList.find(a => a.id === id);
+            if (!app) return;
+            const newEnd = info.event.endStr ? info.event.endStr.split('T')[1] || app.endTime : app.endTime;
+            updateAppointment(id, {
+                customerId: app.customerId,
+                date: app.date,
+                startTime: app.startTime,
+                endTime: newEnd,
+                eventType: app.eventType,
+                location: app.location,
+                status: app.status,
+                notes: app.notes
+            });
+        },
+        events: function(fetchInfo, successCallback, failureCallback) {
+            const events = appointmentsList.map(app => ({
+                id: String(app.id),
+                title: getCustomerName(app.customerId) + ' - ' + (app.eventType || 'Evento'),
+                start: app.date + 'T' + (app.startTime || '00:00'),
+                end: app.date + 'T' + (app.endTime || '23:59'),
+                className: 'fc-event-' + (app.status || 'pending'),
+                extendedProps: {
+                    location: app.location || '',
+                    status: app.status || 'pending',
+                    notes: app.notes || ''
+                }
+            }));
+            successCallback(events);
+        },
+        eventClick: function(info) {
+            const id = parseInt(info.event.id);
+            const app = appointmentsList.find(a => a.id === id);
+            if (app) openEditModal(app);
+        },
+        datesSet: function() {
             updateCalendarTitle();
         }
+    });
 
-        // Actualizar título del calendario
-        function updateCalendarTitle() {
-            const view = calendar.view;
-            if (view) {
-                const startDate = view.currentStart;
-                const options = {
-                    year: 'numeric',
-                    month: 'long'
-                };
-                document.getElementById('calendarTitle').textContent = startDate.toLocaleDateString('es-ES', options);
+    calendar.render();
+    updateCalendarTitle();
+}
+
+function updateCalendarTitle()
+{
+    const titleEl = document.getElementById('calendarTitle');
+    if (calendar && titleEl) {
+        const opts = { year: 'numeric', month: 'long' };
+        titleEl.textContent = calendar.view.currentStart.toLocaleDateString('es-ES', opts);
+    }
+}
+
+function filterAppointments()
+{
+    const searchVal = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+    const typeFilter = document.getElementById('eventTypeFilter')?.value || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+    document.querySelectorAll('.table-row:not(.table-header)').forEach(row => {
+        const id = parseInt(row.dataset.id);
+        const app = appointmentsList.find(a => a.id === id);
+        if (!app) { row.style.display = 'none'; return; }
+        const name = getCustomerName(app.customerId).toLowerCase();
+        const matchSearch = name.includes(searchVal);
+        const matchType = !typeFilter || (app.eventType || '') === typeFilter;
+        const matchStatus = !statusFilter || (app.status || '') === statusFilter;
+        row.style.display = (matchSearch && matchType && matchStatus) ? 'grid' : 'none';
+    });
+}
+
+function openEditModal(appointment)
+{
+    const modal = document.getElementById('editModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
+    setVal('editId', appointment.id);
+    setVal('editClient', appointment.customerId);
+    setVal('editDate', appointment.date);
+    setVal('editStartTime', appointment.startTime);
+    setVal('editEndTime', appointment.endTime);
+    setVal('editEventType', appointment.eventType);
+    setVal('editLocation', appointment.location);
+    setVal('editStatus', appointment.status);
+    setVal('editNotes', appointment.notes);
+
+    populateClientSelectors();
+}
+
+function validateAppointmentData(data) {
+    if (!data.customerId) {
+        alert('Debe seleccionar un cliente.');
+        return false;
+    }
+    if (!data.date) {
+        alert('La fecha es obligatoria.');
+        return false;
+    }
+    if (!data.startTime) {
+        alert('La hora de inicio es obligatoria.');
+        return false;
+    }
+    if (data.endTime && data.startTime >= data.endTime) {
+        alert('La hora de fin debe ser posterior a la hora de inicio.');
+        return false;
+    }
+    return true;
+}
+
+function initApp()
+{
+    fetchCustomers().then(() => {
+        if (customersList.length === 0) {
+            const addBtn = document.getElementById('addAppointmentBtn');
+            if (addBtn) addBtn.disabled = true;
+        }
+        fetchAppointments();
+    });
+
+    renderAppointmentsTable(currentPage);
+
+    const addBtn = document.getElementById('addAppointmentBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', () => {
+            if (customersList.length === 0) {
+                alert('Debe registrar al menos un cliente antes de crear una cita.');
+                return;
             }
-        }
-
-        // Renderizar tabla de citas
-        function renderAppointmentsTable(page = 1) {
-            const table = document.querySelector('.appointments-table');
-            const rowsContainer = table.querySelector('.table-row') ? table.querySelector('.table-row').parentNode : table;
-
-            // Limpiar filas existentes
-            const existingRows = document.querySelectorAll('.table-row:not(.table-header)');
-            existingRows.forEach(row => row.remove());
-
-            // Filtrar citas habilitadas
-            const enabledAppointments = Object.values(appointmentsData).filter(app => app.enabled);
-            const totalAppointments = enabledAppointments.length;
-            const startIndex = (page - 1) * appointmentsPerPage;
-            const endIndex = Math.min(startIndex + appointmentsPerPage, totalAppointments);
-            const pageAppointments = enabledAppointments.slice(startIndex, endIndex);
-
-            // Actualizar información de paginación
-            document.getElementById('showingStart').textContent = startIndex + 1;
-            document.getElementById('showingEnd').textContent = endIndex;
-            document.getElementById('totalAppointments').textContent = totalAppointments;
-
-            // Renderizar filas
-            pageAppointments.forEach(appointment => {
-                const client = clientsData[appointment.clientId];
-                const date = new Date(appointment.date);
-                const formattedDate = date.toLocaleDateString('es-ES');
-
-                const row = document.createElement('div');
-                row.className = 'table-row';
-                row.dataset.id = appointment.id;
-                row.dataset.type = appointment.eventType;
-                row.dataset.status = appointment.status;
-
-                row.innerHTML = `
-                    <div class="col-1">#${appointment.id}</div>
-                    <div class="col-2" style="display: flex; align-items: center; gap: 15px;">
-                        <div class="client-img">
-                            <img src="${client.image}" alt="Cliente">
-                        </div>
-                        <div>
-                            <strong>${client.firstName} ${client.lastName}</strong>
-                            <div style="font-size: 0.85rem; color: var(--gray);">${client.phone}</div>
-                        </div>
-                    </div>
-                    <div class="col-3">
-                        <div>${formattedDate}</div>
-                        <div style="font-size: 0.85rem; color: var(--gray);">${appointment.startTime} - ${appointment.endTime}</div>
-                    </div>
-                    <div class="col-4"><span class="event-type">${appointment.eventType.charAt(0).toUpperCase() + appointment.eventType.slice(1)}</span></div>
-                    <div class="col-5">${appointment.location}</div>
-                    <div class="col-6"><span class="status ${appointment.status}">${getStatusText(appointment.status)}</span></div>
-                    <div class="col-7" style="display: flex; gap: 10px;">
-                        <button class="action-btn edit" data-id="${appointment.id}"><i class="fas fa-edit"></i></button>
-                    
-                    </div>
-                `;
-
-                rowsContainer.appendChild(row);
-
-                // Agregar event listeners
-                addEventListenersToRow(row, appointment.id);
-            });
-        }
-
-        // Llenar selectores de cliente
-        function populateClientSelectors() {
-            const newClientSelect = document.getElementById('newClient');
-
-            // Limpiar selector
-            newClientSelect.innerHTML = '<option value="">Seleccionar cliente...</option>';
-
-            // Agregar opciones
-            Object.values(clientsData).forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                option.textContent = `${client.firstName} ${client.lastName}`;
-                newClientSelect.appendChild(option);
-            });
-        }
-
-        const editClientSelect = document.getElementById('editClient');
-        editClientSelect.innerHTML = '<option value="">Seleccionar cliente...</option>';
-        Object.values(clientsData).forEach(client => {
-            const option = document.createElement('option');
-            option.value = client.id;
-            option.textContent = `${client.firstName} ${client.lastName}`;
-            editClientSelect.appendChild(option);
+            const modal = document.getElementById('newAppointmentModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                populateClientSelectors();
+            }
+            const form = document.getElementById('newAppointmentForm');
+            if (form) form.reset();
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('newDate');
+            if (dateInput) dateInput.min = today;
         });
+    }
 
-        // Obtener texto para estado
-        function getStatusText(status) {
-            switch (status) {
-                case 'pending':
-                    return 'Pendiente';
-                case 'confirmed':
-                    return 'Confirmada';
-                case 'in-progress':
-                    return 'En Progreso';
-                case 'completed':
-                    return 'Completada';
-                case 'cancelled':
-                    return 'Cancelada';
-                default:
-                    return status;
-            }
-        }
+    const newForm = document.getElementById('newAppointmentForm');
+    if (newForm) {
+        newForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = {
+                customerId: parseInt(document.getElementById('newClient')?.value || 0),
+                date: document.getElementById('newDate')?.value || '',
+                startTime: document.getElementById('newStartTime')?.value || '',
+                endTime: document.getElementById('newEndTime')?.value || '',
+                eventType: document.getElementById('newEventType')?.value || '',
+                location: document.getElementById('newLocation')?.value || '',
+                status: document.getElementById('newStatus')?.value || 'pending',
+                notes: document.getElementById('newNotes')?.value || ''
+            };
+            if (!validateAppointmentData(data)) return;
+            createAppointment(data);
+            document.getElementById('newAppointmentModal').style.display = 'none';
+        });
+    }
 
-        // Agregar event listeners a una fila
-        function addEventListenersToRow(row, id) {
-            // Botón de editar
-            row.querySelector('.action-btn.edit').addEventListener('click', function() {
-                const appointment = appointmentsData[id];
-                if (appointment) {
-                    openEditModal(appointment);
-                }
-            });
+    const editForm = document.getElementById('editForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('editId')?.value || 0);
+            if (!id) return;
+            const data = {
+                customerId: parseInt(document.getElementById('editClient')?.value || 0),
+                date: document.getElementById('editDate')?.value || '',
+                startTime: document.getElementById('editStartTime')?.value || '',
+                endTime: document.getElementById('editEndTime')?.value || '',
+                eventType: document.getElementById('editEventType')?.value || '',
+                location: document.getElementById('editLocation')?.value || '',
+                status: document.getElementById('editStatus')?.value || 'pending',
+                notes: document.getElementById('editNotes')?.value || ''
+            };
+            if (!validateAppointmentData(data)) return;
+            updateAppointment(id, data);
+            document.getElementById('editModal').style.display = 'none';
+        });
+    }
 
-
-        }
-
-        // Actualizar eventos del calendario
-        function updateCalendarEvents() {
-            calendar.refetchEvents();
-        }
-
-        // Inicializar la aplicación
-        function initApp() {
-            // Renderizar citas y calendario
-            renderAppointmentsTable();
-            populateClientSelectors();
-            initCalendar();
-
-            // Simulate active menu items
-            const menuItems = document.querySelectorAll('.nav-links a');
-            menuItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    menuItems.forEach(i => i.classList.remove('active'));
-                    this.classList.add('active');
-                });
-            });
-
-
-            // Botón para abrir modal de nueva cita
-            document.getElementById('addAppointmentBtn').addEventListener('click', function() {
-                document.getElementById('newAppointmentModal').style.display = 'flex';
-                // Limpiar formulario
-                document.getElementById('newAppointmentForm').reset();
-                // Establecer fecha mínima como hoy
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('newDate').min = today;
-            });
-            document.getElementById('editForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const id = document.getElementById('editId').value;
-                if (appointmentsData[id]) {
-                    // Actualizar los datos de la cita
-                    appointmentsData[id].clientId = document.getElementById('editClient').value;
-                    appointmentsData[id].date = document.getElementById('editDate').value;
-                    appointmentsData[id].startTime = document.getElementById('editStartTime').value;
-                    appointmentsData[id].endTime = document.getElementById('editEndTime').value;
-                    appointmentsData[id].eventType = document.getElementById('editEventType').value;
-                    appointmentsData[id].location = document.getElementById('editLocation').value;
-                    appointmentsData[id].status = document.getElementById('editStatus').value;
-                    appointmentsData[id].notes = document.getElementById('editNotes').value;
-
-                    // Actualizar la UI
-                    renderAppointmentsTable(currentPage);
-                    updateCalendarEvents();
-
-                    alert('Cita actualizada correctamente');
-                    document.getElementById('editModal').style.display = 'none';
-                }
-            });
-
-            // Agregar manejador para el botón de cancelar edición
-            document.getElementById('cancelEdit').addEventListener('click', function() {
-                document.getElementById('editModal').style.display = 'none';
-            });
-
-            // Botón para cambiar entre vista de tabla y calendario
-            document.getElementById('toggleViewBtn').addEventListener('click', function() {
-                const tableView = document.getElementById('appointmentsTable');
-                const calendarView = document.getElementById('calendarView');
-                const icon = this.querySelector('i');
-
+    const toggleBtn = document.getElementById('toggleViewBtn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', function() {
+            const tableView = document.getElementById('appointmentsTable');
+            const calendarView = document.getElementById('calendarView');
+            const icon = this.querySelector('i');
+            if (tableView && calendarView) {
                 if (tableView.style.display !== 'none') {
                     tableView.style.display = 'none';
                     calendarView.style.display = 'block';
-                    icon.classList.remove('fa-calendar');
-                    icon.classList.add('fa-list');
+                    if (icon) { icon.classList.remove('fa-calendar'); icon.classList.add('fa-list'); }
                     this.innerHTML = '<i class="fas fa-list"></i> Vista Tabla';
-                    calendar.updateSize(); // Asegurar que el calendario se redimensione
+                    if (calendar) calendar.updateSize();
                 } else {
                     tableView.style.display = 'block';
                     calendarView.style.display = 'none';
-                    icon.classList.remove('fa-list');
-                    icon.classList.add('fa-calendar');
+                    if (icon) { icon.classList.remove('fa-list'); icon.classList.add('fa-calendar'); }
                     this.innerHTML = '<i class="fas fa-calendar"></i> Vista Calendario';
                 }
-            });
+            }
+        });
+    }
 
-            // Eventos de filtros
+    document.querySelectorAll('.close-modal, #cancelNew, #cancelEdit').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+        });
+    });
 
-            // Funciones para manejar modals
-            const modals = document.querySelectorAll('.modal');
-            const closeButtons = document.querySelectorAll('.close-modal, #cancelNew, #cancelEdit');
+    window.addEventListener('click', function(e) {
+        document.querySelectorAll('.modal').forEach(m => {
+            if (e.target === m) m.style.display = 'none';
+        });
+    });
 
-            // Cerrar modals
-            closeButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    modals.forEach(modal => {
-                        modal.style.display = 'none';
-                    });
-                });
-            });
+    const prevBtn = document.getElementById('prevMonth');
+    const nextBtn = document.getElementById('nextMonth');
+    const todayBtn = document.getElementById('todayBtn');
+    if (prevBtn) prevBtn.addEventListener('click', () => { if (calendar) calendar.prev(); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { if (calendar) calendar.next(); });
+    if (todayBtn) todayBtn.addEventListener('click', () => { if (calendar) calendar.today(); });
 
-            // Cerrar modal al hacer clic fuera
-            window.addEventListener('click', function(event) {
-                modals.forEach(modal => {
-                    if (event.target === modal) {
-                        modal.style.display = 'none';
-                    }
-                });
-            });
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+    if (prevPage) {
+        prevPage.addEventListener('click', () => {
+            if (currentPage > 1) { currentPage--; renderAppointmentsTable(currentPage); }
+        });
+    }
+    if (nextPage) {
+        nextPage.addEventListener('click', () => {
+            const totalPages = Math.ceil(appointmentsList.length / appointmentsPerPage) || 1;
+            if (currentPage < totalPages) { currentPage++; renderAppointmentsTable(currentPage); }
+        });
+    }
 
-            // Formulario para nueva cita
-            document.getElementById('newAppointmentForm').addEventListener('submit', function(e) {
-                e.preventDefault();
+    const searchInput = document.getElementById('searchInput');
+    const typeFilter = document.getElementById('eventTypeFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    if (searchInput) searchInput.addEventListener('input', filterAppointments);
+    if (typeFilter) typeFilter.addEventListener('change', filterAppointments);
+    if (statusFilter) statusFilter.addEventListener('change', filterAppointments);
 
-                // Generar un nuevo ID (simple incremento)
-                const ids = Object.keys(appointmentsData).map(id => parseInt(id));
-                const newId = String(Math.max(...ids) + 1).padStart(3, '0');
+    const today = new Date().toISOString().split('T')[0];
+    const dateFields = ['newDate', 'editDate'];
+    dateFields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.min = today;
+    });
+}
 
-                // Obtener valores del formulario
-                const newAppointment = {
-                    id: newId,
-                    clientId: document.getElementById('newClient').value,
-                    date: document.getElementById('newDate').value,
-                    startTime: document.getElementById('newStartTime').value,
-                    endTime: document.getElementById('newEndTime').value,
-                    eventType: document.getElementById('newEventType').value,
-                    location: document.getElementById('newLocation').value,
-                    status: document.getElementById('newStatus').value,
-                    notes: document.getElementById('newNotes').value,
-                    enabled: true
-                };
-
-                // Agregar a los datos
-                appointmentsData[newId] = newAppointment;
-
-                // Actualizar la aplicación
-                renderAppointmentsTable(currentPage);
-                updateCalendarEvents();
-
-                alert('Cita agregada correctamente');
-                document.getElementById('newAppointmentModal').style.display = 'none';
-
-                alert('Cita actualizada correctamente');
-                document.getElementById('editModal').style.display = 'none';
-                // Limpiar formulario
-                document.getElementById('newAppointmentForm').reset();
-            });
-
-            // Botones de navegación del calendario
-            document.getElementById('prevMonth').addEventListener('click', function() {
-                calendar.prev();
-            });
-
-            document.getElementById('nextMonth').addEventListener('click', function() {
-                calendar.next();
-            });
-
-            document.getElementById('todayBtn').addEventListener('click', function() {
-                calendar.today();
-            });
-
-            // Botones de paginación
-            document.getElementById('prevPage').addEventListener('click', function() {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderAppointmentsTable(currentPage);
-                }
-            });
-
-            document.getElementById('nextPage').addEventListener('click', function() {
-                const totalAppointments = Object.values(appointmentsData).filter(app => app.enabled).length;
-                const totalPages = Math.ceil(totalAppointments / appointmentsPerPage);
-
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderAppointmentsTable(currentPage);
-                }
-            });
-
-            // Establecer fecha mínima en los datepickers
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('newDate').min = today;
-        }
-
-        function openEditModal(appointment) {
-            const client = clientsData[appointment.clientId];
-
-            document.getElementById('editId').value = appointment.id;
-            document.getElementById('editClient').value = appointment.clientId;
-            document.getElementById('editDate').value = appointment.date;
-            document.getElementById('editStartTime').value = appointment.startTime;
-            document.getElementById('editEndTime').value = appointment.endTime;
-            document.getElementById('editEventType').value = appointment.eventType;
-            document.getElementById('editLocation').value = appointment.location;
-            document.getElementById('editStatus').value = appointment.status;
-            document.getElementById('editNotes').value = appointment.notes || '';
-            document.getElementById('editModal').style.display = 'flex';
-
-        }
-        // Función para filtrar citas
-        function filterAppointments() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const eventTypeFilter = document.getElementById('eventTypeFilter').value;
-            const statusFilter = document.getElementById('statusFilter').value;
-
-            const rows = document.querySelectorAll('.table-row:not(.table-header)');
-
-            rows.forEach(row => {
-                const id = row.dataset.id;
-                const appointment = appointmentsData[id];
-                const client = clientsData[appointment.clientId];
-                const clientName = (client.firstName + ' ' + client.lastName).toLowerCase();
-                const eventType = appointment.eventType;
-                const status = appointment.status;
-                const enabled = appointment.enabled;
-
-                // Aplicar filtros
-                const matchesSearch = clientName.includes(searchTerm);
-                const matchesEventType = eventTypeFilter === '' || eventType === eventTypeFilter;
-                const matchesStatus = statusFilter === '' || status === statusFilter;
-
-                if (matchesSearch && matchesEventType && matchesStatus && enabled) {
-                    row.style.display = 'grid';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-
-        // Inicializar la aplicación cuando el DOM esté cargado
-        document.addEventListener('DOMContentLoaded', initApp);
+document.addEventListener('DOMContentLoaded', () => {
+    initApp();
+    setTimeout(initCalendar, 100);
+});

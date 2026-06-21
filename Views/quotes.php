@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citas - Bet-El Creativa</title>
     
-   <!-- <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/globals.css"> -->
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/quoteStyle.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -27,41 +26,54 @@
             </div>
             <div class="user-container">
                 <div class="imagenfoto">
-                    <img src="imagenes/BetEl.png" alt="Bet-El Creativa Logo">
+                    <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
                 </div>
                 <div class="user-details">
                     <h2>Ismael Maestre</h2>
                     <p>Administrador</p>
                 </div>
+                <div class="user-settings" id="userSettings">
+                    <button class="settings-btn" id="settingsBtn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settingsDropdown">
+                        <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
+                            <i class="fas fa-user"></i> Cuenta
+                        </a>
+                        <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </a>
+                    </div>
+                </div>
             </div>
         </header>
         <!-- Menú principal -->
         <nav class="main-menu">
-            <a class="menu-item ">
+            <a href="<?php echo APP_URL; ?>dashboard" class="menu-item">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </a>
-            <a class="menu-item">
+            <a href="<?php echo APP_URL; ?>materials" class="menu-item">
                 <i class="fas fa-box-open"></i>
                 <span>Materiales</span>
             </a>
-            <a class="menu-item active">
+            <a href="<?php echo APP_URL; ?>quotes" class="menu-item active">
                 <i class="fas fa-calendar-check"></i>
                 <span>Citas</span>
             </a>
-            <a class="menu-item">
+            <a href="<?php echo APP_URL; ?>category" class="menu-item">
                 <i class="fas fa-layer-group"></i>
                 <span>Categoría</span>
             </a>
-            <a class="menu-item">
+            <a href="<?php echo APP_URL; ?>customers" class="menu-item">
                 <i class="fas fa-users"></i>
                 <span>Clientes</span>
             </a>
-            <a class="menu-item">
+            <a href="<?php echo APP_URL; ?>storage" class="menu-item">
                 <i class="fas fa-warehouse"></i>
                 <span>Almacén</span>
             </a>
-            <a class="menu-item">
+            <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Reportes</span>
             </a>
@@ -93,46 +105,38 @@
                             </div>
                             <div class="filter-group">
                                 <h3>Buscar Cliente</h3>
-                                <input type="text" class="form-control" placeholder="Nombre del cliente...">
+                                <input type="text" class="form-control" id="searchInput" placeholder="Nombre del cliente...">
                             </div>
                             <div class="filter-group">
                                 <h3>Rango de Fechas</h3>
                                 <div class="date-picker">
-                                    <input type="date" value="2023-11-01">
-                                    <input type="date" value="2023-11-30">
+                                    <input type="date" id="filterDateFrom">
+                                    <input type="date" id="filterDateTo">
                                 </div>
                             </div>
 
                             <div class="filter-group">
                                 <h3>Estado de Cita</h3>
-                                <div class="status-filter">
-                                    <div class="status-btn active">Todas</div>
-                                    <div class="status-btn">Confirmadas</div>
-                                    <div class="status-btn">Pendientes</div>
-                                    <div class="status-btn">Canceladas</div>
-                                </div>
+                                <select id="statusFilter" class="form-select">
+                                    <option value="">Todos</option>
+                                    <option value="pending">Pendientes</option>
+                                    <option value="confirmed">Confirmadas</option>
+                                    <option value="in-progress">En Progreso</option>
+                                    <option value="completed">Completadas</option>
+                                    <option value="cancelled">Canceladas</option>
+                                </select>
                             </div>
 
                             <div class="filter-group">
                                 <h3>Tipo de Evento</h3>
-                                <div class="event-type-filter">
-                                    <div class="type-btn">
-                                        <i class="fas fa-glass-cheers"></i>
-                                        <span>Bodas</span>
-                                    </div>
-                                    <div class="type-btn">
-                                        <i class="fas fa-birthday-cake"></i>
-                                        <span>Cumpleaños</span>
-                                    </div>
-                                    <div class="type-btn active">
-                                        <i class="fas fa-baby"></i>
-                                        <span>Infantiles</span>
-                                    </div>
-                                    <div class="type-btn">
-                                        <i class="fas fa-briefcase"></i>
-                                        <span>Corporativos</span>
-                                    </div>
-                                </div>
+                                <select id="eventTypeFilter" class="form-select">
+                                    <option value="">Todos</option>
+                                    <option value="boda">Bodas</option>
+                                    <option value="cumpleanos">Cumpleaños</option>
+                                    <option value="corporativo">Corporativos</option>
+                                    <option value="quince">Quinceañeros</option>
+                                    <option value="otro">Otro</option>
+                                </select>
                             </div>
 
 
@@ -320,7 +324,21 @@
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.min.js"></script>
-    <script src="../Public/js/quotes.js"></script>
+    <script>
+        // Constantes globales usadas por citas.js para comunicarse con la API
+        const APP_URL = '<?php echo APP_URL; ?>';
+        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
+    </script>
+    <script>
+        document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.getElementById('settingsDropdown')?.classList.toggle('show');
+        });
+        document.addEventListener('click', function () {
+            document.getElementById('settingsDropdown')?.classList.remove('show');
+        });
+    </script>
+    <script src="<?php echo APP_URL; ?>Public/js/citas.js"></script>
 </body>
 
 </html>

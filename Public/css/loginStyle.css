@@ -1,3 +1,22 @@
+:root {
+  --primary: rgb(25, 13, 199);
+  --secondary: #1fc509c7;
+  --accent: #1abc9c;
+  --light: #f8f9fa;
+  --dark: #212529;
+  --gray: #6c757d;
+  --light-gray: #e9ecef;
+  --warning: #ff9800;
+  --danger: #f44336;
+  --success: #4caf50;
+  --info: #2196f3;
+  --icon: oklch(0.496 0.265 301.924);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s ease;
+  --sidebar-width: 250px;
+  --header-height: 70px;
+}
+
 /* loginStyle.css - Estilos específicos para la página de inicio de sesión */
 
 body {
@@ -102,7 +121,7 @@ body::before {
 
 .toggle-password {
   position: absolute;
-  left: 329px;
+  right: 15px;
   top: 27%;
   transform: translateY(-50%);
   color: rgb(0, 0, 0);
@@ -265,334 +284,9 @@ body::before {
   }
   .toggle-password {
     font-size: 1.2rem;
-    left: auto;
-    right: 15px;
   }
   .login-button {
     padding: 14px;
     font-size: 1rem;
   }
-}
-
-
-
-/* * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-}
-
-body {
-  background: url("../images/inicio.jpg") no-repeat center center fixed;
-  background-size: cover;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  position: relative;
-  overflow-x: hidden;
-}
-
-body::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 1;
-}
-
-.login-container {
-  position: relative;
-  z-index: 2;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-  width: 100%;
-  max-width: 450px;
-  padding: 40px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.login-container:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.login-header h1 {
-  color: #fff;
-  font-size: 2.5rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.login-header p {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1.1rem;
-}
-
-.input-group {
-  position: relative;
-  margin-bottom: 25px;
-}
-
-.input-group .icon1 {
-  position: absolute;
-  left: 12px;
-  top: 31%;
-  transform: translateY(-56%);
-  color: rgb(0 0 0);
-  font-size: 2rem;
-  transition: color 0.3s;
-}
-.icon2 {
-  position: absolute;
-  left: 12px;
-  top: 31%;
-  transform: translateY(-56%);
-  color: rgb(0 0 0);
-  font-size: 2rem;
-  transition: color 0.3s;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 8px 15px 15px 50px;
-    background: rgb(255 255 255);
-    border: 3px solid rgb(7 0 0);
-    border-radius: 10px;
-    font-size: 1rem;
-    color: #000000;
-    transition: all 0.3s;
-    outline: none;
-}
-
-.input-group input::placeholder {
-  color: rgb(0, 0, 0);
-}
-
-.toggle-password {
-  position: absolute;
-  left: 329px;
-  top: 27%;
-  transform: translateY(-50%);
-  color: rgb(0, 0, 0);
-  cursor: pointer;
-  font-size: 1.6rem;
-  transition: color 0.3s;
-}
-
-.toggle-password:hover {
-  color: #2400c2;
-}
-
-.remember-forgot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.95rem;
-}
-
-.remember {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.remember input {
-  width: 18px;
-  height: 18px;
-  accent-color: #6a11cb;
-}
-
-.forgot {
-  color: #ffffff;
-  text-decoration: none;
-  transition: color 0.3s;
-}
-
-.forgot:hover {
-  color: #2575fc;
-  text-decoration: underline;
-}
-
-.login-button {
-  width: 100%;
-  padding: 15px;
-  background: rgba(0, 0, 255, 0.76);
-  color: rgb(255, 255, 255);
-  border: none;
-  border-radius: 10px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
-}
-
-.login-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(106, 17, 203, 0.6);
-}
-
-.login-button:active {
-  transform: translateY(0);
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 25px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.register-link a {
-  color: #ffffff;
-  text-decoration: none;
-  font-weight: 600;
-  margin-left: 5px;
-  transition: color 0.3s;
-}
-
-.register-link a:hover {
-  color: #2575fc;
-  text-decoration: underline;
-}
-
-.feedback {
-  margin-top: 8px;
-  padding: 10px 15px;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  display: none;
-  animation: fadeIn 0.3s;
-}
-
-.valid-feedback {
-  background: rgba(40, 167, 69, 0.2);
-  color: #d4edda;
-  border: 1px solid rgba(195, 230, 203, 0.3);
-}
-
-.invalid-feedback {
-  background: rgba(220, 53, 69, 0.2);
-  color: #f8d7da;
-  border: 1px solid rgba(245, 198, 203, 0.3);
-  animation: shake 0.4s;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  75% {
-    transform: translateX(5px);
-  }
-}
-
-.success-message {
-  background: rgba(40, 167, 69, 0.8);
-  color: white;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
-  margin-top: 20px;
-  display: none;
-  animation: fadeIn 0.5s;
-}
-
-/* Responsive Design *//* 
-@media (max-width: 768px) {
-  .login-container {
-    padding: 30px;
-    max-width: 90%;
-  }
-
-  .login-header h1 {
-    font-size: 2.2rem;
-  }
-
-  .input-group input {
-    padding: 14px 14px 14px 45px;
-  }
-
-  .remember-forgot {
-    flex-direction: column;
-    gap: 12px;
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 480px) {
-  .login-container {
-    padding: 25px 20px;
-  }
-
-  .login-header h1 {
-    font-size: 2rem;
-  }
-
-  .login-header p {
-    font-size: 1rem;
-  }
-
-  .input-group input {
-    padding: 12px 12px 12px 40px;
-    font-size: 0.95rem;
-  }
-
-  .input-group i,
-  .toggle-password {
-    font-size: 1.1rem;
-  }
-
-  .login-button {
-    padding: 14px;
-    font-size: 1rem;
-  }
-
-  .feedback {
-    font-size: 0.9rem;
-  }
-}
-
-@media (max-width: 360px) {
-  .login-header h1 {
-    font-size: 1.8rem;
-  }
-
-  .input-group input {
-    padding: 10px 10px 10px 35px;
-  }
-}
-
-.icon1 {
-  font-size: 24px;
-} */ 
+} 

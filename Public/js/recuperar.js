@@ -11,44 +11,49 @@
         const phoneInput = document.getElementById('phone');
         const phoneFeedback = document.getElementById('phone-feedback');
         
-        // Función para validar un campo
         function validateField(field, feedbackId, validationFn, errorMessage, successMessage) {
+            if (!field) return false;
             const value = field.value.trim();
             const feedbackElement = document.getElementById(feedbackId);
-            
+
             if (!value) {
                 field.classList.remove('valid');
                 field.classList.add('invalid');
-                feedbackElement.textContent = 'Este campo es obligatorio';
-                feedbackElement.className = 'feedback invalid-feedback';
-                feedbackElement.style.display = 'block';
+                if (feedbackElement) {
+                    feedbackElement.textContent = 'Este campo es obligatorio';
+                    feedbackElement.className = 'feedback invalid-feedback';
+                    feedbackElement.style.display = 'block';
+                }
                 return false;
             }
-            
+
             if (validationFn && !validationFn(value)) {
                 field.classList.remove('valid');
                 field.classList.add('invalid');
-                feedbackElement.textContent = errorMessage;
-                feedbackElement.className = 'feedback invalid-feedback';
-                feedbackElement.style.display = 'block';
+                if (feedbackElement) {
+                    feedbackElement.textContent = errorMessage;
+                    feedbackElement.className = 'feedback invalid-feedback';
+                    feedbackElement.style.display = 'block';
+                }
                 return false;
             }
-            
+
             field.classList.remove('invalid');
             field.classList.add('valid');
-            feedbackElement.textContent = successMessage || '¡Campo válido!';
-            feedbackElement.className = 'feedback valid-feedback';
-            feedbackElement.style.display = 'block';
+            if (feedbackElement) {
+                feedbackElement.textContent = successMessage || 'Campo valido';
+                feedbackElement.className = 'feedback valid-feedback';
+                feedbackElement.style.display = 'block';
+            }
             return true;
         }
-        
-        // Validación específica para cada campo
+
         function validatePhone(phone) {
             return /^[0-9]{4}-[0-9]{3}-[0-9]{2}-[0-9]{2}$/.test(phone);
         }
-        
+
         function validatePassword(password) {
-            return /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.*[0-9a-zA-Z]).{8,}$/.test(password);
+            return password.length >= 6;
         }
         
         function validateCode() {
@@ -172,7 +177,7 @@
                 this, 
                 'password-feedback', 
                 validatePassword, 
-                'Mínimo 8 caracteres, una mayúscula y un símbolo', 
+                'Mínimo 6 caracteres', 
                 '¡Contraseña válida!'
             );
         });

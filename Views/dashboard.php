@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Creativo - Bet-El Creativa</title>
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/globals.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/dashboardStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -18,10 +17,23 @@
     <div class="app-container">
         <header class="app-header">
             <div class="logo-container">
-                <img src="imagenes/BetEl.png" alt="Bet-El Creativa Logo">
+                <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
                 <div class="user-info">
                     <h1>Bienvenido, Ismael Maestre</h1>
                     <p>Administrador de Bet-El Creativa</p>
+                </div>
+            </div>
+            <div class="user-settings" id="userSettings">
+                <button class="settings-btn" id="settingsBtn">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div class="settings-dropdown" id="settingsDropdown">
+                    <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
+                        <i class="fas fa-user"></i> Cuenta
+                    </a>
+                    <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
                 </div>
             </div>
         </header>
@@ -32,27 +44,27 @@
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Panel de Control</span>
             </a>
-            <a href="materials.php" class="menu-item">
+            <a href="<?php echo APP_URL; ?>materials" class="menu-item">
                 <i class="fas fa-box-open"></i>
                 <span>Materiales</span>
             </a>
-            <a href="quotes.php" class="menu-item">
+            <a href="<?php echo APP_URL; ?>quotes" class="menu-item">
                 <i class="fas fa-calendar-check"></i>
                 <span>Citas</span>
             </a>
-            <a href="category.php" class="menu-item">
+            <a href="<?php echo APP_URL; ?>category" class="menu-item">
                 <i class="fas fa-layer-group"></i>
                 <span>Categoría</span>
             </a>
-            <a href="customers.php" class="menu-item">
+            <a href="<?php echo APP_URL; ?>customers" class="menu-item">
                 <i class="fas fa-users"></i>
                 <span>Clientes</span>
             </a>
-            <a href="storage.php" class="menu-item">
+            <a href="<?php echo APP_URL; ?>storage" class="menu-item">
                 <i class="fas fa-warehouse"></i>
                 <span>Almacén</span>
             </a>
-            <a href="reports.php" class="menu-item">
+            <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Reportes</span>
             </a>
@@ -91,7 +103,7 @@
                 <div class="card-header">
                     <i class="fas fa-exclamation-circle"></i> Alertas Importantes
                 </div>
-                <div class="card-Alert">
+                <div class="card-alert">
                     <div class="alert-card critical">
                         <i class="fas fa-fire"></i>
                         <div>
@@ -220,125 +232,20 @@
 
     </div>
 
-    <!-- <script>
-        // Menú activo
-        document.querySelectorAll('.menu-item').forEach(item => {
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.menu-item').forEach(i => {
-                    i.classList.remove('active');
-                });
-                this.classList.add('active');
-            });
+    <script>
+        const APP_URL = '<?php echo APP_URL; ?>';
+        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
+    </script>
+    <script>
+        document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.getElementById('settingsDropdown')?.classList.toggle('show');
         });
-
-        // Tareas completadas
-        document.querySelectorAll('.task-check').forEach(check => {
-            check.addEventListener('click', function() {
-                const taskItem = this.closest('.task-item');
-                taskItem.classList.toggle('completed');
-            });
+        document.addEventListener('click', function () {
+            document.getElementById('settingsDropdown')?.classList.remove('show');
         });
-
-        // Gráfico de ventas
-        const salesCtx = document.getElementById('salesChart').getContext('2d');
-        const salesChart = new Chart(salesCtx, {
-            type: 'line',
-            data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
-                datasets: [{
-                    label: 'Ventas Mensuales ($)',
-                    data: [12000, 19000, 15000, 18000, 22000, 24580, 21000, 23000, 24500, 26000, 28000, 30000],
-                    backgroundColor: 'rgba(154, 13, 199, 0.1)',
-                    borderColor: '#9b0dc7',
-                    borderWidth: 3,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#9b0dc7',
-                    pointBorderWidth: 2,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#222222', // color más oscuro para el texto
-
-                        },
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                         ticks: {
-                            font: {
-                                size: 14, // opcional: ajusta el tamaño
-                                weight: '600' // opcional: grosor de la fuente
-                            },
-                            color: '#222222' // texto más oscuro
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            font: {
-                                size: 14, // opcional: ajusta el tamaño
-                                weight: '600' // opcional: grosor de la fuente
-                            },
-                            color: '#222222' // texto más oscuro
-                        }
-                    }
-                }
-            }
-        });
-
-        // Gráfico de tipos de eventos
-        const eventTypeCtx = document.getElementById('eventTypeChart').getContext('2d');
-        const eventTypeChart = new Chart(eventTypeCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Bodas', 'Cumpleaños', 'Infantiles', 'Corporativos', 'Otros'],
-                datasets: [{
-                    data: [35, 25, 20, 15, 5],
-                    backgroundColor: [
-                        '#9b0dc7',
-                        '#1abc9c',
-                        '#3498db',
-                        '#e74c3c',
-                        '#f39c12'
-                    ],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: {
-                            color: '#222222', // color más oscuro para el texto
-                            font: {
-                                size: 14, // opcional: ajusta el tamaño
-                                weight: '600' // opcional: grosor de la fuente
-                            }
-                        },
-                        position: 'bottom',
-
-                    }
-                },
-                cutout: '60%'
-            }
-        });
-    </script> -->
-    <script src="<?php echo APP_URL; ?>public/js/deshboard.js"></script>
+    </script>
+    <script src="<?php echo APP_URL; ?>Public/js/deshboard.js"></script>
 </body>
 
 </html>
