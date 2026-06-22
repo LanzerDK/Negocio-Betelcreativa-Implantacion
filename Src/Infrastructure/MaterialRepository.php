@@ -84,10 +84,12 @@ class MaterialRepository
     public function save(MaterialModel $material): bool
     {
         try {
+            $this->db->beginTransaction();
+
             $sql = "INSERT INTO materials (material_code, name, price, cost_type, wholesale_qty, current_stock, category_id, supplier_id, current_location_id) 
                     VALUES (:code, :name, :price, :cost_type, :wholesale_qty, :stock, :category_id, :supplier_id, :location_id)";
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
+            $ok = $stmt->execute([
                 ':code' => $material->getCode(),
                 ':name' => $material->getName(),
                 ':price' => $material->getPrice(),
@@ -98,7 +100,23 @@ class MaterialRepository
                 ':supplier_id' => $material->getSupplierId(),
                 ':location_id' => $material->getLocationId()
             ]);
+
+            if ($ok && $material->getStock() > 0 && $material->getLocationId()) {
+                $materialId = $this->db->lastInsertId();
+                $this->db->prepare(
+                    "INSERT INTO material_stock_locations (material_id, location_id, quantity)
+                     VALUES (:mid, :lid, :qty)"
+                )->execute([
+                    ':mid' => $materialId,
+                    ':lid' => $material->getLocationId(),
+                    ':qty' => $material->getStock()
+                ]);
+            }
+
+            $this->db->commit();
+            return true;
         } catch (PDOException $e) {
+            $this->db->rollBack();
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
             return false;
         }

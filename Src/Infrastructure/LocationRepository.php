@@ -84,4 +84,27 @@ class LocationRepository
             return false;
         }
     }
+
+    public function delete(int $id): bool
+    {
+        try {
+            $check = $this->db->prepare(
+                "SELECT COUNT(*) FROM material_stock_locations WHERE location_id = :id AND quantity > 0"
+            );
+            $check->execute([':id' => $id]);
+            if ($check->fetchColumn() > 0) {
+                return false;
+            }
+
+            $this->db->prepare("DELETE FROM material_stock_locations WHERE location_id = :id")->execute([':id' => $id]);
+            $this->db->prepare("UPDATE materials SET current_location_id = NULL WHERE current_location_id = :id")->execute([':id' => $id]);
+            $this->db->prepare("UPDATE inventory_movements SET origin_location_id = NULL WHERE origin_location_id = :id")->execute([':id' => $id]);
+            $this->db->prepare("UPDATE inventory_movements SET destination_location_id = NULL WHERE destination_location_id = :id")->execute([':id' => $id]);
+
+            $stmt = $this->db->prepare("DELETE FROM locations WHERE location_id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
 }

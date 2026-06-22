@@ -1,257 +1,15 @@
-:root {
-  --primary: rgb(25, 13, 199);
-  --secondary: #1fc509c7;
-  --accent: #1abc9c;
-  --light: #f8f9fa;
-  --dark: #212529;
-  --gray: #6c757d;
-  --light-gray: #e9ecef;
-  --warning: #ff9800;
-  --danger: #f44336;
-  --success: #4caf50;
-  --info: #2196f3;
-  --icon: oklch(0.496 0.265 301.924);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease;
-  --sidebar-width: 250px;
-  --header-height: 70px;
-  --card-bg: rgba(255, 255, 255, 0.85);
-}
+/* storageStyle.css - Estilos específicos del módulo de Almacén */
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-.modal-footer {
-  padding: 15px 20px;
-  background-color: var(--light-gray);
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.user-settings {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-left: 0.5rem;
-}
-
-.settings-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: #fff;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.1rem;
-  transition: var(--transition);
-}
-
-.settings-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: rotate(30deg);
-}
-
-.settings-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 180px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  display: none;
-  z-index: 9999;
-}
-
-.settings-dropdown.show {
-  display: block;
-}
-
-.settings-dropdown .dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
-  color: var(--dark);
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: background 0.2s;
-  cursor: pointer;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-}
-
-.settings-dropdown .dropdown-item i {
-  width: 18px;
-  text-align: center;
-  color: var(--primary);
-}
-
-.settings-dropdown .dropdown-item:hover {
-  background: var(--light-gray);
-}
-
-.settings-dropdown .dropdown-item:last-child {
-  border-top: 1px solid var(--light-gray);
-}
-
-.settings-dropdown .dropdown-item:last-child i {
-  color: var(--danger);
-}
-
-body {
-  font-family: "Poppins", sans-serif;
-  background: url("https://i.pinimg.com/736x/04/a2/eb/04a2ebeefd745704da9056388e8f1c46.jpg");
-  background-size: cover;
-  background-attachment: fixed;
-  color: var(--dark);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Header */
 .app-header {
-  background: url("../images/Disebar.jpeg");
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
- margin-bottom: 0px;
-  box-shadow: var(--shadow);
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.logo-icon {
-  font-size: 3rem;
-  margin: 0;
-  color: var(--icon);
-}
-
-.app-info h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--light);
-}
-
-.user-details h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--light);
-}
-
-.app-info p {
-  margin: 0;
-  color: var(--light);
-  font-size: 0.9rem;
-}
-
-.user-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.imagenfoto img {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 2px solid #ddd;
-}
-
-.user-details h2 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-.user-details p {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--light-gray);
-}
-
-/* Menú principal */
-.main-menu {
   background: linear-gradient(to right, var(--primary), var(--secondary));
+  color: var(--gold-text);
+  padding: 15px 25px;
   display: flex;
-  overflow-x: auto;
-  padding: 0 15px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  margin-bottom: 25px;
-}
-
-.menu-item {
-  padding: 15px 20px;
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  transition: var(--transition);
-  min-width: 100px;
-  text-decoration: none;
-  cursor: pointer;
-  position: relative;
+  z-index: 100;
 }
-
-.menu-item:hover,
-.menu-item.active {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.menu-item i {
-  font-size: 22px;
-  margin-bottom: 8px;
-}
-
-.menu-item.active:after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 20%;
-  width: 60%;
-  height: 3px;
-  background: var(--accent);
-}
-
-/* Contenido principal */
-.main-content {
-  flex: 1;
-  padding: 25px;
-  max-width: 1800px;
-  margin: 0 auto;
-  width: 100%;
-}
-
+/* Contenedor de contenido con bordes redondeados */
 .content {
   border-radius: 15px;
   padding: 25px;
@@ -261,50 +19,25 @@ body {
   gap: 25px;
 }
 
-/* Page Header */
+/* Encabezado de página con título y acciones */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--light-gray);
+  padding: 15px 20px;
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  border-radius: 10px;
 }
 
+/* Título de página en color claro */
 .page-title {
-  color: var(--light);
-  font-size: 1.8rem;
-}
-
-.btn {
-  padding: 12px 25px;
-  border-radius: 50px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: var(--transition);
-}
-
-.btn-primary {
-  background: var(--primary);
   color: white;
+  font-size: 1.8rem;
+  margin: 0;
 }
 
-.btn-outline {
-  background-color: transparent;
-  border: 2px solid var(--primary);
-  color: var(--primary);
-}
-
-.btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-/* Inventory Overview */
+/* Tarjetas de resumen del inventario en grid */
 .inventory-overview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -312,14 +45,29 @@ body {
   margin-bottom: 10px;
 }
 
+/* Tarjeta individual de resumen con gradiente */
 .overview-card {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   border-radius: 15px;
   padding: 25px 20px;
   text-align: center;
   color: white;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
   transition: transform 0.3s ease;
+  position: relative;
+}
+
+.overview-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 15px;
+  padding: 2px;
+  background: var(--gold-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .overview-card:hover {
@@ -343,76 +91,54 @@ body {
   opacity: 0.9;
 }
 
-/* Filters Sidebar */
+/* Sidebar de filtros con fondo semitransparente */
 .filters-sidebar {
-  background: rgba(255, 255, 255, 0.747);
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 15px;
   padding: 25px 20px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
   height: fit-content;
+  position: relative;
 }
 
+.filters-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 15px;
+  padding: 2px;
+  background: var(--gold-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.filters-sidebar h3 {
+  color: var(--gold-text);
+}
+
+.filters-sidebar i {
+  color: var(--gold-text);
+}
+
+/* Título del sidebar de filtros */
 .sidebar-title {
-  color: var(--primary);
+  color: var(--gold-text);
   margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--light-gray);
-  font-size: 1.4rem;
+  padding: 0 0 15px;
+  border-bottom: 2px solid var(--gold-text);
+  font-size: 1.2rem;
 }
 
-.filter-group {
-  margin-bottom: 25px;
-}
-
-.filter-label {
-  display: block;
-  margin-bottom: 10px;
-  font-weight: 600;
-  color: var(--primary);
-  font-size: 1.1rem;
-}
-
-.filter-input,
-.filter-select {
-  width: 100%;
-  padding: 14px 18px;
-  border-radius: 12px;
-  border: 1px solid var(--light-gray);
-  font-size: 1rem;
-  background: white;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-.filter-button {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 14px 20px;
-  border-radius: 12px;
-  font-weight: 600;
-  width: 100%;
-  cursor: pointer;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-
-.filter-button:hover {
-  background: #1a0bc7;
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(25, 13, 199, 0.3);
-}
-
-/* Main Content Area */
+/* Área de contenido principal */
 .content-main {
   display: flex;
   flex-direction: column;
   gap: 30px;
 }
 
-/* Warehouse Layout */
+/* Sección de layout del almacén (zonas) */
 .warehouse-layout {
   background: rgba(255, 255, 255, 0.747);
   border-radius: 15px;
@@ -420,18 +146,26 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* Encabezado de sección con título y acciones */
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding: 12px 15px;
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  border-radius: 8px;
+  color: white;
 }
 
+/* Título de sección */
 .section-title {
-  color: var(--primary);
+  color: white;
   font-size: 1.5rem;
+  margin: 0;
 }
 
+/* Grid de zonas del almacén responsive */
 .layout-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -439,8 +173,9 @@ body {
   margin-bottom: 30px;
 }
 
+/* Tarjeta de zona con bordes y hover */
 .zone {
-  background: var(--card-bg);
+  background: rgba(255, 255, 255, 0.85);
   border-radius: 15px;
   padding: 20px;
   box-shadow: var(--shadow);
@@ -453,19 +188,23 @@ body {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
+/* Cabecera de zona con ícono y título */
 .zone-header {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--light-gray);
+  padding: 10px 15px;
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  border-radius: 8px;
+  color: white;
 }
 
+/* Ícono circular de la zona */
 .zone-icon {
   font-size: 1.8rem;
   color: var(--primary);
   margin-right: 15px;
-  background: rgba(25, 13, 199, 0.1);
+  background: rgba(13, 71, 161, 0.1);
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -474,12 +213,14 @@ body {
   justify-content: center;
 }
 
+/* Nombre de la zona */
 .zone-title {
   font-size: 1.3rem;
   font-weight: 600;
   color: var(--primary);
 }
 
+/* Estante individual dentro de una zona */
 .shelf {
   display: flex;
   justify-content: space-between;
@@ -496,6 +237,7 @@ body {
   font-weight: 600;
 }
 
+/* Estadísticas del estante (materiales/capacidad) */
 .shelf-stats {
   display: flex;
   gap: 15px;
@@ -506,7 +248,7 @@ body {
   color: var(--success);
 }
 
-/* Materials Table */
+/* Tabla de materiales del inventario */
 .materials-table {
   background: rgba(255, 255, 255, 0.747);
   border-radius: 15px;
@@ -514,6 +256,7 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* Encabezado de tabla con columnas específicas del almacén */
 .table-header {
   display: grid;
   grid-template-columns: 60px 2fr 1fr 1fr 1fr 120px;
@@ -523,6 +266,7 @@ body {
   font-weight: 600;
 }
 
+/* Fila de datos con mismas columnas que el encabezado */
 .table-row {
   display: grid;
   grid-template-columns: 60px 2fr 1fr 1fr 1fr 120px;
@@ -532,13 +276,14 @@ body {
 }
 
 .table-row:nth-child(even) {
-      background: transparent;
+  background: transparent;
 }
 
 .table-row:hover {
- background: rgba(255, 255, 255, 0.747);
+  background: rgba(255, 255, 255, 0.747);
 }
 
+/* Imagen circular del material en tabla */
 .material-img {
   width: 40px;
   height: 40px;
@@ -551,6 +296,7 @@ body {
   font-size: 1.2rem;
 }
 
+/* Indicador de estado con badge redondeado */
 .status {
   padding: 5px 12px;
   border-radius: 20px;
@@ -574,6 +320,7 @@ body {
   color: var(--danger);
 }
 
+/* Botón de acción circular con ícono */
 .action-btn {
   width: 36px;
   height: 36px;
@@ -594,87 +341,33 @@ body {
   transform: scale(1.1);
 }
 
-/* Pagination */
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 20px;
-  background: rgba(255, 255, 255, 0.747);
-  border-radius: 15px;
-  box-shadow: var(--shadow);
-  margin-top: 20px;
-}
-
-.page-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.page-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: none;
-  background: var(--light-gray);
-  color: var(--dark);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-}
-
-.page-btn.active {
-  background: var(--primary);
-  color: white;
-}
-
-/* Modals */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  display: none;
-}
-
+/* Bootstrap modal overrides - personalización de modales Bootstrap */
 .modal-content {
-  background: white;
+  border: none;
   border-radius: 15px;
-  width: 90%;
-  max-width: 600px;
-  overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: white;
+  border-radius: 15px 15px 0 0;
   padding: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
 }
 
 .modal-title {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 600;
 }
 
-.close-modal {
-  font-size: 1.8rem;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.close-modal:hover {
-  transform: scale(1.2);
+.modal-footer {
+  border-top: 1px solid var(--light-gray);
+  padding: 15px 25px;
+  background: #ffffff;
 }
 
 .modal-body {
@@ -683,10 +376,7 @@ body {
   overflow-y: auto;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
+/* Label de formulario específico de almacén */
 .form-label {
   display: block;
   margin-bottom: 8px;
@@ -704,6 +394,7 @@ body {
   background: white;
 }
 
+/* Contenedor de acciones del formulario */
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -711,44 +402,26 @@ body {
   margin-top: 20px;
 }
 
-/* Tabs */
-.tabs-bar {
-  display: flex;
-  gap: 5px;
-  margin-bottom: 5px;
-  background: rgba(255, 255, 255, 0.747);
-  border-radius: 12px;
-  padding: 5px;
-  box-shadow: var(--shadow);
-}
-
-.tab-btn {
-  padding: 12px 24px;
+/* Botón de eliminar estante con estilo danger */
+.shelf-delete {
+  background: none;
   border: none;
-  background: transparent;
-  color: var(--gray);
-  font-weight: 600;
-  border-radius: 10px;
+  color: var(--danger);
   cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px 8px;
+  border-radius: 6px;
   transition: var(--transition);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
 }
 
-.tab-btn:hover {
-  background: var(--light-gray);
-  color: var(--primary);
+.shelf-delete:hover {
+  background: rgba(244, 67, 54, 0.1);
+  transform: scale(1.1);
 }
 
-.tab-btn.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 12px rgba(25, 13, 199, 0.3);
-}
 
-/* History */
+
+/* Contenedor del historial con fondo */
 .history-container {
   background: rgba(255, 255, 255, 0.747);
   border-radius: 15px;
@@ -756,6 +429,7 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* Tabla de historial con estructura HTML table */
 .history-table {
   width: 100%;
   border-collapse: collapse;
@@ -781,48 +455,10 @@ body {
 }
 
 .history-table tr:hover {
-  background: rgba(25, 13, 199, 0.03);
+  background: rgba(13, 71, 161, 0.03);
 }
 
-/* Bootstrap modal overrides */
-.modal-content {
-  border: none;
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.modal-header {
-  background: linear-gradient(to right, var(--primary), var(--secondary));
-  color: white;
-  border-radius: 15px 15px 0 0;
-  padding: 20px;
-}
-
-.modal-header .btn-close {
-  filter: brightness(0) invert(1);
-}
-
-.modal-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-
-.modal-footer {
-  border-top: 1px solid var(--light-gray);
-  padding: 15px 20px;
-}
-
-.btn-secondary {
-  background: var(--light-gray);
-  color: var(--dark);
-  border: none;
-}
-
-.btn-secondary:hover {
-  background: #d5d9e0;
-  transform: translateY(-2px);
-}
-
+/* Input inválido con feedback visible (sobreescribe _base) */
 .is-invalid {
   border-color: var(--danger) !important;
 }
@@ -838,20 +474,21 @@ body {
   display: block;
 }
 
-/* Content wrapper for sidebar layout */
+/* Layout de dos columnas: sidebar + contenido */
 .content-wrapper {
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 25px;
 }
 
+/* Responsive del layout */
 @media (max-width: 992px) {
   .content-wrapper {
     grid-template-columns: 1fr;
   }
 }
 
-/* Responsive */
+/* Responsive de tabla de materiales */
 @media (max-width: 1200px) {
   .table-header,
   .table-row {

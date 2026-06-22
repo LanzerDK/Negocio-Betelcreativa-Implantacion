@@ -3,6 +3,8 @@
 // =============================================
 
 let appointmentsList = [];
+let allAppointments = [];
+let cancelledAppointments = [];
 let customersList = [];
 
 let currentPage = 1;
@@ -12,7 +14,7 @@ let calendar = null;
 async function fetchCustomers()
 {
     try {
-        const res = await fetch(APP_URL + 'api/customers.php');
+        const res = await fetch(APP_URL + 'api/customers.php?_=' + Date.now());
         const data = await res.json();
         if (data.success) {
             customersList = data.data;
@@ -26,7 +28,7 @@ async function fetchCustomers()
 async function fetchAppointments()
 {
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php');
+        const res = await fetch(APP_URL + 'api/appointments.php?_=' + Date.now());
         const data = await res.json();
         if (data.success) {
             appointmentsList = data.data;
@@ -35,6 +37,34 @@ async function fetchAppointments()
         }
     } catch (err) {
         console.error('Error al cargar citas:', err);
+    }
+}
+
+async function fetchAllAppointments()
+{
+    try {
+        const res = await fetch(APP_URL + 'api/appointments.php?all=1&_=' + Date.now());
+        const data = await res.json();
+        if (data.success) {
+            allAppointments = data.data;
+            if (calendar) calendar.refetchEvents();
+        }
+    } catch (err) {
+        console.error('Error al cargar todas las citas:', err);
+    }
+}
+
+async function fetchCancelledAppointments()
+{
+    try {
+        const res = await fetch(APP_URL + 'api/appointments.php?cancelled=1&_=' + Date.now());
+        const data = await res.json();
+        if (data.success) {
+            cancelledAppointments = data.data;
+            renderHistory();
+        }
+    } catch (err) {
+        console.error('Error al cargar citas canceladas:', err);
     }
 }
 
@@ -84,9 +114,9 @@ async function updateAppointment(id, appData)
     }
 }
 
-async function deleteAppointment(id)
+async function cancelAppointment(id)
 {
-    if (!confirm('¿Estás seguro de eliminar esta cita?')) return;
+    if (!confirm('¿Estás seguro de cancelar esta cita?')) return;
     try {
         const res = await fetch(APP_URL + 'api/appointments.php?id=' + id, {
             method: 'DELETE',
@@ -94,12 +124,41 @@ async function deleteAppointment(id)
         });
         const data = await res.json();
         if (data.success) {
+            currentPage = 1;
             await fetchAppointments();
+            await fetchAllAppointments();
+            await fetchCancelledAppointments();
         } else {
             alert('Error: ' + data.message);
         }
     } catch (err) {
-        console.error('Error al eliminar cita:', err);
+        console.error('Error al cancelar cita:', err);
+        alert('Error de conexión');
+    }
+}
+
+async function reactivateAppointment(id)
+{
+    if (!confirm('¿Reactivar esta cita? Se cambiará a estado Pendiente.')) return;
+    try {
+        const res = await fetch(APP_URL + 'api/appointments.php?id=' + id, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF_TOKEN
+            },
+            body: JSON.stringify({ status: 'pending' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            await fetchAppointments();
+            await fetchAllAppointments();
+            await fetchCancelledAppointments();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Error al reactivar cita:', err);
         alert('Error de conexión');
     }
 }
@@ -201,9 +260,10 @@ function renderAppointmentsTable(page)
             <div class="col-6"><span class="status ${app.status}">${getStatusText(app.status)}</span></div>
             <div class="col-7" style="display:flex;gap:10px;">
                 <button class="action-btn edit" data-id="${app.id}"><i class="fas fa-edit"></i></button>
-                <button class="action-btn delete-btn" data-id="${app.id}">
-                    <i class="fas fa-trash"></i>
-                </button>
+                ${app.status !== 'cancelled' ? `
+                <button class="action-btn cancel-btn" data-id="${app.id}" title="Cancelar cita">
+                    <i class="fas fa-ban"></i>
+                </button>` : ''}
             </div>
         `;
 
@@ -222,9 +282,9 @@ function addEventListenersToRow(row, id)
         });
     }
 
-    const deleteBtn = row.querySelector('.action-btn.delete-btn');
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', () => deleteAppointment(id));
+    const cancelBtn = row.querySelector('.action-btn.cancel-btn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', () => cancelAppointment(id));
     }
 }
 
@@ -282,7 +342,8 @@ function initCalendar()
             });
         },
         events: function(fetchInfo, successCallback, failureCallback) {
-            const events = appointmentsList.map(app => ({
+            const list = allAppointments.length > 0 ? allAppointments : appointmentsList;
+            const events = list.map(app => ({
                 id: String(app.id),
                 title: getCustomerName(app.customerId) + ' - ' + (app.eventType || 'Evento'),
                 start: app.date + 'T' + (app.startTime || '00:00'),
@@ -298,7 +359,8 @@ function initCalendar()
         },
         eventClick: function(info) {
             const id = parseInt(info.event.id);
-            const app = appointmentsList.find(a => a.id === id);
+            const list = allAppointments.length > 0 ? allAppointments : appointmentsList;
+            const app = list.find(a => a.id === id);
             if (app) openEditModal(app);
         },
         datesSet: function() {
@@ -337,11 +399,49 @@ function filterAppointments()
     });
 }
 
+function renderHistory()
+{
+    const tbody = document.getElementById('historyBody');
+    if (!tbody) return;
+
+    if (cancelledAppointments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">No hay citas canceladas.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = cancelledAppointments.map(app => {
+        const name = getCustomerName(app.customerId);
+        const phone = getCustomerPhone(app.customerId);
+        const dateObj = new Date(app.date + 'T' + (app.startTime || '00:00'));
+        const formattedDate = dateObj.toLocaleDateString('es-ES');
+        const eventType = app.eventType ? app.eventType.charAt(0).toUpperCase() + app.eventType.slice(1) : '—';
+        return `<tr>
+            <td>#${app.id}</td>
+            <td><strong>${name}</strong><br><small style="color:var(--gray)">${phone}</small></td>
+            <td>${formattedDate}<br><small style="color:var(--gray)">${app.startTime || '—'}</small></td>
+            <td>${eventType}</td>
+            <td>${app.location || '—'}</td>
+            <td>
+                <button class="btn-reactivate" data-id="${app.id}">
+                    <i class="fas fa-undo"></i> Reactivar
+                </button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    tbody.querySelectorAll('.btn-reactivate').forEach(btn => {
+        btn.addEventListener('click', () => reactivateAppointment(parseInt(btn.dataset.id)));
+    });
+}
+
 function openEditModal(appointment)
 {
     const modal = document.getElementById('editModal');
     if (!modal) return;
     modal.style.display = 'flex';
+
+    // Poblar selects primero (esto resetea el innerHTML)
+    populateClientSelectors();
 
     const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
     setVal('editId', appointment.id);
@@ -354,7 +454,13 @@ function openEditModal(appointment)
     setVal('editStatus', appointment.status);
     setVal('editNotes', appointment.notes);
 
-    populateClientSelectors();
+    // En edición, el cliente no se debe cambiar
+    const clientSelect = document.getElementById('editClient');
+    if (clientSelect) {
+        clientSelect.disabled = true;
+        clientSelect.style.opacity = '0.8';
+        clientSelect.style.cursor = 'not-allowed';
+    }
 }
 
 function validateAppointmentData(data) {
@@ -385,6 +491,8 @@ function initApp()
             if (addBtn) addBtn.disabled = true;
         }
         fetchAppointments();
+        fetchAllAppointments();
+        fetchCancelledAppointments();
     });
 
     renderAppointmentsTable(currentPage);
@@ -513,6 +621,20 @@ function initApp()
     if (searchInput) searchInput.addEventListener('input', filterAppointments);
     if (typeFilter) typeFilter.addEventListener('change', filterAppointments);
     if (statusFilter) statusFilter.addEventListener('change', filterAppointments);
+
+    const historyToggle = document.getElementById('toggleHistoryBtn');
+    const historySection = document.getElementById('historySection');
+    if (historyToggle && historySection) {
+        historyToggle.addEventListener('click', function() {
+            if (historySection.style.display === 'none') {
+                historySection.style.display = 'block';
+                this.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar Historial';
+            } else {
+                historySection.style.display = 'none';
+                this.innerHTML = '<i class="fas fa-history"></i> Historial de Canceladas';
+            }
+        });
+    }
 
     const today = new Date().toISOString().split('T')[0];
     const dateFields = ['newDate', 'editDate'];

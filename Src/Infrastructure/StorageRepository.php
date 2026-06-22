@@ -17,23 +17,21 @@ class StorageRepository
         $this->db = Database::getConnection();
     }
 
-    public function recordAdjustment(int $materialId, int $userId, int $locationId, string $type, int $quantity, string $reason, ?string $notes): bool
+    public function recordAdjustment(int $materialId, int $userId, string $type, int $quantity, string $reason, ?string $notes): bool
     {
         try {
             $this->db->beginTransaction();
 
             if ($type === 'entry') {
                 $this->db->exec("UPDATE materials SET current_stock = current_stock + $quantity WHERE material_id = $materialId");
-                $this->upsertStockLocation($materialId, $locationId, $quantity);
             } else {
                 $this->db->exec("UPDATE materials SET current_stock = GREATEST(current_stock - $quantity, 0) WHERE material_id = $materialId");
-                $this->upsertStockLocation($materialId, $locationId, -$quantity);
             }
 
             $actionType = $type === 'entry' ? 'Entry' : 'Exit';
             $stmt = $this->db->prepare(
-                "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, extra_note, destination_location_id, movement_date)
-                 VALUES (:material_id, :user_id, :action_type, :quantity, :reason, :extra_note, :location_id, NOW())"
+                "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, extra_note, movement_date)
+                 VALUES (:material_id, :user_id, :action_type, :quantity, :reason, :extra_note, NOW())"
             );
             $stmt->execute([
                 ':material_id' => $materialId,
@@ -41,8 +39,7 @@ class StorageRepository
                 ':action_type' => $actionType,
                 ':quantity' => $quantity,
                 ':reason' => $reason,
-                ':extra_note' => $notes,
-                ':location_id' => $locationId
+                ':extra_note' => $notes
             ]);
 
             $this->db->commit();
@@ -58,6 +55,17 @@ class StorageRepository
     {
         try {
             $this->db->beginTransaction();
+
+            $check = $this->db->prepare(
+                "SELECT quantity FROM material_stock_locations WHERE material_id = :mid AND location_id = :lid"
+            );
+            $check->execute([':mid' => $materialId, ':lid' => $fromLocationId]);
+            $row = $check->fetch();
+            $available = $row ? (int)$row['quantity'] : 0;
+
+            if ($available < $quantity) {
+                throw new PDOException("Stock insuficiente en la ubicación origen. Disponible: $available, Solicitado: $quantity.");
+            }
 
             $this->upsertStockLocation($materialId, $fromLocationId, -$quantity);
             $this->upsertStockLocation($materialId, $toLocationId, $quantity);
@@ -97,7 +105,7 @@ class StorageRepository
         }
     }
 
-    public function getHistory(int $page = 1, int $perPage = 20): array
+    public function getHistory(int $page = 1, int $perPage = 15): array
     {
         try {
             $offset = ($page - 1) * $perPage;

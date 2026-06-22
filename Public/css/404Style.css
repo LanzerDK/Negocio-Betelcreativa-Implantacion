@@ -1,21 +1,4 @@
-:root {
-  --primary: rgb(25, 13, 199);
-  --secondary: #1fc509c7;
-  --accent: #1abc9c;
-  --light: #f8f9fa;
-  --dark: #212529;
-  --gray: #6c757d;
-  --light-gray: #e9ecef;
-  --warning: #ff9800;
-  --danger: #f44336;
-  --success: #4caf50;
-  --info: #2196f3;
-  --icon: oklch(0.496 0.265 301.924);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease;
-  --sidebar-width: 250px;
-  --header-height: 70px;
-}
+/* 404Style.css */
 
 .btn {
   padding: 12px 25px;
@@ -35,7 +18,7 @@
 }
 
 .btn-primary:hover {
-  background: #0d0c8c;
+  background: var(--primary-dark);
   transform: translateY(-3px);
   box-shadow: var(--shadow);
 }
@@ -43,14 +26,28 @@
 .card {
   background: rgba(255, 255, 255, 0.747);
   border-radius: 15px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
   overflow: hidden;
   transition: var(--transition);
+  position: relative;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 15px;
+  padding: 2px;
+  background: var(--gold-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15), 0px 2px 20px rgba(212, 175, 55, 0.35);
 }
 
 .app-container {

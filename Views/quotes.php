@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citas - Bet-El Creativa</title>
     
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/quoteStyle.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -85,8 +86,11 @@
                 <div class="page-header">
                     <h2 class="page-title">Citas Programadas</h2>
                     <div class="page-actions">
-                        <button class="btn btn-outline" id="toggleViewBtn">
+                        <button id="toggleViewBtn">
                             <i class="fas fa-calendar"></i> Vista Calendario
+                        </button>
+                        <button id="toggleHistoryBtn">
+                            <i class="fas fa-history"></i> Historial de Canceladas
                         </button>
                         <button class="btn btn-primary" id="addAppointmentBtn">
                             <i class="fas fa-plus"></i> Nueva Cita
@@ -158,7 +162,7 @@
                                 <div class="col-7">Acciones</div>
                             </div>
 
-                            <!-- Table Rows (dinámicas) -->
+                            
                         </div>
 
                         <!-- Calendar View -->
@@ -188,6 +192,29 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Historial de citas canceladas -->
+                <div class="history-container" id="historySection" style="display:none;">
+                    <div class="history-header">
+                        <h3><i class="fas fa-history"></i> Historial de Citas Canceladas</h3>
+                        <
+                    </div>
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Fecha y Hora</th>
+                                <th>Tipo</th>
+                                <th>Ubicación</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray)">Cargando...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

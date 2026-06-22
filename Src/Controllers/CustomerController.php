@@ -99,7 +99,8 @@ class CustomerController
                     'clientType' => trim($input['clientType'] ?? $existing->getClientType()),
                     'source'     => trim($input['source'] ?? $existing->getSource()),
                     'notes'      => trim($input['notes'] ?? $existing->getNotes()),
-                    'preferences'=> trim($input['preferences'] ?? $existing->getPreferences())
+                    'preferences'=> trim($input['preferences'] ?? $existing->getPreferences()),
+                    'isActive'   => array_key_exists('is_active', $input) ? (bool)$input['is_active'] : $existing->isActive()
                 ]);
 
                 if ($repo->update($customer)) {
@@ -115,10 +116,27 @@ class CustomerController
                 if (!$id) {
                     ApiResponse::error('ID de cliente requerido.');
                 }
-                if ($repo->delete($id)) {
-                    ApiResponse::success(null, 'Cliente eliminado exitosamente.');
+                $existing = $repo->findById($id);
+                if (!$existing) {
+                    ApiResponse::error('Cliente no encontrado.', 404);
+                }
+                $customer = new CustomerModel([
+                    'id'         => $id,
+                    'firstName'  => $existing->getFirstName(),
+                    'lastName'   => $existing->getLastName(),
+                    'email'      => $existing->getEmail(),
+                    'phone'      => $existing->getPhone(),
+                    'address'    => $existing->getAddress(),
+                    'clientType' => $existing->getClientType(),
+                    'source'     => $existing->getSource(),
+                    'notes'      => $existing->getNotes(),
+                    'preferences'=> $existing->getPreferences(),
+                    'isActive'   => false
+                ]);
+                if ($repo->update($customer)) {
+                    ApiResponse::success(null, 'Cliente deshabilitado exitosamente.');
                 } else {
-                    ApiResponse::error('Error al eliminar el cliente.', 500);
+                    ApiResponse::error('Error al deshabilitar el cliente.', 500);
                 }
                 break;
 

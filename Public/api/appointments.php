@@ -12,5 +12,6 @@ require_once __DIR__ . '/../../Config/app.php';
 use BetelCreativa\Controllers\AppointmentController;
 
 header('Content-Type: application/json');
+header('Cache-Control: no-cache, no-store, must-revalidate');
 
 AppointmentController::handleRequest();

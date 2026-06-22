@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Categoria - Bet-El Creativa</title>
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/categoryStyle.css">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">

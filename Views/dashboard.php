@@ -5,8 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Creativo - Bet-El Creativa</title>
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/dashboardStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/dashboardStyle.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -23,7 +24,8 @@
                     <p>Administrador de Bet-El Creativa</p>
                 </div>
             </div>
-            <div class="user-settings" id="userSettings">
+            
+<div class="user-settings" id="userSettings">
                 <button class="settings-btn" id="settingsBtn">
                     <i class="fas fa-cog"></i>
                 </button>
@@ -39,7 +41,9 @@
         </header>
 
         <!-- Menú principal -->
-        <nav class="main-menu">
+        
+
+            <nav class="main-menu">
             <a class="menu-item active">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Panel de Control</span>
@@ -68,11 +72,12 @@
                 <i class="fas fa-chart-line"></i>
                 <span>Reportes</span>
             </a>
-        </nav>
 
+            
+        </nav>
         <!-- Contenido principal -->
         <main class="main-content">
-            <h2 style="color: rgba(244, 241, 255, 0.88); ">Panel de Control</h2>
+            <h2 style="color:var(--secondary); padding: 5px; margin-bottom: 25px;">Panel de Control</h2>
 
             <!-- Estadísticas rápidas -->
             <div class="stats-container">
@@ -106,37 +111,44 @@
                 <div class="card-alert">
                     <div class="alert-card critical">
                         <i class="fas fa-fire"></i>
-                        <div>
+                        <div class="alert-text">
                             <strong>Stock Crítico!</strong>
                             <p>Globos dorados - solo quedan 15 unidades</p>
                         </div>
                     </div>
                     <div class="alert-card">
                         <i class="fas fa-calendar-exclamation"></i>
-                        <div>
+                        <div class="alert-text">
                             <strong>Evento Pendiente</strong>
                             <p>Boda Maestre - faltan materiales por confirmar</p>
                         </div>
                     </div>
                     <div class="alert-card">
                         <i class="fas fa-truck"></i>
-                        <div>
+                        <div class="alert-text">
                             <strong>Entrega Retrasada</strong>
                             <p>Pedido #21 - retraso de 2 horas</p>
                         </div>
                     </div>
                     <div class="alert-card critical">
                         <i class="fas fa-fire"></i>
-                        <div>
+                        <div class="alert-text">
                             <strong>Herramienta Dañada!!</strong>
                             <p>Maquina de Inflar Globos - Esta quebrada por fuera</p>
                         </div>
                     </div>
                     <div class="alert-card critical">
                         <i class="fas fa-fire"></i>
-                        <div>
+                        <div class="alert-text">
                             <strong>Herramienta Dañada!!</strong>
                             <p>Maquina de Inflar Globos - Esta quebrada por fuera</p>
+                        </div>
+                    </div>
+                    <div class="alert-card info">
+                        <i class="fas fa-tools"></i>
+                        <div class="alert-text">
+                            <strong>Mantenimiento de Herramientas</strong>
+                            <p>Calibración de equipos - programada para el viernes</p>
                         </div>
                     </div>
                 </div>

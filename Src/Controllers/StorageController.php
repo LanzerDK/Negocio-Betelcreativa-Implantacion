@@ -24,7 +24,8 @@ class StorageController
                     ApiResponse::success($summary);
                 } elseif ($action === 'history') {
                     $page = max(1, (int)($_GET['page'] ?? 1));
-                    $result = $repo->getHistory($page);
+                    $perPage = max(1, min(50, (int)($_GET['per_page'] ?? 15)));
+                    $result = $repo->getHistory($page, $perPage);
                     ApiResponse::success($result);
                 } elseif ($action === 'stock') {
                     $materialId = (int)($_GET['material_id'] ?? 0);
@@ -46,14 +47,13 @@ class StorageController
 
                 if ($action === 'adjust') {
                     $materialId = (int)($input['material_id'] ?? 0);
-                    $locationId = (int)($input['location_id'] ?? 0);
                     $type = $input['type'] ?? '';
                     $quantity = (int)($input['quantity'] ?? 0);
                     $reason = trim($input['reason'] ?? '');
                     $notes = trim($input['notes'] ?? '');
 
-                    if (!$materialId || !$locationId) {
-                        ApiResponse::error('Material y ubicación requeridos.');
+                    if (!$materialId) {
+                        ApiResponse::error('Material requerido.');
                     }
                     if (!in_array($type, ['entry', 'exit'])) {
                         ApiResponse::error('Tipo debe ser entry o exit.');
@@ -62,7 +62,7 @@ class StorageController
                         ApiResponse::error('La cantidad debe ser mayor a 0.');
                     }
 
-                    if ($repo->recordAdjustment($materialId, $userId, $locationId, $type, $quantity, $reason, $notes)) {
+                    if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $notes)) {
                         ApiResponse::success(null, 'Ajuste registrado exitosamente.');
                     } else {
                         ApiResponse::error('Error al registrar el ajuste.', 500);

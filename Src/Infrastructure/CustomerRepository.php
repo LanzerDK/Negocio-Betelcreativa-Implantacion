@@ -97,7 +97,8 @@ class CustomerRepository
                         first_name = :firstName, last_name = :lastName,
                         email = :email, phone = :phone, address = :address,
                         client_type = :clientType, source = :source,
-                        notes = :notes, preferences = :preferences
+                        notes = :notes, preferences = :preferences,
+                        is_active = :isActive
                     WHERE customer_id = :id";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
@@ -110,7 +111,8 @@ class CustomerRepository
                 ':clientType'   => $customer->getClientType(),
                 ':source'       => $customer->getSource(),
                 ':notes'        => $customer->getNotes(),
-                ':preferences'  => $customer->getPreferences()
+                ':preferences'  => $customer->getPreferences(),
+                ':isActive'     => $customer->isActive() ? 1 : 0
             ]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);

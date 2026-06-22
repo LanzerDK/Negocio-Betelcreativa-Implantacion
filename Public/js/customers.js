@@ -95,22 +95,22 @@ async function updateClient(id, clientData)
     }
 }
 
-async function deleteClient(id)
+async function toggleClientStatus(id, isActive)
 {
-    if (!confirm('¿Estás seguro de eliminar este cliente?')) return;
     try {
         const res = await fetch(APP_URL + 'api/customers.php?id=' + id, {
-            method: 'DELETE',
-            headers: { 'X-CSRF-Token': CSRF_TOKEN }
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+            body: JSON.stringify({ is_active: isActive ? 0 : 1 })
         });
         const data = await res.json();
         if (data.success) {
             await fetchClients();
         } else {
-            showError(data.message || 'Error al eliminar el cliente');
+            showError(data.message || 'Error al cambiar estado del cliente');
         }
     } catch (err) {
-        console.error('Error al eliminar cliente:', err);
+        console.error('Error al cambiar estado del cliente:', err);
         showError('Error de conexión');
     }
 }
@@ -123,7 +123,7 @@ function renderClientsList()
 
     clients.forEach(client => {
         const item = document.createElement('div');
-        item.className = 'client-item';
+        item.className = 'client-item' + (client.isActive === false || client.isActive === 0 ? ' inactive' : '');
         item.dataset.id = client.id;
 
         const name = (client.firstName || '') + ' ' + (client.lastName || '');
@@ -132,6 +132,7 @@ function renderClientsList()
             <div class="client-info">
                 <h4>${name.trim() || 'Sin nombre'}</h4>
                 <p>${client.email || 'Sin email'}</p>
+                ${client.isActive === false || client.isActive === 0 ? '<span class="inactive-badge">Inactivo</span>' : ''}
             </div>
         `;
 
@@ -161,6 +162,7 @@ function renderClientDetails(clientId)
 
     if (!detail) return;
     detail.innerHTML = `
+        ${client.isActive === false || client.isActive === 0 ? '<div class="client-inactive-banner"><i class="fas fa-eye-slash"></i> Cliente Inhabilitado</div>' : ''}
         <div class="client-header">
             <img src="${avatar}" alt="Cliente" class="client-main-avatar" onerror="this.src='https://i.imgur.com/1As0akH.jpg'">
             <div class="client-main-info">
@@ -168,8 +170,8 @@ function renderClientDetails(clientId)
                     <button class="btn btn-edit" id="editClientBtn">
                         <i class="fas fa-edit"></i> Editar
                     </button>
-                    <button class="btn btn-delete" id="deleteClientBtn">
-                        <i class="fas fa-trash"></i> Eliminar
+                    <button class="btn ${client.isActive ? 'btn-delete' : 'btn-enable'}" id="toggleClientBtn">
+                        ${client.isActive ? '<i class="fas fa-eye-slash"></i> Inhabilitar' : '<i class="fas fa-check-circle"></i> Habilitar'}
                     </button>
                 </h2>
                 <p><i class="fas fa-envelope"></i> ${client.email || '—'}</p>
@@ -227,8 +229,8 @@ function renderClientDetails(clientId)
     const editBtn = document.getElementById('editClientBtn');
     if (editBtn) editBtn.addEventListener('click', () => openEditClientModal(client));
 
-    const deleteBtn = document.getElementById('deleteClientBtn');
-    if (deleteBtn) deleteBtn.addEventListener('click', () => deleteClient(client.id));
+    const toggleBtn = document.getElementById('toggleClientBtn');
+    if (toggleBtn) toggleBtn.addEventListener('click', () => toggleClientStatus(client.id, client.isActive));
 }
 
 function getClientTypeLabel(type) {

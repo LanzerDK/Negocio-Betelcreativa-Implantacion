@@ -8,7 +8,8 @@ let currentTab = 'inventory';
 
 const FILTERS = { search: '', categoryId: '', status: '' };
 
-const PER_PAGE = 8;
+const PER_PAGE = 10;
+const HISTORY_PER_PAGE = 15;
 let currentPage = 1;
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -55,17 +56,20 @@ document.addEventListener('DOMContentLoaded', function () {
     cargarHistorial(1);
   });
   document.getElementById('addShelfBtn')?.addEventListener('click', function () {
+    document.getElementById('shelfZoneType').value = 'new';
+    toggleShelfZoneType();
+    llenarSelectZona();
+    document.getElementById('shelfForm').reset();
     const modal = new bootstrap.Modal(document.getElementById('shelfModal'));
     modal.show();
   });
   document.getElementById('guardarEstanteBtn')?.addEventListener('click', guardarEstante);
-  document.getElementById('addMaterialBtn')?.addEventListener('click', function () {
-    const modal = new bootstrap.Modal(document.getElementById('addMaterialModal'));
-    document.getElementById('addMaterialForm').reset();
-    document.getElementById('addMatCode').value = '';
-    modal.show();
+  document.getElementById('addMaterialInFilterBtn')?.addEventListener('click', function () {
+    abrirModalNuevoMaterial();
   });
   document.getElementById('guardarNuevoMaterialBtn')?.addEventListener('click', guardarNuevoMaterial);
+  document.getElementById('shelfZoneType')?.addEventListener('change', toggleShelfZoneType);
+  document.getElementById('confirmDeleteShelfModalBtn')?.addEventListener('click', eliminarEstante);
 });
 
 async function cargarDatosIniciales() {
@@ -132,6 +136,7 @@ function renderLayout() {
             <div class="shelf-name">${escapeHtml(l.name)}</div>
             <div class="shelf-stats">
               <div class="shelf-stat">${count} items</div>
+              <button class="shelf-delete" data-id="${l.id}" data-name="${escapeHtml(l.name)}" title="Eliminar estante"><i class="fas fa-trash-alt"></i></button>
             </div>
           </div>`;
         }).join('')}
@@ -139,6 +144,12 @@ function renderLayout() {
     `;
     grid.appendChild(zoneDiv);
   }
+  document.querySelectorAll('.shelf-delete').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      confirmarEliminarEstante(parseInt(this.dataset.id), this.dataset.name);
+    });
+  });
 }
 
 function llenarSelectores() {
@@ -155,8 +166,8 @@ function llenarSelectores() {
   llenarSelectMaterial('adjustMaterial', null);
   llenarSelectMaterial('moveMaterialSelect', null);
   llenarSelectUbicacion('moveNewLocation', null);
-  llenarSelectUbicacion('adjustLocation', null);
   llenarSelectUbicacion('addMaterialLocation', null);
+  llenarSelectZona();
   const catSel = document.getElementById('addMatCategory');
   if (catSel) {
     catSel.innerHTML = '<option value="">Seleccionar categoría</option>';
@@ -289,14 +300,12 @@ function renderPaginacion(page, totalPages, total) {
 
 async function abrirAjustar(material) {
   document.getElementById('adjustId').value = material.id;
-  llenarSelectMaterial('adjustMaterial', material.id);
-  document.getElementById('adjustMaterial').disabled = true;
-  const locs = await fetchStockLocations(material.id);
-  llenarSelectUbicacion('adjustLocation', locs.length > 0 ? locs[0].locationId : material.location_id);
+  document.getElementById('adjustMaterial').value = material.id;
   document.getElementById('adjustType').value = 'entry';
   document.getElementById('adjustQuantity').value = '';
   document.getElementById('adjustReason').value = 'ajuste';
   document.getElementById('adjustNotes').value = '';
+  document.getElementById('adjustCurrentStock').value = material.stock || 0;
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   const modal = new bootstrap.Modal(document.getElementById('adjustModal'));
   modal.show();
@@ -335,25 +344,28 @@ async function fetchStockLocations(materialId) {
 
 document.getElementById('guardarAjusteBtn')?.addEventListener('click', guardarAjuste);
 document.getElementById('guardarMovimientoBtn')?.addEventListener('click', guardarMovimiento);
+document.getElementById('addMatCostType')?.addEventListener('change', function () {
+  document.getElementById('addMatWholesaleQtyGroup').style.display = this.value === 'wholesale' ? 'block' : 'none';
+});
 
 async function guardarAjuste() {
   const materialId = parseInt(document.getElementById('adjustId').value);
-  const locationId = parseInt(document.getElementById('adjustLocation').value);
   const type = document.getElementById('adjustType').value;
   const quantity = parseInt(document.getElementById('adjustQuantity').value);
   const reason = document.getElementById('adjustReason').value;
   const notes = document.getElementById('adjustNotes').value.trim();
+  document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   let valid = true;
   if (!materialId) { valid = false; }
-  if (!locationId) { marcarError('adjustLocation'); valid = false; }
   if (!quantity || quantity <= 0) { marcarError('adjustQuantity'); valid = false; }
   if (!valid) return alert('Complete todos los campos requeridos.');
+  if (!confirm('¿Está seguro de registrar este ajuste de inventario?')) return;
   document.getElementById('guardarAjusteBtn').disabled = true;
   try {
     const res = await fetch(APP_URL + 'api/storage.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-      body: JSON.stringify({ action: 'adjust', material_id: materialId, location_id: locationId, type, quantity, reason, notes })
+      body: JSON.stringify({ action: 'adjust', material_id: materialId, type, quantity, reason, notes })
     });
     const data = await res.json();
     if (data.success) {
@@ -377,12 +389,14 @@ async function guardarMovimiento() {
   const quantity = parseInt(document.getElementById('moveQuantity').value);
   const reason = document.getElementById('moveReason').value;
   const notes = document.getElementById('moveNotes').value.trim();
+  document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   let valid = true;
   if (!materialId || !fromLocationId) { valid = false; }
   if (!toLocationId) { marcarError('moveNewLocation'); valid = false; }
   if (!quantity || quantity <= 0) { marcarError('moveQuantity'); valid = false; }
   if (fromLocationId === toLocationId) { alert('La ubicación de destino debe ser diferente.'); return; }
   if (!valid) return alert('Complete todos los campos requeridos.');
+  if (!confirm('¿Está seguro de mover ' + quantity + ' unidades a la nueva ubicación?')) return;
   document.getElementById('guardarMovimientoBtn').disabled = true;
   try {
     const res = await fetch(APP_URL + 'api/storage.php', {
@@ -407,8 +421,17 @@ async function guardarMovimiento() {
 
 async function guardarEstante() {
   const name = document.getElementById('shelfName').value.trim();
-  const zone = document.getElementById('shelfZone').value;
+  const zoneType = document.getElementById('shelfZoneType').value;
+  let zone = '';
+  if (zoneType === 'new') {
+    zone = document.getElementById('shelfNewZone').value.trim();
+    if (!zone) return alert('Ingrese el nombre de la nueva zona.');
+  } else {
+    zone = document.getElementById('shelfZoneSelect').value;
+    if (!zone) return alert('Seleccione una zona existente.');
+  }
   if (!name) return alert('El nombre del estante es obligatorio.');
+  if (!confirm(`¿Está seguro de agregar el estante "${name}" en la zona "${zone}"?`)) return;
   document.getElementById('guardarEstanteBtn').disabled = true;
   try {
     const res = await fetch(APP_URL + 'api/locations.php', {
@@ -432,14 +455,47 @@ async function guardarEstante() {
   }
 }
 
+function confirmarEliminarEstante(locationId, name) {
+  document.getElementById('deleteShelfId').value = locationId;
+  document.getElementById('deleteShelfName').textContent = name;
+  const modal = new bootstrap.Modal(document.getElementById('deleteShelfModal'));
+  modal.show();
+}
+
+async function eliminarEstante() {
+  const id = parseInt(document.getElementById('deleteShelfId').value);
+  if (!id) return;
+  document.getElementById('confirmDeleteShelfModalBtn').disabled = true;
+  try {
+    const res = await fetch(APP_URL + 'api/locations.php', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+      body: JSON.stringify({ id })
+    });
+    const data = await res.json();
+    if (data.success) {
+      bootstrap.Modal.getInstance(document.getElementById('deleteShelfModal'))?.hide();
+      await recargarDatos();
+    } else {
+      alert('Error: ' + data.message + '\n\nNota: No se puede eliminar un estante que tenga materiales con stock.');
+    }
+  } catch (err) {
+    alert('Error de conexión.');
+  } finally {
+    document.getElementById('confirmDeleteShelfModalBtn').disabled = false;
+  }
+}
+
 async function recargarDatos() {
   try {
-    const [mat, loc, sum] = await Promise.all([
+    const [mat, cat, loc, sum] = await Promise.all([
       fetch(APP_URL + 'api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
+      fetch(APP_URL + 'api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'api/locations.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'api/storage.php?action=summary').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
     ]);
     if (mat.success) allMaterials = mat.data;
+    if (cat.success) allCategories = cat.data;
     if (loc.success) {
       allLocations = loc.data;
       const zoneSet = new Set();
@@ -460,7 +516,7 @@ async function cargarHistorial(page) {
   const container = document.getElementById('historyBody');
   if (!container) return;
   try {
-    const res = await fetch(APP_URL + 'api/storage.php?action=history&page=' + page);
+    const res = await fetch(APP_URL + 'api/storage.php?action=history&page=' + page + '&per_page=' + HISTORY_PER_PAGE);
     const data = await res.json();
     if (!data.success) { container.innerHTML = '<tr><td colspan="7">Error al cargar historial</td></tr>'; return; }
     historyData = data.data.data || [];
@@ -518,19 +574,23 @@ async function cargarHistorial(page) {
 }
 
 async function guardarNuevoMaterial() {
-  const name = document.getElementById('addMatName').value.trim();
   const code = document.getElementById('addMatCode').value.trim();
+  const name = document.getElementById('addMatName').value.trim();
   const categoryId = parseInt(document.getElementById('addMatCategory').value) || null;
-  const price = parseFloat(document.getElementById('addMatPrice').value) || 0;
   const stock = parseInt(document.getElementById('addMatStock').value) || 0;
+  const costType = document.getElementById('addMatCostType').value;
+  const price = parseFloat(document.getElementById('addMatPrice').value) || 0;
+  const wholesaleQty = costType === 'wholesale' ? parseInt(document.getElementById('addMatWholesaleQty').value) || 0 : 0;
   const locationId = parseInt(document.getElementById('addMaterialLocation').value) || null;
-  if (!name) return alert('El nombre del material es obligatorio.');
+  document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
+  if (!name) { marcarError('addMatName'); return alert('El nombre del material es obligatorio.'); }
+  if (!code) { marcarError('addMatCode'); return alert('El código del material es obligatorio.'); }
   document.getElementById('guardarNuevoMaterialBtn').disabled = true;
   try {
     const res = await fetch(APP_URL + 'api/materials.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-      body: JSON.stringify({ name, code, category_id: categoryId, price, stock, location_id: locationId, cost_type: 'unit' })
+      body: JSON.stringify({ name, code, category_id: categoryId, stock, cost_type: costType, price, wholesale_qty: wholesaleQty, location_id: locationId })
     });
     const data = await res.json();
     if (data.success) {
@@ -545,6 +605,36 @@ async function guardarNuevoMaterial() {
   } finally {
     document.getElementById('guardarNuevoMaterialBtn').disabled = false;
   }
+}
+
+function llenarSelectZona(selected) {
+  const sel = document.getElementById('shelfZoneSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Seleccionar zona...</option>';
+  allZones.forEach(z => {
+    const opt = document.createElement('option');
+    opt.value = z;
+    opt.textContent = z;
+    if (selected && z === selected) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function toggleShelfZoneType() {
+  const val = document.getElementById('shelfZoneType')?.value;
+  document.getElementById('shelfNewZoneGroup').style.display = val === 'new' ? 'block' : 'none';
+  document.getElementById('shelfExistingZoneGroup').style.display = val === 'existing' ? 'block' : 'none';
+}
+
+function abrirModalNuevoMaterial() {
+  const modal = new bootstrap.Modal(document.getElementById('addMaterialModal'));
+  document.getElementById('addMaterialForm').reset();
+  document.getElementById('addMatCode').value = '';
+  // Auto-generate code
+  const codePrefix = 'MAT-';
+  const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+  document.getElementById('addMatCode').value = codePrefix + randomSuffix;
+  modal.show();
 }
 
 function marcarError(id) {

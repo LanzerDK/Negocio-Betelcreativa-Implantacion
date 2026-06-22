@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Materiales - Bet-El Creativa</title>
    
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/materialStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/materialStyle.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -189,24 +190,10 @@
                             </div>
                             <div class="mb-3">
                                <div class="form-group">
-                        <label class="form-label">Nueva Ubicación</label>
+                        <label class="form-label">Ubicación</label>
                         <select class="form-select" id="newLocation">
                              <option value="">Seleccionar ubicación...</option>
-                             <option value="1">Almacén A, Estante 1</option>
-                             <option value="2">Almacén A, Estante 2</option>
-                             <option value="3">Almacén A, Estante 3</option>
-                             <option value="4">Almacén B, Estante 1</option>
-                             <option value="5">Almacén B, Estante 2</option>
-                             <option value="6">Almacén B, Estante 3</option>
-                             <option value="7">Almacén C, Estante 1</option>
-                             <option value="8">Almacén C, Estante 2</option>
-                             <option value="9">Almacén C, Estante 3</option>
-                             <option value="10">Almacén D, Estante 1</option>
-                             <option value="11">Almacén D, Estante 2</option>
-                             <option value="12">Almacén D, Estante 3</option>
-                             <option value="13">Almacén E, Estante 1</option>
-                             <option value="14">Almacén E, Estante 2</option>
-                             <option value="15">Almacén E, Estante 3</option>
+                             
                          </select>
                     </div>
                                 

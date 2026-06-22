@@ -24,8 +24,31 @@ class AppointmentRepository
         $this->db = Database::getConnection();
     }
 
-    // Devuelve todas las citas ordenadas por fecha descendente
+    // Devuelve todas las citas activas (no canceladas) ordenadas por fecha descendente
     public function findAll(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT appointment_id AS id, customer_id AS customerId,
+                        date, start_time AS startTime, end_time AS endTime,
+                        event_type AS eventType, location, status, notes,
+                        is_active AS isActive
+                 FROM appointments
+                 WHERE status != 'cancelled'
+                 ORDER BY date DESC, start_time DESC"
+            );
+            $appointments = [];
+            while ($row = $stmt->fetch()) {
+                $appointments[] = new AppointmentModel($row);
+            }
+            return $appointments;
+        } catch (PDOException $e) {
+            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // Devuelve todas las citas (incluyendo canceladas) para el calendario
+    public function findAllWithCancelled(): array
     {
         try {
             $stmt = $this->db->query(
@@ -62,6 +85,37 @@ class AppointmentRepository
             return $data ? new AppointmentModel($data) : null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // Verifica si existe un conflicto de horario para una cita
+    // (mismo cliente, misma fecha, horarios superpuestos)
+    // Si $excludeId no es null, excluye esa cita de la comprobación (para actualizaciones)
+    public function hasTimeConflict(int $customerId, string $date, string $startTime, string $endTime, ?int $excludeId = null): bool
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM appointments
+                    WHERE customer_id = :customerId
+                      AND date = :date
+                      AND status != 'cancelled'
+                      AND start_time < :endTime
+                      AND end_time > :startTime";
+            $params = [
+                ':customerId' => $customerId,
+                ':date'       => $date,
+                ':startTime'  => $startTime,
+                ':endTime'    => $endTime
+            ];
+            if ($excludeId) {
+                $sql .= " AND appointment_id != :excludeId";
+                $params[':excludeId'] = $excludeId;
+            }
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
         }
     }
 
@@ -138,6 +192,29 @@ class AppointmentRepository
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
             return false;
+        }
+    }
+
+    // Devuelve todas las citas canceladas ordenadas por fecha descendente
+    public function findCancelled(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT appointment_id AS id, customer_id AS customerId,
+                        date, start_time AS startTime, end_time AS endTime,
+                        event_type AS eventType, location, status, notes,
+                        is_active AS isActive
+                 FROM appointments
+                 WHERE status = 'cancelled'
+                 ORDER BY date DESC, start_time DESC"
+            );
+            $appointments = [];
+            while ($row = $stmt->fetch()) {
+                $appointments[] = new AppointmentModel($row);
+            }
+            return $appointments;
+        } catch (PDOException $e) {
+            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
         }
     }
 

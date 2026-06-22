@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Almacén - Bet-El Creativa</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/storageStyle.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -74,11 +76,6 @@
             <!-- Page Header -->
             <div class="page-header">
                 <h2 class="page-title">Inventario del Almacén</h2>
-                <div class="page-actions">
-                    <button class="btn btn-primary" id="addMaterialBtn">
-                        <i class="fas fa-plus"></i> Agregar Material
-                    </button>
-                </div>
             </div>
 
             <!-- Inventory Overview -->
@@ -117,6 +114,9 @@
                     <!-- Filters Sidebar -->
                     <aside class="filters-sidebar">
                         <h3 class="sidebar-title">Filtrar Materiales</h3>
+                        <button class="filter-button" id="addMaterialInFilterBtn" style="margin-bottom:15px;">
+                            <i class="fas fa-plus"></i> Nuevo Material
+                        </button>
                         <div class="filter-group">
                             <label class="filter-label">Buscar Material</label>
                             <input type="text" class="filter-input" id="searchInput" placeholder="Nombre o código">
@@ -211,7 +211,7 @@
 
     <!-- Modal Ajustar Inventario -->
     <div class="modal fade" id="adjustModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Ajustar Inventario</h5>
@@ -221,11 +221,13 @@
                     <input type="hidden" id="adjustId">
                     <div class="mb-3">
                         <label class="form-label">Material</label>
-                        <select class="form-select" id="adjustMaterial" disabled></select>
+                        <select class="form-select" id="adjustMaterial">
+                            <option value="">Seleccionar material...</option>
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Ubicación</label>
-                        <select class="form-select" id="adjustLocation" required></select>
+                        <label class="form-label">Stock Actual</label>
+                        <input type="text" class="form-control" id="adjustCurrentStock" disabled>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tipo de Movimiento</label>
@@ -265,7 +267,7 @@
 
     <!-- Modal Mover Material -->
     <div class="modal fade" id="moveModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Mover Material</h5>
@@ -315,7 +317,7 @@
 
     <!-- Modal Agregar Estante -->
     <div class="modal fade" id="shelfModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Agregar Estante</h5>
@@ -328,9 +330,19 @@
                             <input type="text" class="form-control" id="shelfName" placeholder="Ej: F1" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Zona</label>
-                            <input type="text" class="form-control" id="shelfZone" placeholder="Ej: Zona Flores" required>
-                            <small class="text-muted">Ingrese el nombre de la zona. Si no existe, se creará automáticamente.</small>
+                            <label class="form-label">Tipo de Zona</label>
+                            <select class="form-select" id="shelfZoneType" required>
+                                <option value="new">Crear nueva zona</option>
+                                <option value="existing">Usar zona existente</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="shelfNewZoneGroup">
+                            <label class="form-label">Nombre de la Nueva Zona</label>
+                            <input type="text" class="form-control" id="shelfNewZone" placeholder="Ej: Zona Flores">
+                        </div>
+                        <div class="mb-3" id="shelfExistingZoneGroup" style="display:none;">
+                            <label class="form-label">Zona Existente</label>
+                            <select class="form-select" id="shelfZoneSelect"></select>
                         </div>
                     </form>
                 </div>
@@ -342,9 +354,30 @@
         </div>
     </div>
 
+    <!-- Modal Confirmar Eliminar Estante -->
+    <div class="modal fade" id="deleteShelfModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Eliminar Estante</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="deleteShelfId">
+                    <p>¿Está seguro de eliminar el estante <strong id="deleteShelfName"></strong>?</p>
+                    <p class="text-muted">Esta acción no se puede deshacer. Los materiales no se eliminarán, solo se desasociarán.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteShelfModalBtn">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Agregar Material (Acceso Rápido) -->
     <div class="modal fade" id="addMaterialModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Agregar Nuevo Material</h5>
@@ -353,28 +386,45 @@
                 <div class="modal-body">
                     <form id="addMaterialForm">
                         <div class="mb-3">
-                            <label class="form-label">Nombre del Material</label>
-                            <input type="text" class="form-control" id="addMatName" required>
+                            <label for="addMatCode" class="form-label">Código</label>
+                            <input type="text" class="form-control" id="addMatCode" placeholder="Auto-generado si se deja vacío">
+                            <div class="invalid-feedback">El código es obligatorio</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Código</label>
-                            <input type="text" class="form-control" id="addMatCode" placeholder="Dejar vacío para auto-generar">
+                            <label for="addMatName" class="form-label">Nombre del Material</label>
+                            <input type="text" class="form-control" id="addMatName" placeholder="Ej: Globos Metálicos">
+                            <div class="invalid-feedback">El nombre es obligatorio</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Categoría</label>
-                            <select class="form-select" id="addMatCategory" required></select>
+                            <label for="addMatCategory" class="form-label">Categoría</label>
+                            <select class="form-select" id="addMatCategory">
+                                <option value="">Seleccionar categoría</option>
+                            </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Precio Unitario ($)</label>
-                            <input type="number" class="form-control" id="addMatPrice" min="0" step="0.01">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Stock Inicial</label>
+                            <label for="addMatStock" class="form-label">Stock Inicial</label>
                             <input type="number" class="form-control" id="addMatStock" min="0" value="0">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Ubicación</label>
-                            <select class="form-select" id="addMaterialLocation" required></select>
+                            <label for="addMatCostType" class="form-label">Tipo de Costo</label>
+                            <select class="form-select" id="addMatCostType">
+                                <option value="unit">Unitario</option>
+                                <option value="wholesale">Por Mayor</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addMatPrice" class="form-label">Costo</label>
+                            <input type="number" step="0.01" class="form-control" id="addMatPrice" min="0.01">
+                        </div>
+                        <div class="mb-3" id="addMatWholesaleQtyGroup" style="display:none;">
+                            <label for="addMatWholesaleQty" class="form-label">Cantidad por Mayor</label>
+                            <input type="number" class="form-control" id="addMatWholesaleQty" min="1" placeholder="Ej: 12">
+                        </div>
+                        <div class="mb-3">
+                            <label for="addMaterialLocation" class="form-label">Ubicación</label>
+                            <select class="form-select" id="addMaterialLocation">
+                                <option value="">Seleccionar ubicación...</option>
+                            </select>
                         </div>
                     </form>
                 </div>

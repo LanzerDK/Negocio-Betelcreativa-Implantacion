@@ -30,7 +30,17 @@ class AppointmentController
                 // GET /api/appointments.php           -> lista todas las citas
                 // GET /api/appointments.php?id=5      -> una cita específica
                 // GET /api/appointments.php?customer_id=3 -> citas de un cliente
-                if (isset($_GET['id'])) {
+                if (isset($_GET['cancelled'])) {
+                    // GET /api/appointments.php?cancelled=1 -> citas canceladas
+                    $appointments = $repo->findCancelled();
+                    ApiResponse::success(array_map([self::class, 'toArray'], $appointments));
+                    return;
+                } elseif (isset($_GET['all'])) {
+                    // GET /api/appointments.php?all=1 -> todas (incluye canceladas) para calendario
+                    $appointments = $repo->findAllWithCancelled();
+                    ApiResponse::success(array_map([self::class, 'toArray'], $appointments));
+                    return;
+                } elseif (isset($_GET['id'])) {
                     $appointment = $repo->findById((int)$_GET['id']);
                     if ($appointment) {
                         // Incluye datos del cliente en la respuesta para FullCalendar
@@ -66,12 +76,26 @@ class AppointmentController
                 // Validaciones obligatorias
                 if (!$appointment->getCustomerId()) {
                     ApiResponse::error('Debe seleccionar un cliente.');
+                    return;
                 }
                 if (empty($appointment->getDate())) {
                     ApiResponse::error('La fecha es obligatoria.');
+                    return;
                 }
                 if (empty($appointment->getStartTime())) {
                     ApiResponse::error('La hora de inicio es obligatoria.');
+                    return;
+                }
+
+                // Validar conflicto de horario
+                if ($repo->hasTimeConflict(
+                    $appointment->getCustomerId(),
+                    $appointment->getDate(),
+                    $appointment->getStartTime(),
+                    $appointment->getEndTime()
+                )) {
+                    ApiResponse::error('El cliente ya tiene una cita programada en ese horario.');
+                    return;
                 }
 
                 if ($repo->save($appointment)) {
@@ -107,6 +131,18 @@ class AppointmentController
                     'notes'      => trim($input['notes'] ?? $existing->getNotes())
                 ]);
 
+                // Validar conflicto de horario (excluyendo la cita actual)
+                if ($repo->hasTimeConflict(
+                    $appointment->getCustomerId(),
+                    $appointment->getDate(),
+                    $appointment->getStartTime(),
+                    $appointment->getEndTime(),
+                    $id
+                )) {
+                    ApiResponse::error('El cliente ya tiene una cita programada en ese horario.');
+                    return;
+                }
+
                 if ($repo->update($appointment)) {
                     ApiResponse::success(null, 'Cita actualizada exitosamente.');
                 } else {
@@ -119,11 +155,29 @@ class AppointmentController
                 $id = (int)($_GET['id'] ?? 0);
                 if (!$id) {
                     ApiResponse::error('ID de cita requerido.');
+                    return;
                 }
-                if ($repo->delete($id)) {
-                    ApiResponse::success(null, 'Cita eliminada exitosamente.');
+                $existing = $repo->findById($id);
+                if (!$existing) {
+                    ApiResponse::error('Cita no encontrada.', 404);
+                    return;
+                }
+                // En lugar de eliminar físicamente, marcamos como cancelada
+                $appointment = new AppointmentModel([
+                    'id'         => $id,
+                    'customerId' => $existing->getCustomerId(),
+                    'date'       => $existing->getDate(),
+                    'startTime'  => $existing->getStartTime(),
+                    'endTime'    => $existing->getEndTime(),
+                    'eventType'  => $existing->getEventType(),
+                    'location'   => $existing->getLocation(),
+                    'status'     => 'cancelled',
+                    'notes'      => $existing->getNotes()
+                ]);
+                if ($repo->update($appointment)) {
+                    ApiResponse::success(null, 'Cita cancelada exitosamente.');
                 } else {
-                    ApiResponse::error('Error al eliminar la cita.', 500);
+                    ApiResponse::error('Error al cancelar la cita.', 500);
                 }
                 break;
 

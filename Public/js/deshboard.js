@@ -26,11 +26,11 @@
                 datasets: [{
                     label: 'Ventas Mensuales ($)',
                     data: [12000, 19000, 15000, 18000, 22000, 24580, 21000, 23000, 24500, 26000, 28000, 30000],
-                    backgroundColor: 'rgba(154, 13, 199, 0.1)',
-                    borderColor: '#9b0dc7',
+                    backgroundColor: 'rgba(10, 54, 157, 0.1)',
+                    borderColor: '#0A369D',
                     borderWidth: 3,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#9b0dc7',
+                    pointBackgroundColor: '#2C7ACD#fff',
+                    pointBorderColor: '#0A369D',
                     pointBorderWidth: 2,
                     tension: 0.3,
                     fill: true
@@ -42,8 +42,7 @@
                 plugins: {
                     legend: {
                         labels: {
-                            color: '#222222', // color más oscuro para el texto
-
+                            color: '#222222',
                         },
                         display: false
                     }
@@ -56,10 +55,10 @@
                         },
                          ticks: {
                             font: {
-                                size: 14, // opcional: ajusta el tamaño
-                                weight: '600' // opcional: grosor de la fuente
+                                size: 14,
+                                weight: '600'
                             },
-                            color: '#222222' // texto más oscuro
+                            color: '#222222'
                         }
                     },
                     x: {
@@ -68,10 +67,10 @@
                         },
                         ticks: {
                             font: {
-                                size: 14, // opcional: ajusta el tamaño
-                                weight: '600' // opcional: grosor de la fuente
+                                size: 14,
+                                weight: '600'
                             },
-                            color: '#222222' // texto más oscuro
+                            color: '#222222'
                         }
                     }
                 }
@@ -87,11 +86,11 @@
                 datasets: [{
                     data: [35, 25, 20, 15, 5],
                     backgroundColor: [
-                        '#9b0dc7',
-                        '#1abc9c',
-                        '#3498db',
-                        '#e74c3c',
-                        '#f39c12'
+                        '#002266',
+                        '#0A369D',
+                        '#D4AF37',
+                        '#4A90E2',
+                        '#F7E493'
                     ],
                     borderWidth: 0
                 }]
@@ -102,14 +101,13 @@
                 plugins: {
                     legend: {
                         labels: {
-                            color: '#222222', // color más oscuro para el texto
+                            color: '#222222',
                             font: {
-                                size: 14, // opcional: ajusta el tamaño
-                                weight: '600' // opcional: grosor de la fuente
+                                size: 14,
+                                weight: '600'
                             }
                         },
                         position: 'bottom',
-
                     }
                 },
                 cutout: '60%'

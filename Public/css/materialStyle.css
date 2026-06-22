@@ -1,386 +1,34 @@
-/* ============================================
-   BASE STYLES (migrated from globals.css)
-   ============================================ */
-:root {
-  --primary: rgb(25, 13, 199);
-  --secondary: #1fc509c7;
-  --accent: #1abc9c;
-  --light: #f8f9fa;
-  --dark: #212529;
-  --gray: #6c757d;
-  --light-gray: #e9ecef;
-  --warning: #ff9800;
-  --danger: #f44336;
-  --success: #4caf50;
-  --info: #2196f3;
-  --icon: oklch(0.496 0.265 301.924);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s ease;
-  --sidebar-width: 250px;
-  --header-height: 70px;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Poppins', sans-serif;
-  background: url(https://i.pinimg.com/736x/04/a2/eb/04a2ebeefd745704da9056388e8f1c46.jpg);
-  background-size: cover;
-  background-attachment: fixed;
-  color: var(--dark);
-  min-height: 100vh;
-  display: flex;
-  overflow-x: hidden;
-}
-
-.app-container {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
+/* materialStyle.css - Estilos específicos del módulo de Materiales */
 .app-header {
-  background: url("../images/Disebar.jpeg");
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  margin-bottom: 0px;
-  box-shadow: var(--shadow);
-}
-
-.logo-container {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.logo-icon {
-  font-size: 3rem;
-  margin: 0;
-  color: var(--icon);
-}
-
-.app-info h1 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--light);
-}
-
-.app-info p {
-  margin: 0;
-  color: var(--light);
-  font-size: 0.9rem;
-}
-
-.user-container {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.imagenfoto img {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 2px solid #ddd;
-}
-
-.user-details h2 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--light);
-}
-
-.user-details p {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--light-gray);
-}
-
-.main-menu {
   background: linear-gradient(to right, var(--primary), var(--secondary));
-  display: flex;
-  overflow-x: auto;
-  padding: 0 15px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  margin-bottom: 25px;
-}
-
-.menu-item {
-  padding: 15px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  transition: var(--transition);
-  min-width: 100px;
-  text-decoration: none;
-  cursor: pointer;
-  position: relative;
-}
-
-.menu-item:hover,
-.menu-item.active {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.menu-item i {
-  font-size: 22px;
-  margin-bottom: 8px;
-}
-
-.menu-item.active:after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 20%;
-  width: 60%;
-  height: 3px;
-  background: var(--accent);
-}
-
-.main-content {
-  flex: 1;
-  padding: 25px;
-}
-
-.btn {
-  padding: 12px 25px;
-  border-radius: 50px;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: var(--transition);
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: #0d0c8c;
-  transform: translateY(-3px);
-  box-shadow: var(--shadow);
-}
-
-.btn-outline {
-  background: transparent;
-  border: 2px solid var(--primary);
-  color: var(--primary);
-}
-
-.btn-outline:hover {
-  background: rgba(25, 13, 199, 0.1);
-  transform: translateY(-3px);
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: var(--gray);
-}
-
-.form-control {
-  width: 100%;
-  padding: 12px 15px;
-  border-radius: 8px;
-  border: 1px solid var(--light-gray);
-  font-size: 1rem;
-  transition: var(--transition);
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(25, 13, 199, 0.1);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-}
-
-.user-settings {
-  position: relative;
+  color: var(--gold-text);
+  padding: 15px 25px;
   display: flex;
   align-items: center;
-  margin-left: 0.5rem;
+  z-index: 100;
 }
 
-.settings-btn {
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: #fff;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.1rem;
-  transition: var(--transition);
-}
-
-.settings-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: rotate(30deg);
-}
-
-.settings-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 180px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  display: none;
-  z-index: 9999;
-}
-
-.settings-dropdown.show {
-  display: block;
-}
-
-.settings-dropdown .dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
-  color: var(--dark);
-  text-decoration: none;
-  font-size: 0.9rem;
-  transition: background 0.2s;
-  cursor: pointer;
-  border: none;
-  background: none;
-  width: 100%;
-  text-align: left;
-  font-family: inherit;
-}
-
-.settings-dropdown .dropdown-item i {
-  width: 18px;
-  text-align: center;
-  color: var(--primary);
-}
-
-.settings-dropdown .dropdown-item:hover {
-  background: var(--light-gray);
-}
-
-.settings-dropdown .dropdown-item:last-child {
-  border-top: 1px solid var(--light-gray);
-}
-
-.settings-dropdown .dropdown-item:last-child i {
-  color: var(--danger);
-}
-
-@media (max-width: 768px) {
-  .app-header {
-    flex-direction: column;
-    text-align: center;
-    padding: 15px;
-    gap: 15px;
-  }
-  .logo-container {
-    margin-right: 0;
-    justify-content: center;
-  }
-  .user-container {
-    justify-content: center;
-  }
-  .main-menu {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .menu-item {
-    min-width: 80px;
-    padding: 12px 15px;
-  }
-  .menu-item i {
-    font-size: 18px;
-  }
-  .main-content {
-    padding: 15px;
-  }
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .menu-item span {
-    font-size: 0.8rem;
-  }
-}
-
-/* materialStyle.css - Estilos específicos para el módulo de materiales */
-
+/* Contenedor principal con sidebar de filtros + grid de materiales */
 .material-container {
   display: grid;
   grid-template-columns: 1fr 3fr;
-  gap: 20px;
+  gap: 35px;
+  padding: 25px;
 }
 
-/* Panel de filtros (material) */
-.filters-section {
-  background: rgba(255, 255, 255, 0.747);
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: var(--shadow);
-  height: fit-content;
-}
-
-.filters-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid var(--light-gray);
-}
-
-.filter-group {
-  margin-bottom: 20px;
-}
-
+/* Grupo de filtro con título en color primary */
 .filter-group h3 {
   margin-bottom: 15px;
   color: var(--primary);
   font-size: 1.1rem;
 }
 
+/* Lista de categorías clickeables dentro del panel de filtros */
 .category-list {
   list-style: none;
 }
 
+/* Cada ítem de categoría con hover resaltado */
 .category-item {
   padding: 10px;
   margin-bottom: 8px;
@@ -394,21 +42,23 @@ body {
 
 .category-item:hover,
 .category-item.active {
-  background-color: rgba(155, 13, 199, 0.1);
+  background-color: rgba(13, 71, 161, 0.1);
   color: var(--primary);
 }
 
+/* Ícono circular de cada categoría */
 .category-icon {
   width: 30px;
   height: 30px;
-  background-color: rgba(155, 13, 199, 0.1);
+  background-color: rgba(13, 71, 161, 0.1);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
+  color: var(--secondary);
 }
 
+/* Caja de búsqueda con ícono y borde redondeado */
 .search-box {
   position: relative;
   margin-bottom: 20px;
@@ -427,50 +77,99 @@ body {
   left: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--gray);
+  color: var(--gold-text);
 }
 
+/* Grid de tarjetas de materiales responsive */
 .materials-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  align-items: stretch;
 }
 
+/* Tarjeta individual de material con flex column para altura uniforme */
 .material-card {
   background: rgba(255, 255, 255, 0.747);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
   transition: var(--transition);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 480px;
+}
+
+.material-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  padding: 2px;
+  background: var(--gold-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .material-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0px 2px 20px rgba(212, 175, 55, 0.35);
 }
 
+/* Estado inhabilitado - escala reducida y borde rojo */
 .material-card.inhabilitado {
+  transform: scale(0.98);
   border: 2px solid var(--danger);
   position: relative;
 }
 
+.material-card.inhabilitado::before {
+  display: none;
+}
+
+.material-card.inhabilitado::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.material-card.inhabilitado:hover {
+  transform: scale(0.98);
+}
+
+/* Los botones dentro de tarjeta inhabilitada se mantienen visibles */
+.material-card.inhabilitado .card-actions {
+  position: relative;
+  z-index: 3;
+}
+
+/* Badge de "Inhabilitado" flotante sobre la imagen */
 .inactive-badge {
   position: absolute;
   top: 45px;
   right: 15px;
   background: var(--danger);
   color: white;
-  padding: 3px 12px;
+  padding: 5px 14px;
   border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  z-index: 2;
+  font-size: 0.8rem;
+  font-weight: 700;
+  z-index: 5;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
 }
 
+/* Badge genérico flotante en tarjeta */
 .card-badge {
   position: absolute;
   top: 15px;
@@ -481,66 +180,118 @@ body {
   font-weight: 600;
 }
 
+/* Badge de stock suficiente en verde */
 .badge-stock {
   background-color: var(--success);
   color: white;
 }
 
+/* Badge de stock bajo en naranja */
 .badge-low {
   background-color: var(--warning);
   color: white;
 }
 
+/* Badge de stock agotado en rojo */
 .badge-out {
   background-color: var(--danger);
   color: white;
 }
 
+/* Imagen del material con altura fija */
 .material-image {
   height: 180px;
   background-size: cover;
   background-position: center;
 }
 
+/* Información del material con flex para llenar espacio */
 .material-info {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
+/* Título y precio en fila */
 .material-title {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 10px;
 }
 
+/* Nombre del material con límite de 2 líneas */
 .material-title h3 {
-  color: var(--dark);
-  font-size: 1.3rem;
+  color: #000;
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-height: 2.6em;
+  line-height: 1.3;
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
+/* Precio con gradiente azul y fondo redondeado */
 .material-price {
-  background-color: var(--dark);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
-  padding: 5px 15px;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: fit-content;
+  box-shadow: 0 2px 8px rgba(13, 71, 161, 0.2);
 }
 
+/* Detalles del material (código y etiqueta) en fila con fondo sutil */
 .material-details {
   display: flex;
   justify-content: space-between;
   margin-bottom: 15px;
   font-size: 0.9rem;
-  color: var(--gray);
+  color: #000;
+  font-weight: 500;
+  padding: 10px 12px;
+  background: rgba(13, 71, 161, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(13, 71, 161, 0.08);
 }
 
+.material-details span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.material-details i {
+  color: var(--primary);
+  width: 16px;
+}
+
+/* Último span resaltado en color primary */
+.material-details span:last-child {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Información de stock con barra de progreso */
 .stock-info {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 15px;
+  color: #000;
+  font-weight: 500;
 }
 
+/* Barra de progreso de stock */
 .progress-bar {
   height: 8px;
   background-color: var(--light-gray);
@@ -554,6 +305,7 @@ body {
   border-radius: 4px;
 }
 
+/* Niveles de stock: alto/medio/bajo */
 .progress-high {
   background-color: var(--success);
   width: 80%;
@@ -569,57 +321,75 @@ body {
   width: 15%;
 }
 
+/* Acciones de la tarjeta (editar, toggle) */
 .card-actions {
   display: flex;
   gap: 10px;
-  margin-top: 15px;
+  margin-top: auto;
+  padding-top: 15px;
 }
 
+/* Botón de acción base dentro de tarjeta */
 .action-btn {
   flex: 1;
   padding: 10px;
   border-radius: 8px;
   border: none;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   transition: var(--transition);
+  font-size: 0.85rem;
 }
 
+/* Botón de editar con color accent semitransparente */
 .edit-btn {
   background-color: rgba(26, 188, 156, 0.1);
   color: var(--accent);
 }
 
-.delete-btn {
-  background-color: rgba(244, 67, 54, 0.1);
-  color: var(--danger);
+.edit-btn:hover {
+  background-color: var(--accent);
+  color: white;
 }
 
+/* Botón de toggle activar/inhabilitar */
 .toggle-btn {
   background-color: rgba(244, 67, 54, 0.1);
   color: var(--danger);
 }
 
+.toggle-btn:hover {
+  background-color: var(--danger);
+  color: white;
+}
+
+/* Botón toggle en estado "habilitar" (verde sólido) */
 .toggle-btn.is-disabled {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: var(--success);
+  background-color: var(--success);
+  color: white;
+}
+
+.toggle-btn.is-disabled:hover {
+  background-color: #388e3c;
+  color: white;
 }
 
 .action-btn:hover {
   transform: translateY(-2px);
 }
 
+/* Botón de nuevo material en el sidebar */
 .btn-nuevo-material {
-  background: var(--primary);
-  color: white;
+  background: var(--secondary);
+  color: var(--gold-button);
   padding: 12px 25px;
   border-radius: 50px;
-  border: none;
-  font-weight: 600;
+  border: 1px solid var(--gold-button);
+  font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -631,52 +401,23 @@ body {
 }
 
 .btn-nuevo-material:hover {
-  background: #0d0c8c;
+  background: var(--primary-dark);
   transform: translateY(-3px);
   box-shadow: var(--shadow);
 }
 
-.btn-limpiar {
-  color: var(--light);
-  background: rgba(19, 64, 214, 0.705);
-  border: 1px solid rgb(0, 0, 0);
-  border-radius: 10px;
-  padding: 4px 15px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.btn-limpiar:hover {
-  background: #141fb49a;
-  transform: translateY(-2px);
-}
-
-.toggle-btn.is-disabled {
-  background-color: rgba(76, 175, 80, 0.1);
-  color: var(--success);
-}
-
-.is-invalid {
-  border-color: var(--danger) !important;
-}
-
+/* Input inválido con foco en rojo (sobreescribe _base) */
 .is-invalid:focus {
   box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.1) !important;
 }
 
-.invalid-feedback {
-  color: var(--danger);
-  font-size: 0.85rem;
-  margin-top: 5px;
-  font-weight: 500;
-}
-
+/* Grupos de cantidad al por mayor ocultos por defecto */
 #wholesaleQtyGroup,
 #editWholesaleQtyGroup {
   display: none;
 }
 
-/* Responsive material */
+/* Responsive - apila el layout en pantallas medianas */
 @media (max-width: 1024px) {
   .material-container {
     grid-template-columns: 1fr;

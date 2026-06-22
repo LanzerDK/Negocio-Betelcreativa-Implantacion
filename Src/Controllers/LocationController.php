@@ -61,6 +61,24 @@ class LocationController
                 }
                 break;
 
+            case 'DELETE':
+                CsrfHelper::validateRequestOrFail();
+                $input = json_decode(file_get_contents('php://input'), true) ?? $_GET;
+                $id = (int)($input['id'] ?? 0);
+                if (!$id) {
+                    ApiResponse::error('ID de ubicación requerido.');
+                }
+                $loc = $repo->findById($id);
+                if (!$loc) {
+                    ApiResponse::error('Ubicación no encontrada.', 404);
+                }
+                if ($repo->delete($id)) {
+                    ApiResponse::success(null, 'Ubicación eliminada exitosamente.');
+                } else {
+                    ApiResponse::error('Error al eliminar la ubicación.', 500);
+                }
+                break;
+
             default:
                 ApiResponse::error('Método no permitido.', 405);
         }

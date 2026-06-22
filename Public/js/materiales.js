@@ -254,6 +254,10 @@ function renderizarMateriales(materials) {
     `;
 
     card.querySelector('.edit-btn').addEventListener('click', function () {
+      if (isInactive) {
+        alert('Material Inhabilitado. Para modificar este Material Debes de Activarlos primero.');
+        return;
+      }
       editingMaterialId = mat.id;
       cargarCategoriasParaSelect().then(() => llenarFormularioEdicion(mat));
       const modal = new bootstrap.Modal(document.getElementById('editarMaterialModal'));
