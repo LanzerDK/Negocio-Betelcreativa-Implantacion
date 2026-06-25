@@ -1,22 +1,6 @@
 let charts = {};
-// @debug — panel visible en la página para diagnóstico
-(function () {
-    const box = document.createElement('div');
-    box.id = 'reportes-debug';
-    box.style.cssText = 'position:fixed;bottom:0;right:0;width:420px;max-height:300px;overflow:auto;background:#111;color:#0f0;font:12px monospace;padding:8px;z-index:9999;border-radius:6px 0 0 0;opacity:0.9';
-    box.innerHTML = '<div style="font-weight:bold;margin-bottom:4px">[Reportes Debug]</div>';
-    document.body.appendChild(box);
-    window.__debugLog = function (...args) {
-        const line = document.createElement('div');
-        line.textContent = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
-        box.appendChild(line);
-        box.scrollTop = box.scrollHeight;
-        console.log(...args);
-    };
-})();
 
 document.addEventListener('DOMContentLoaded', () => {
-    __debugLog('DOMContentLoaded iniciado');
     initReportNavigation();
     initChartInstances();
     initGenerateButtons();
@@ -25,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set default dates and load initial data
     setDefaultDates();
     setTimeout(() => {
-        __debugLog('setTimeout disparado — cargando reportes');
         loadReport('inventory');
         loadReport('movements');
         loadReport('income');
@@ -164,21 +147,16 @@ function initGenerateButtons() {
 async function loadReport(report) {
     const params = getFilterParams(report);
     const url = APP_URL + 'api/reports.php?action=' + report + '&' + new URLSearchParams(params);
-    __debugLog('loadReport(' + report + ') →', url);
-
     try {
         const res = await fetch(url);
         const json = await res.json();
-        __debugLog('loadReport(' + report + ') respuesta:', 'success=' + json.success, 'rows=' + (json.data?.table?.rows?.length ?? 'N/A'));
         if (json.success) {
             renderReport(report, json.data);
         } else {
             toast(json.message || 'Error al cargar reporte', 'error');
-            __debugLog('loadReport(' + report + ') ERROR:', json.message);
         }
     } catch (err) {
         toast('Error de conexión al cargar reporte', 'error');
-        __debugLog('loadReport(' + report + ') EXCEPCIÓN:', err.message);
         console.error(err);
     }
 }
@@ -219,15 +197,11 @@ function getFilterParams(report) {
 }
 
 function renderReport(report, data) {
-    if (!data) {
-        __debugLog('renderReport(' + report + ') — data es null/undefined');
-        return;
-    }
-    __debugLog('renderReport(' + report + ') — chart=' + !!data.chart + ' stats=' + (data.stats?.length ?? 0) + ' rows=' + (data.table?.rows?.length ?? 0));
+    if (!data) return;
 
-    try { updateChart(report, data.chart); } catch (e) { __debugLog('Error en chart:', report, e.message); console.error(e); }
-    try { updateStats(report, data.stats); } catch (e) { __debugLog('Error en stats:', report, e.message); console.error(e); }
-    try { updateTable(report, data.table); } catch (e) { __debugLog('Error en table:', report, e.message); console.error(e); }
+    try { updateChart(report, data.chart); } catch (e) { console.error(e); }
+    try { updateStats(report, data.stats); } catch (e) { console.error(e); }
+    try { updateTable(report, data.table); } catch (e) { console.error(e); }
 
     if (data.note) {
         const noteEl = document.querySelector('.income-note');
@@ -273,20 +247,13 @@ function updateStats(report, stats) {
 }
 
 function updateTable(report, tableData) {
-    __debugLog('updateTable(' + report + ') llamado');
-    if (!tableData || !tableData.headers || !tableData.rows) {
-        __debugLog('updateTable: sin datos para', report, '→ tableData=', tableData);
-        return;
-    }
+    if (!tableData || !tableData.headers || !tableData.rows) return;
+
     const selector = '.' + report + '-table-body';
     const tbody = document.querySelector(selector);
-    __debugLog('updateTable: selector=' + selector + ' → encontrado=' + !!tbody);
-    if (!tbody) {
-        return;
-    }
+    if (!tbody) return;
 
     if (tableData.rows.length === 0) {
-        __debugLog('updateTable: 0 filas — mostrando "No hay datos"');
         tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:20px;color:var(--gray);">No hay datos para este período</td></tr>';
         return;
     }
@@ -298,9 +265,7 @@ function updateTable(report, tableData) {
         }).join('');
         return '<tr>' + cells + '</tr>';
     }).join('');
-    __debugLog('updateTable: insertando ' + tableData.rows.length + ' filas, HTML length=' + html.length);
     tbody.innerHTML = html;
-    __debugLog('updateTable: innerHTML asignado correctamente');
 }
 
 function formatNumber(n) {
@@ -338,40 +303,6 @@ function initExportButtons() {
     document.getElementById('exportAllBtn')?.addEventListener('click', exportAllReports);
 }
 
-async function exportToPDF(reportId) {
-    const element = document.getElementById(reportId);
-    if (!element) { toast('Reporte no encontrado.', 'error'); return; }
-
-    const wasActive = element.classList.contains('active');
-    if (!wasActive) element.classList.add('active');
-
-    try {
-        const chartUrl = element.dataset.chartUrl;
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-
-        if (chartUrl) {
-            // Try QuickChart first for high-quality image
-            try {
-                const img = await loadImage(chartUrl);
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (img.height * pdfWidth) / img.width;
-                pdf.addImage(img, 'PNG', 0, 10, pdfWidth, Math.min(pdfHeight, 250));
-            } catch (_) {
-                // QuickChart failed, fallback to html2canvas
-                await fallbackCanvas(pdf, element);
-            }
-        } else {
-            await fallbackCanvas(pdf, element);
-        }
-
-        pdf.save(`reporte_${reportId}.pdf`);
-    } finally {
-        if (!wasActive) element.classList.remove('active');
-    }
-}
-
 function loadImage(url) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -382,21 +313,115 @@ function loadImage(url) {
     });
 }
 
-function fallbackCanvas(pdf, element) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            html2canvas(element, { scale: 2, useCORS: true, logging: false })
-                .then(canvas => {
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    resolve();
-                })
-                .catch(() => resolve());
-        }, 300);
+async function captureChartImage(element) {
+    const chartUrl = element.dataset.chartUrl;
+    if (chartUrl) {
+        try {
+            const img = await loadImage(chartUrl);
+            return { type: 'quickchart', data: img };
+        } catch (_) {}
+    }
+    const chartContainer = element.querySelector('.chart-container');
+    if (chartContainer) {
+        try {
+            const canvas = await html2canvas(chartContainer, { scale: 2, useCORS: true, logging: false });
+            return { type: 'canvas', data: canvas };
+        } catch (_) {}
+    }
+    return null;
+}
+
+function addChartToPdf(pdf, chartResult, yPos) {
+    if (!chartResult) return yPos;
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    if (chartResult.type === 'quickchart') {
+        const img = chartResult.data;
+        const h = (img.height * pdfWidth) / img.width;
+        const clamped = Math.min(h, 120);
+        pdf.addImage(img, 'PNG', 0, yPos, pdfWidth, clamped);
+        return yPos + clamped + 8;
+    } else {
+        const canvas = chartResult.data;
+        const imgData = canvas.toDataURL('image/png');
+        const h = (canvas.height * pdfWidth) / canvas.width;
+        const clamped = Math.min(h, 120);
+        pdf.addImage(imgData, 'PNG', 0, yPos, pdfWidth, clamped);
+        return yPos + clamped + 8;
+    }
+}
+
+function addTableToPdf(pdf, element, startY) {
+    const table = element.querySelector('.report-table');
+    if (!table) return;
+
+    const headers = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim());
+    const rows = [];
+    const tbody = table.querySelector('tbody');
+    if (tbody) {
+        [...tbody.querySelectorAll('tr')].forEach(tr => {
+            const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+            if (cells.length > 0 && cells.some(c => c !== '')) {
+                rows.push(cells);
+            }
+        });
+    }
+    if (rows.length === 0) return;
+
+    pdf.autoTable({
+        head: [headers],
+        body: rows,
+        startY: startY,
+        theme: 'grid',
+        headStyles: {
+            fillColor: [0, 34, 102],
+            textColor: [212, 175, 55],
+            fontStyle: 'bold',
+            halign: 'center',
+        },
+        alternateRowStyles: {
+            fillColor: [248, 249, 250],
+        },
+        styles: {
+            fontSize: 8,
+            cellPadding: 2,
+            textColor: [33, 37, 41],
+            lineColor: [212, 175, 55],
+            lineWidth: 0.3,
+        },
+        columnStyles: { 0: { cellWidth: 'auto' } },
+        margin: { left: 5, right: 5 },
     });
+}
+
+async function exportToPDF(reportId) {
+    const element = document.getElementById(reportId);
+    if (!element) { toast('Reporte no encontrado.', 'error'); return; }
+
+    const report = reportId.replace('Report', '');
+    const wasActive = element.classList.contains('active');
+    if (!wasActive) element.classList.add('active');
+
+    await loadReport(report);
+    await new Promise(r => setTimeout(r, 600));
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+
+        const title = element.querySelector('.report-name')?.textContent || report;
+        pdf.setFontSize(16);
+        pdf.text(title, pdfWidth / 2, 12, { align: 'center' });
+
+        let yPos = 20;
+        const chartResult = await captureChartImage(element);
+        yPos = addChartToPdf(pdf, chartResult, yPos);
+        addTableToPdf(pdf, element, yPos);
+
+        pdf.save(`reporte_${reportId}.pdf`);
+    } finally {
+        if (!wasActive) element.classList.remove('active');
+    }
 }
 
 async function exportAllReports() {
@@ -408,50 +433,28 @@ async function exportAllReports() {
         const element = document.getElementById(reportIds[i]);
         if (!element) continue;
 
+        const report = reportIds[i].replace('Report', '');
         const wasActive = element.classList.contains('active');
         if (!wasActive) element.classList.add('active');
 
-        const report = reportIds[i].replace('Report', '');
         await loadReport(report);
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 600));
 
         try {
-            const chartUrl = element.dataset.chartUrl;
-            if (chartUrl) {
-                try {
-                    const img = await loadImage(chartUrl);
-                    if (i > 0) pdf.addPage();
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (img.height * pdfWidth) / img.width;
-                    pdf.addImage(img, 'PNG', 0, 10, pdfWidth, Math.min(pdfHeight, 250));
-                } catch (_) {
-                    await fallbackCanvasPage(pdf, element, i);
-                }
-            } else {
-                await fallbackCanvasPage(pdf, element, i);
-            }
+            if (i > 0) pdf.addPage();
+
+            const title = element.querySelector('.report-name')?.textContent || report;
+            pdf.setFontSize(16);
+            pdf.text(title, pdf.internal.pageSize.getWidth() / 2, 12, { align: 'center' });
+
+            let yPos = 20;
+            const chartResult = await captureChartImage(element);
+            yPos = addChartToPdf(pdf, chartResult, yPos);
+            addTableToPdf(pdf, element, yPos);
         } finally {
             if (!wasActive) element.classList.remove('active');
         }
     }
 
     pdf.save('todos_los_reportes.pdf');
-}
-
-function fallbackCanvasPage(pdf, element, pageIndex) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            html2canvas(element, { scale: 2, useCORS: true, logging: false })
-                .then(canvas => {
-                    if (pageIndex > 0) pdf.addPage();
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgProps = pdf.getImageProperties(imgData);
-                    const pdfWidth = pdf.internal.pageSize.getWidth();
-                    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-                    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                    resolve();
-                })
-                .catch(() => resolve());
-        }, 300);
-    });
 }

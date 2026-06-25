@@ -14,6 +14,7 @@
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/jspdf.umd.min.js"></script>
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/xlsx.full.min.js"></script>
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/html2canvas.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/assets/vendor/jspdf-autotable.min.js"></script>
 </head>
 
 <body>
