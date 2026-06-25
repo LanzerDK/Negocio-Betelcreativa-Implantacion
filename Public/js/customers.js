@@ -154,7 +154,10 @@ function renderClientDetails(clientId)
     currentClientId = clientId;
     const detail = document.getElementById('clientDetail');
     const noSel = document.getElementById('noClientSelected');
-    if (detail) detail.classList.add('active');
+    if (detail) {
+        detail.classList.add('active');
+        detail.classList.toggle('inactive', client.isActive === false || client.isActive === 0);
+    }
     if (noSel) noSel.style.display = 'none';
 
     const name = (client.firstName || '') + ' ' + (client.lastName || '');
@@ -227,19 +230,28 @@ function renderClientDetails(clientId)
     });
 
     const editBtn = document.getElementById('editClientBtn');
-    if (editBtn) editBtn.addEventListener('click', () => openEditClientModal(client));
+    if (editBtn) {
+        if (client.isActive === false || client.isActive === 0) {
+            editBtn.disabled = true;
+            editBtn.title = 'No se puede editar un cliente inactivo';
+        }
+        editBtn.addEventListener('click', () => {
+            if (editBtn.disabled) return;
+            openEditClientModal(client);
+        });
+    }
 
     const toggleBtn = document.getElementById('toggleClientBtn');
     if (toggleBtn) toggleBtn.addEventListener('click', () => toggleClientStatus(client.id, client.isActive));
 }
 
 function getClientTypeLabel(type) {
-    const labels = { regular: 'Regular', frequent: 'Cliente frecuente', vip: 'VIP', new: 'Nuevo' };
+    const labels = { Regular: 'Regular', Frequent: 'Cliente frecuente', VIP: 'VIP', New: 'Nuevo' };
     return labels[type] || type;
 }
 
 function getSourceLabel(source) {
-    const labels = { recommendation: 'Recomendación', social: 'Redes Sociales', web: 'Sitio Web', event: 'En un evento', other: 'Otro' };
+    const labels = { Recommendation: 'Recomendación', 'Social Media': 'Redes Sociales', Website: 'Sitio Web', Event: 'En un evento', Other: 'Otro' };
     return labels[source] || source;
 }
 
@@ -311,8 +323,8 @@ function openEditClientModal(client)
                 email: email,
                 phone: phone,
                 address: document.getElementById('editAddress')?.value?.trim() || '',
-                clientType: document.getElementById('editClientType')?.value || 'regular',
-                source: document.getElementById('editSource')?.value || 'other',
+                clientType: document.getElementById('editClientType')?.value || 'Regular',
+                source: document.getElementById('editSource')?.value || 'Other',
                 notes: document.getElementById('editNotes')?.value?.trim() || '',
                 preferences: document.getElementById('editPreferences')?.value?.trim() || ''
             };
@@ -355,8 +367,8 @@ function setupNewClientForm()
             email: email,
             phone: phone,
             address: document.getElementById('address')?.value?.trim() || '',
-            clientType: document.getElementById('clientType')?.value || 'regular',
-            source: document.getElementById('source')?.value || 'other',
+            clientType: document.getElementById('clientType')?.value || 'Regular',
+            source: document.getElementById('source')?.value || 'Other',
             notes: document.getElementById('notes')?.value?.trim() || '',
             preferences: document.getElementById('preferences')?.value?.trim() || ''
         };
@@ -398,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Status filter buttons
-    const typeMap = { 'todos': null, 'frecuentes': 'frequent', 'nuevos': 'new', 'vip': 'vip' };
+    const typeMap = { 'todos': null, 'frecuentes': 'Frequent', 'nuevos': 'New', 'vip': 'VIP' };
     document.querySelectorAll('.status-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));

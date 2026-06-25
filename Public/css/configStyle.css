@@ -1,13 +1,5 @@
 /* configStyle.css - Estilos específicos del módulo de Configuración de Usuario */
 
-.app-header {
-  background: linear-gradient(to right, var(--primary), var(--secondary));
-  color: var(--gold-text);
-  padding: 15px 25px;
-  display: flex;
-  align-items: center;
-  z-index: 100;
-}
 /* Contenedor principal de configuración centrado */
 .config-container {
   max-width: 1200px;
@@ -40,7 +32,7 @@
 
 /* Cabecera del perfil con gradiente */
 .profile-header {
-  padding: 30px;
+  padding: 20px 25px;
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
   display: flex;
@@ -50,25 +42,25 @@
 /* Avatar del perfil con posición relativa para upload */
 .profile-avatar {
   position: relative;
-  margin-right: 25px;
+  margin-right: 20px;
 }
 
 .profile-avatar img {
-  width: 120px;
-  height: 120px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  border: 4px solid rgba(255, 255, 255, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.3);
   object-fit: cover;
 }
 
 /* Botón de subir foto de perfil */
 .avatar-upload {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
+  bottom: 2px;
+  right: 2px;
   background: var(--accent);
-  width: 35px;
-  height: 35px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -88,7 +80,7 @@
 }
 
 .profile-info h2 {
-  font-size: 1.8rem;
+  font-size: 1.4rem;
   margin-bottom: 5px;
 }
 

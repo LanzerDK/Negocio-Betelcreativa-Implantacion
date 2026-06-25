@@ -66,6 +66,33 @@ document.getElementById('togglePassword').addEventListener('click', function() {
     this.classList.toggle('bi-eye');
 });
 
+// === Triple clic en el logo → modal de registro ===
+// La validación real del código de seguridad se hace en el servidor
+let logoClickCount = 0;
+let logoClickTimer = null;
+
+document.getElementById('loginLogo').addEventListener('click', function() {
+    logoClickCount++;
+    if (logoClickTimer) clearTimeout(logoClickTimer);
+    if (logoClickCount >= 3) {
+        logoClickCount = 0;
+        document.getElementById('secretModal').classList.add('show');
+        document.getElementById('registerLinkInModal').classList.remove('show');
+        return;
+    }
+    logoClickTimer = setTimeout(function() { logoClickCount = 0; }, 1000);
+});
+
+document.getElementById('closeSecretModal').addEventListener('click', function() {
+    document.getElementById('secretModal').classList.remove('show');
+});
+
+document.getElementById('secretModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.classList.remove('show');
+    }
+});
+
 document.getElementById('loginForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -95,12 +122,12 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
             if (data.success) {
                 window.location.href = window.APP_URL + 'dashboard';
             } else {
-                alert(data.message || 'Error al iniciar sesión.');
+                toast(data.message || 'Error al iniciar sesión.', 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Error de conexión. Intente nuevamente.');
+            toast('Error de conexión.', 'error');
         });
     }
 });

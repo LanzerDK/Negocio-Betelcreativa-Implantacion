@@ -55,8 +55,8 @@ class CustomerController
                     'email'     => trim($input['email'] ?? ''),
                     'phone'     => trim($input['phone'] ?? ''),
                     'address'   => trim($input['address'] ?? ''),
-                    'clientType'=> trim($input['clientType'] ?? 'regular'),
-                    'source'    => trim($input['source'] ?? 'other'),
+                    'clientType'=> trim($input['clientType'] ?? 'Regular'),
+                    'source'    => trim($input['source'] ?? 'Other'),
                     'notes'     => trim($input['notes'] ?? ''),
                     'preferences'=> trim($input['preferences'] ?? '')
                 ]);
@@ -64,6 +64,18 @@ class CustomerController
                 // Validación: nombre y apellido son obligatorios
                 if (empty($customer->getFirstName()) || empty($customer->getLastName())) {
                     ApiResponse::error('El nombre y apellido son obligatorios.');
+                }
+
+                // Validación: email duplicado
+                $email = $customer->getEmail();
+                if ($email && $repo->existsByEmail($email)) {
+                    ApiResponse::error('Ya existe un cliente con ese correo electrónico.');
+                }
+
+                // Validación: teléfono duplicado
+                $phone = $customer->getPhone();
+                if ($phone && $repo->existsByPhone($phone)) {
+                    ApiResponse::error('Ya existe un cliente con ese número de teléfono.');
                 }
 
                 if ($repo->save($customer)) {
@@ -86,6 +98,18 @@ class CustomerController
                 $existing = $repo->findById($id);
                 if (!$existing) {
                     ApiResponse::error('Cliente no encontrado.', 404);
+                }
+
+                // Validación: email duplicado (excluyendo este cliente)
+                $email = trim($input['email'] ?? '');
+                if ($email && $email !== $existing->getEmail() && $repo->existsByEmail($email, $id)) {
+                    ApiResponse::error('Ya existe un cliente con ese correo electrónico.');
+                }
+
+                // Validación: teléfono duplicado (excluyendo este cliente)
+                $phone = trim($input['phone'] ?? '');
+                if ($phone && $phone !== $existing->getPhone() && $repo->existsByPhone($phone, $id)) {
+                    ApiResponse::error('Ya existe un cliente con ese número de teléfono.');
                 }
 
                 // Crea el modelo con los datos nuevos, manteniendo los existentes como fallback

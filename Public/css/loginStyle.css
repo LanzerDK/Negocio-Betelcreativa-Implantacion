@@ -47,6 +47,41 @@ body::before {
   margin-bottom: 30px;
 }
 
+.login-header .logo-img {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  position: relative;
+  box-shadow:
+    0 0 20px rgba(255, 215, 0, 0.4),
+    0 0 40px rgba(255, 215, 0, 0.2),
+    inset 0 0 30px rgba(255, 255, 255, 0.15);
+  animation: logoGlow 3s ease-in-out infinite alternate;
+  transition: transform 0.3s ease;
+}
+
+.login-header .logo-img:hover {
+  transform: scale(1.05);
+}
+
+@keyframes logoGlow {
+  0% {
+    box-shadow:
+      0 0 20px rgba(255, 215, 0, 0.4),
+      0 0 40px rgba(255, 215, 0, 0.2),
+      inset 0 0 30px rgba(255, 255, 255, 0.15);
+  }
+  100% {
+    box-shadow:
+      0 0 30px rgba(255, 215, 0, 0.7),
+      0 0 60px rgba(255, 215, 0, 0.4),
+      0 0 80px rgba(255, 215, 0, 0.2),
+      inset 0 0 30px rgba(255, 255, 255, 0.15);
+  }
+}
+
 .login-header h1 {
   color: #fff;
   font-size: 2.5rem;
@@ -67,26 +102,18 @@ body::before {
 .input-group .icon1 {
   position: absolute;
   left: 12px;
-  top: 31%;
-  transform: translateY(-56%);
+  top: 50%;
+  transform: translateY(-50%);
   color: rgb(0 0 0);
   font-size: 2rem;
   transition: color 0.3s;
-}
-
-.icon2 {
-  position: absolute;
-  left: 12px;
-  top: 31%;
-  transform: translateY(-56%);
-  color: rgb(0 0 0);
-  font-size: 2rem;
-  transition: color 0.3s;
+  z-index: 1;
+  line-height: 1;
 }
 
 .input-group input {
   width: 100%;
-  padding: 8px 15px 15px 50px;
+  padding: 12px 50px 12px 50px;
   background: rgb(255 255 255);
   border: 3px solid rgb(7 0 0);
   border-radius: 10px;
@@ -102,13 +129,15 @@ body::before {
 
 .toggle-password {
   position: absolute;
-  right: 15px;
-  top: 27%;
+  right: 12px;
+  top: 50%;
   transform: translateY(-50%);
   color: rgb(0, 0, 0);
   cursor: pointer;
   font-size: 1.6rem;
   transition: color 0.3s;
+  z-index: 1;
+  line-height: 1;
 }
 
 .toggle-password:hover {
@@ -174,6 +203,11 @@ body::before {
   text-align: center;
   margin-top: 25px;
   color: rgba(255, 255, 255, 0.8);
+  display: none;
+}
+
+.register-link.show {
+  display: block;
 }
 
 .register-link a {
@@ -186,6 +220,138 @@ body::before {
 
 .register-link a:hover {
   color: var(--secondary);
+  text-decoration: underline;
+}
+
+/* Modal de clave secreta */
+.secret-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s;
+}
+
+.secret-modal-overlay.show {
+  display: flex;
+}
+
+.secret-modal {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(15px);
+  border-radius: 20px;
+  padding: 35px;
+  max-width: 420px;
+  width: 90%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.secret-modal h2 {
+  color: #fff;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.secret-modal p {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  margin-bottom: 20px;
+}
+
+.secret-modal .secret-input {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  text-align: center;
+  outline: none;
+  margin-bottom: 15px;
+  transition: border-color 0.3s;
+}
+
+.secret-modal .secret-input:focus {
+  border-color: #ffd700;
+}
+
+.secret-modal .secret-error {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  display: none;
+}
+
+.secret-modal .secret-error.show {
+  display: block;
+}
+
+.secret-modal .btn-validate {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(to right, #ffd700, #ffaa00);
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 15px;
+}
+
+.secret-modal .btn-validate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.secret-modal .btn-close-modal {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 8px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.secret-modal .btn-close-modal:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.secret-modal .register-link-in-modal {
+  display: none;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.secret-modal .register-link-in-modal.show {
+  display: block;
+}
+
+.secret-modal .register-link-in-modal a {
+  color: #ffd700;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: color 0.3s;
+}
+
+.secret-modal .register-link-in-modal a:hover {
+  color: #fff;
   text-decoration: underline;
 }
 

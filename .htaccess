@@ -1,4 +1,4 @@
 RewriteEngine On
-RewriteBase /BetelCreativa/
-RewriteCond %{REQUEST_URI} !^/BetelCreativa/Public/
+# Redirige todo a Public/ excepto si ya está en Public/
+RewriteCond %{REQUEST_URI} !/Public/
 RewriteRule ^(.*)$ Public/$1 [L]

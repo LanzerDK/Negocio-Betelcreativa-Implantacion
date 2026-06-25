@@ -191,16 +191,17 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(data.message);
-                form.reset();
-                window.location.href = window.APP_URL + 'login';
+                toast(data.message, 'success');
+                setTimeout(() => {
+                    window.location.href = window.APP_URL + 'login';
+                }, 1500);
             } else {
-                alert(data.message || "Ocurrio un error en el servidor.");
+                toast(data.message || "Ocurrio un error en el servidor.", 'error');
             }
         })
         .catch(error => {
             console.error("Error en la peticion Fetch:", error);
-            alert("Error de conexion. Verifique que el servidor Apache este funcionando e intente nuevamente.");
+            toast("Error de conexión.", 'error');
         });
     }
 });

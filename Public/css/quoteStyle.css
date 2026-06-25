@@ -183,7 +183,7 @@
 /* Botón toggle vista calendario - azul rey con dorado */
 #toggleViewBtn {
   background: var(--secondary);
-  color: var(--gold-button);
+  color: #ffffff;
   border: 1px solid var(--gold-button);
   padding: 12px 25px;
   border-radius: 50px;
@@ -202,10 +202,10 @@
   box-shadow: 0 5px 15px rgba(13, 71, 161, 0.3);
 }
 
-/* Botón nueva cita - mismo estilo */
+/* Botón nueva cita  */
 #addAppointmentBtn {
   background: var(--secondary);
-  color: var(--gold-button);
+  color: #ffffff;
   border: 1px solid var(--gold-button);
 }
 

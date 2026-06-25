@@ -198,6 +198,21 @@
   display: block;
 }
 
+.client-detail.inactive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.client-detail.inactive .client-header {
+  position: relative;
+  z-index: 3;
+}
+
 /* Cabecera del detalle con avatar grande */
 .client-header {
   display: flex;
@@ -549,6 +564,16 @@
 
 .btn-edit:hover {
   background: #e68900;
+}
+
+.btn-edit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #cccccc;
+}
+
+.btn-edit:disabled:hover {
+  background: #cccccc;
 }
 
 .btn-delete {

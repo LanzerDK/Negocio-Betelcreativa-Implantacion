@@ -36,12 +36,14 @@ class ControllerLogin
         SessionHelpers::set('user_name', $user->getName() . ' ' . $user->getLastName());
         SessionHelpers::set('user_username', $user->getUser());
         SessionHelpers::set('user_email', $user->getEmail());
+        SessionHelpers::set('user_role', $user->getRole());
 
         ApiResponse::success([
             'user_id'  => $user->getId(),
             'name'     => $user->getName() . ' ' . $user->getLastName(),
             'username' => $user->getUser(),
             'email'    => $user->getEmail(),
+            'role'     => $user->getRole(),
         ], 'Inicio de sesión exitoso.');
     }
 

@@ -45,12 +45,15 @@ class StorageController
                 $action = $input['action'] ?? '';
                 $userId = (int)($_SESSION['user_id'] ?? 0);
 
+                $allowedReasons = ['compra', 'venta', 'devolucion', 'perdida', 'ajuste', 'reorganizacion', 'preparacion', 'optimizacion', 'otro'];
+
                 if ($action === 'adjust') {
                     $materialId = (int)($input['material_id'] ?? 0);
                     $type = $input['type'] ?? '';
                     $quantity = (int)($input['quantity'] ?? 0);
                     $reason = trim($input['reason'] ?? '');
                     $notes = trim($input['notes'] ?? '');
+                    $locationId = !empty($input['location_id']) ? (int)$input['location_id'] : null;
 
                     if (!$materialId) {
                         ApiResponse::error('Material requerido.');
@@ -61,8 +64,11 @@ class StorageController
                     if ($quantity <= 0) {
                         ApiResponse::error('La cantidad debe ser mayor a 0.');
                     }
+                    if (!in_array($reason, $allowedReasons, true)) {
+                        ApiResponse::error('Motivo no válido.');
+                    }
 
-                    if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $notes)) {
+                    if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $notes, $locationId)) {
                         ApiResponse::success(null, 'Ajuste registrado exitosamente.');
                     } else {
                         ApiResponse::error('Error al registrar el ajuste.', 500);
@@ -84,6 +90,9 @@ class StorageController
                     }
                     if ($quantity <= 0) {
                         ApiResponse::error('La cantidad debe ser mayor a 0.');
+                    }
+                    if (!in_array($reason, $allowedReasons, true)) {
+                        ApiResponse::error('Motivo no válido.');
                     }
 
                     if ($repo->recordMove($materialId, $userId, $fromLocationId, $toLocationId, $quantity, $reason, $notes)) {

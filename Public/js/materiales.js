@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
   if (nuevoModal) {
     nuevoModal.addEventListener('shown.bs.modal', function () {
       cargarCategoriasParaSelect();
+      cargarUbicacionesParaSelect();
       document.getElementById('nuevoCodigo').value = '';
       document.getElementById('wholesaleQtyGroup').style.display = 'none';
     });
@@ -94,6 +95,30 @@ function cargarCategoriasParaSelect() {
       }
     })
     .catch(err => console.error('Error al cargar categorías:', err));
+}
+
+function cargarUbicacionesParaSelect() {
+  return fetch(APP_URL + 'api/locations.php')
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && Array.isArray(data.data)) {
+        const selects = ['newLocation', 'editLocation'];
+        for (const id of selects) {
+          const sel = document.getElementById(id);
+          if (!sel) continue;
+          const currentVal = sel.value;
+          sel.innerHTML = '<option value="">Sin ubicación</option>';
+          for (const loc of data.data) {
+            const opt = document.createElement('option');
+            opt.value = loc.id || loc.location_id;
+            opt.textContent = loc.name || loc.location_name;
+            if (String(opt.value) === String(currentVal)) opt.selected = true;
+            sel.appendChild(opt);
+          }
+        }
+      }
+    })
+    .catch(err => console.error('Error al cargar ubicaciones:', err));
 }
 
 function cargarSelectCategorias(categorias) {
@@ -255,11 +280,14 @@ function renderizarMateriales(materials) {
 
     card.querySelector('.edit-btn').addEventListener('click', function () {
       if (isInactive) {
-        alert('Material Inhabilitado. Para modificar este Material Debes de Activarlos primero.');
+        toast('Material inhabilitado. Actívelo primero para editarlo.', 'warning');
         return;
       }
       editingMaterialId = mat.id;
-      cargarCategoriasParaSelect().then(() => llenarFormularioEdicion(mat));
+      Promise.all([
+        cargarCategoriasParaSelect(),
+        cargarUbicacionesParaSelect()
+      ]).then(() => llenarFormularioEdicion(mat));
       const modal = new bootstrap.Modal(document.getElementById('editarMaterialModal'));
       modal.show();
     });
@@ -283,11 +311,11 @@ function toggleEstadoMaterial(boton, id) {
       if (data.success) {
         cargarMateriales();
       } else {
-        alert('Error: ' + data.message);
+        toast('Error: ' + data.message, 'error');
       }
     })
     .catch(err => {
-      alert('Error de conexión.');
+      toast('Error de conexión.', 'error');
       console.error(err);
     });
 }
@@ -365,11 +393,11 @@ function agregarNuevoMaterial() {
         document.getElementById('wholesaleQtyGroup').style.display = 'none';
         ocultarModalYRefrescar('nuevoMaterialModal');
       } else {
-        alert('Error: ' + data.message);
+        toast('Error: ' + data.message, 'error');
       }
     })
     .catch(err => {
-      alert('Error de conexión. Intente de nuevo.');
+      toast('Error de conexión.', 'error');
       console.error(err);
     });
 }
@@ -421,11 +449,11 @@ function guardarEdicionMaterial() {
         editingMaterialId = null;
         ocultarModalYRefrescar('editarMaterialModal');
       } else {
-        alert('Error: ' + data.message);
+        toast('Error: ' + data.message, 'error');
       }
     })
     .catch(err => {
-      alert('Error de conexión. Intente de nuevo.');
+      toast('Error de conexión.', 'error');
       console.error(err);
     });
 }

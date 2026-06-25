@@ -96,14 +96,20 @@ class LocationRepository
                 return false;
             }
 
+            $this->db->beginTransaction();
+
             $this->db->prepare("DELETE FROM material_stock_locations WHERE location_id = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE materials SET current_location_id = NULL WHERE current_location_id = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE inventory_movements SET origin_location_id = NULL WHERE origin_location_id = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE inventory_movements SET destination_location_id = NULL WHERE destination_location_id = :id")->execute([':id' => $id]);
 
             $stmt = $this->db->prepare("DELETE FROM locations WHERE location_id = :id");
-            return $stmt->execute([':id' => $id]);
+            $ok = $stmt->execute([':id' => $id]);
+
+            $this->db->commit();
+            return $ok;
         } catch (PDOException $e) {
+            $this->db->rollBack();
             return false;
         }
     }

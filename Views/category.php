@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/categoryStyle.css">
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
 
 </head>
 
@@ -30,8 +30,8 @@
                     <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
                 </div>
                 <div class="user-details">
-                    <h2>Ismael Maestre</h2>
-                    <p>Administrador</p>
+                    <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
+                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
                 </div>
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
@@ -158,8 +158,8 @@
                         <div class="form-group">
                             <label for="categoryStatus">Estado</label>
                             <select id="categoryStatus" class="form-control">
-                                <option value="active">Activa</option>
-                                <option value="inactive">Inactiva</option>
+                                <option value="Active">Activa</option>
+                                <option value="Inactive">Inactiva</option>
                             </select>
                         </div>
 
@@ -195,6 +195,7 @@
             document.getElementById('settingsDropdown')?.classList.remove('show');
         });
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/categorias.js"></script>
 </body>
 

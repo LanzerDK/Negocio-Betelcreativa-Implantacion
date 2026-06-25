@@ -8,9 +8,9 @@
     
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/customerStyle.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
+    <script src="<?php echo APP_URL; ?>Public/assets/vendor/chart.min.js"></script>
     
 </head>
 
@@ -30,8 +30,8 @@
                     <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
                 </div>
                 <div class="user-details">
-                    <h2>Ismael Maestre</h2>
-                    <p>Administrador</p>
+                    <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
+                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
                 </div>
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
@@ -174,21 +174,21 @@
                     <div class="form-group">
                         <label for="clientType">Tipo de Cliente</label>
                         <select id="clientType" class="form-control">
-                            <option value="regular">Regular</option>
-                            <option value="frequent">Frecuente</option>
-                            <option value="vip">VIP</option>
-                            <option value="new">Nuevo</option>
+                            <option value="Regular">Regular</option>
+                            <option value="Frequent">Frecuente</option>
+                            <option value="VIP">VIP</option>
+                            <option value="New">Nuevo</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label for="source">¿Cómo nos conoció?</label>
                         <select id="source" class="form-control">
-                            <option value="recommendation">Recomendación</option>
-                            <option value="social">Redes Sociales</option>
-                            <option value="web">Sitio Web</option>
-                            <option value="event">En un evento</option>
-                            <option value="other">Otro</option>
+                            <option value="Recommendation">Recomendación</option>
+                            <option value="Social Media">Redes Sociales</option>
+                            <option value="Website">Sitio Web</option>
+                            <option value="Event">En un evento</option>
+                            <option value="Other">Otro</option>
                         </select>
                     </div>
                 </div>
@@ -253,21 +253,21 @@
                     <div class="form-group">
                         <label for="editClientType">Tipo de Cliente</label>
                         <select id="editClientType" class="form-control">
-                            <option value="regular">Regular</option>
-                            <option value="frequent">Frecuente</option>
-                            <option value="vip">VIP</option>
-                            <option value="new">Nuevo</option>
+                            <option value="Regular">Regular</option>
+                            <option value="Frequent">Frecuente</option>
+                            <option value="VIP">VIP</option>
+                            <option value="New">Nuevo</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label for="editSource">¿Cómo nos conoció?</label>
                         <select id="editSource" class="form-control">
-                            <option value="recommendation">Recomendación</option>
-                            <option value="social">Redes Sociales</option>
-                            <option value="web">Sitio Web</option>
-                            <option value="event">En un evento</option>
-                            <option value="other">Otro</option>
+                            <option value="Recommendation">Recomendación</option>
+                            <option value="Social Media">Redes Sociales</option>
+                            <option value="Website">Sitio Web</option>
+                            <option value="Event">En un evento</option>
+                            <option value="Other">Otro</option>
                         </select>
                     </div>
                 </div>

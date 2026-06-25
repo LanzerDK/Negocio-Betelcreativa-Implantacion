@@ -12,6 +12,13 @@ const PER_PAGE = 10;
 const HISTORY_PER_PAGE = 15;
 let currentPage = 1;
 
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.classList.toggle('btn-loading', loading);
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   cargarDatosIniciales();
   document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
@@ -73,28 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 async function cargarDatosIniciales() {
-  try {
-    const [mat, cat, loc, sum] = await Promise.all([
-      fetch(APP_URL + 'api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'api/locations.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'api/storage.php?action=summary').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
-    ]);
-    if (mat.success) allMaterials = mat.data;
-    if (cat.success) allCategories = cat.data;
-    if (loc.success) {
-      allLocations = loc.data;
-      const zoneSet = new Set();
-      loc.data.forEach(l => { if (l.description) zoneSet.add(l.description); });
-      allZones = Array.from(zoneSet).sort();
-    }
-    if (sum.success) renderOverview(sum.data);
-    renderLayout();
-    renderTabla();
-    llenarSelectores();
-  } catch (err) {
-    console.error('Error al cargar datos:', err.message || err);
-  }
+  await recargarDatos();
 }
 
 function renderOverview(summary) {
@@ -306,6 +292,13 @@ async function abrirAjustar(material) {
   document.getElementById('adjustReason').value = 'ajuste';
   document.getElementById('adjustNotes').value = '';
   document.getElementById('adjustCurrentStock').value = material.stock || 0;
+  const locSel = document.getElementById('adjustLocation');
+  llenarSelectUbicacion('adjustLocation', null);
+  const firstOpt = document.createElement('option');
+  firstOpt.value = '';
+  firstOpt.textContent = 'Ubicación principal del material';
+  locSel.prepend(firstOpt);
+  locSel.value = '';
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   const modal = new bootstrap.Modal(document.getElementById('adjustModal'));
   modal.show();
@@ -354,31 +347,33 @@ async function guardarAjuste() {
   const quantity = parseInt(document.getElementById('adjustQuantity').value);
   const reason = document.getElementById('adjustReason').value;
   const notes = document.getElementById('adjustNotes').value.trim();
+  const locationId = parseInt(document.getElementById('adjustLocation').value) || null;
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   let valid = true;
   if (!materialId) { valid = false; }
   if (!quantity || quantity <= 0) { marcarError('adjustQuantity'); valid = false; }
-  if (!valid) return alert('Complete todos los campos requeridos.');
+  if (!valid) return toast('Complete todos los campos requeridos.', 'error');
   if (!confirm('¿Está seguro de registrar este ajuste de inventario?')) return;
-  document.getElementById('guardarAjusteBtn').disabled = true;
+  setLoading('guardarAjusteBtn', true);
   try {
     const res = await fetch(APP_URL + 'api/storage.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-      body: JSON.stringify({ action: 'adjust', material_id: materialId, type, quantity, reason, notes })
+      body: JSON.stringify({ action: 'adjust', material_id: materialId, type, quantity, reason, notes, location_id: locationId })
     });
     const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('adjustModal'))?.hide();
+      toast('Ajuste registrado exitosamente.', 'success');
       await recargarDatos();
     } else {
-      alert('Error: ' + data.message);
+      toast('Error: ' + data.message, 'error');
     }
   } catch (err) {
-    alert('Error de conexión.');
+    toast('Error de conexión.', 'error');
     console.error(err);
   } finally {
-    document.getElementById('guardarAjusteBtn').disabled = false;
+    setLoading('guardarAjusteBtn', false);
   }
 }
 
@@ -394,10 +389,10 @@ async function guardarMovimiento() {
   if (!materialId || !fromLocationId) { valid = false; }
   if (!toLocationId) { marcarError('moveNewLocation'); valid = false; }
   if (!quantity || quantity <= 0) { marcarError('moveQuantity'); valid = false; }
-  if (fromLocationId === toLocationId) { alert('La ubicación de destino debe ser diferente.'); return; }
-  if (!valid) return alert('Complete todos los campos requeridos.');
+  if (fromLocationId === toLocationId) { toast('La ubicación de destino debe ser diferente.', 'error'); return; }
+  if (!valid) return toast('Complete todos los campos requeridos.', 'error');
   if (!confirm('¿Está seguro de mover ' + quantity + ' unidades a la nueva ubicación?')) return;
-  document.getElementById('guardarMovimientoBtn').disabled = true;
+  setLoading('guardarMovimientoBtn', true);
   try {
     const res = await fetch(APP_URL + 'api/storage.php', {
       method: 'POST',
@@ -407,15 +402,16 @@ async function guardarMovimiento() {
     const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('moveModal'))?.hide();
+      toast('Material movido exitosamente.', 'success');
       await recargarDatos();
     } else {
-      alert('Error: ' + data.message);
+      toast('Error: ' + data.message, 'error');
     }
   } catch (err) {
-    alert('Error de conexión.');
+    toast('Error de conexión.', 'error');
     console.error(err);
   } finally {
-    document.getElementById('guardarMovimientoBtn').disabled = false;
+    setLoading('guardarMovimientoBtn', false);
   }
 }
 
@@ -425,14 +421,14 @@ async function guardarEstante() {
   let zone = '';
   if (zoneType === 'new') {
     zone = document.getElementById('shelfNewZone').value.trim();
-    if (!zone) return alert('Ingrese el nombre de la nueva zona.');
+    if (!zone) return toast('Ingrese el nombre de la nueva zona.', 'error');
   } else {
     zone = document.getElementById('shelfZoneSelect').value;
-    if (!zone) return alert('Seleccione una zona existente.');
+    if (!zone) return toast('Seleccione una zona existente.', 'error');
   }
-  if (!name) return alert('El nombre del estante es obligatorio.');
+  if (!name) return toast('El nombre del estante es obligatorio.', 'error');
   if (!confirm(`¿Está seguro de agregar el estante "${name}" en la zona "${zone}"?`)) return;
-  document.getElementById('guardarEstanteBtn').disabled = true;
+  setLoading('guardarEstanteBtn', true);
   try {
     const res = await fetch(APP_URL + 'api/locations.php', {
       method: 'POST',
@@ -443,15 +439,16 @@ async function guardarEstante() {
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('shelfModal'))?.hide();
       document.getElementById('shelfForm').reset();
+      toast('Estante agregado exitosamente.', 'success');
       await recargarDatos();
     } else {
-      alert('Error: ' + data.message);
+      toast('Error: ' + data.message, 'error');
     }
   } catch (err) {
-    alert('Error de conexión.');
+    toast('Error de conexión.', 'error');
     console.error(err);
   } finally {
-    document.getElementById('guardarEstanteBtn').disabled = false;
+    setLoading('guardarEstanteBtn', false);
   }
 }
 
@@ -465,7 +462,7 @@ function confirmarEliminarEstante(locationId, name) {
 async function eliminarEstante() {
   const id = parseInt(document.getElementById('deleteShelfId').value);
   if (!id) return;
-  document.getElementById('confirmDeleteShelfModalBtn').disabled = true;
+  setLoading('confirmDeleteShelfModalBtn', true);
   try {
     const res = await fetch(APP_URL + 'api/locations.php', {
       method: 'DELETE',
@@ -475,14 +472,15 @@ async function eliminarEstante() {
     const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('deleteShelfModal'))?.hide();
+      toast('Estante eliminado exitosamente.', 'success');
       await recargarDatos();
     } else {
-      alert('Error: ' + data.message + '\n\nNota: No se puede eliminar un estante que tenga materiales con stock.');
+      toast('Error: ' + data.message, 'error');
     }
   } catch (err) {
-    alert('Error de conexión.');
+    toast('Error de conexión.', 'error');
   } finally {
-    document.getElementById('confirmDeleteShelfModalBtn').disabled = false;
+    setLoading('confirmDeleteShelfModalBtn', false);
   }
 }
 
@@ -583,9 +581,9 @@ async function guardarNuevoMaterial() {
   const wholesaleQty = costType === 'wholesale' ? parseInt(document.getElementById('addMatWholesaleQty').value) || 0 : 0;
   const locationId = parseInt(document.getElementById('addMaterialLocation').value) || null;
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
-  if (!name) { marcarError('addMatName'); return alert('El nombre del material es obligatorio.'); }
-  if (!code) { marcarError('addMatCode'); return alert('El código del material es obligatorio.'); }
-  document.getElementById('guardarNuevoMaterialBtn').disabled = true;
+  if (!name) { marcarError('addMatName'); return toast('El nombre del material es obligatorio.', 'error'); }
+  if (!code) { marcarError('addMatCode'); return toast('El código del material es obligatorio.', 'error'); }
+  setLoading('guardarNuevoMaterialBtn', true);
   try {
     const res = await fetch(APP_URL + 'api/materials.php', {
       method: 'POST',
@@ -595,15 +593,16 @@ async function guardarNuevoMaterial() {
     const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('addMaterialModal'))?.hide();
+      toast('Material creado exitosamente.', 'success');
       await recargarDatos();
     } else {
-      alert('Error: ' + data.message);
+      toast('Error: ' + data.message, 'error');
     }
   } catch (err) {
-    alert('Error de conexión.');
+    toast('Error de conexión.', 'error');
     console.error(err);
   } finally {
-    document.getElementById('guardarNuevoMaterialBtn').disabled = false;
+    setLoading('guardarNuevoMaterialBtn', false);
   }
 }
 

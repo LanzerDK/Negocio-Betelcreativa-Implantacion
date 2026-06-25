@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Materiales - Bet-El Creativa</title>
    
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/materialStyle.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
+    <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body>
@@ -31,8 +31,8 @@
                     <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
                 </div>
                 <div class="user-details">
-                    <h2>Ismael Maestre</h2>
-                    <p>Administrador</p>
+                    <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
+                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
                 </div>
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
@@ -301,6 +301,7 @@
             document.getElementById('settingsDropdown')?.classList.remove('show');
         });
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/materiales.js"></script>
 </body>
 

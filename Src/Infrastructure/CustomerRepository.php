@@ -120,6 +120,42 @@ class CustomerRepository
         }
     }
 
+    // Verifica si ya existe un cliente con el mismo email (excluyendo el ID opcional)
+    public function existsByEmail(string $email, ?int $excludeId = null): bool
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM customers WHERE email = :email";
+            $params = [':email' => $email];
+            if ($excludeId) {
+                $sql .= " AND customer_id != :excludeId";
+                $params[':excludeId'] = $excludeId;
+            }
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    // Verifica si ya existe un cliente con el mismo teléfono (excluyendo el ID opcional)
+    public function existsByPhone(string $phone, ?int $excludeId = null): bool
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM customers WHERE phone = :phone";
+            $params = [':phone' => $phone];
+            if ($excludeId) {
+                $sql .= " AND customer_id != :excludeId";
+                $params[':excludeId'] = $excludeId;
+            }
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     // Elimina un cliente de la BD por su ID
     public function delete(int $id): bool
     {

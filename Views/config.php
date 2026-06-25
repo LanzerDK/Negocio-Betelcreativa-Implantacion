@@ -4,34 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración de Usuario - Bet-El Creativa</title>
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/configStyle.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
 </head>
 <body>
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
             <div class="logo-container">
-                <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
-                <div class="user-info">
+                <h1 class="logo-icon"><i class="fas fa-user-cog"></i></h1>
+                <div class="app-info">
                     <h1>Configuración de Usuario</h1>
                     <p>Personaliza tu experiencia en Bet-El Creativa</p>
                 </div>
             </div>
-            <div class="user-settings" id="userSettings">
-                <button class="settings-btn" id="settingsBtn">
-                    <i class="fas fa-cog"></i>
-                </button>
-                <div class="settings-dropdown" id="settingsDropdown">
-                    <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
-                        <i class="fas fa-user"></i> Cuenta
-                    </a>
-                    <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                    </a>
+            <div class="user-container">
+                <div class="imagenfoto">
+                    <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
+                </div>
+                <div class="user-details">
+                    <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
+                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'user')); ?></p>
+                </div>
+                <div class="user-settings" id="userSettings">
+                    <button class="settings-btn" id="settingsBtn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settingsDropdown">
+                        <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
+                            <i class="fas fa-user"></i> Cuenta
+                        </a>
+                        <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </a>
+                    </div>
                 </div>
             </div>
         </header>
@@ -79,17 +88,18 @@
                 <div class="profile-card">
                     <div class="profile-header">
                         <div class="profile-avatar">
-                            <img src="<?php echo APP_URL; ?>Public/images/avatar.jpg" alt="Avatar de usuario" id="userAvatar">
+                            <?php $avatar = $_SESSION['user_avatar'] ?? ''; ?>
+                            <img src="<?php echo $avatar ? APP_URL . 'Public/' . htmlspecialchars($avatar) : 'data:image/svg+xml,' . rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect fill="#e0e0e0" width="120" height="120" rx="60"/><text x="60" y="72" font-size="48" text-anchor="middle" fill="#999" font-family="Arial">👤</text></svg>'); ?>" alt="Avatar de usuario" id="userAvatar">
                             <div class="avatar-upload" title="Cambiar foto">
                                 <i class="fas fa-camera"></i>
                                 <input type="file" id="avatarInput" accept="image/*" style="display: none;">
                             </div>
                         </div>
                         <div class="profile-info">
-                            <h2 id="userName">Ismael Maestre</h2>
-                            <p id="userEmail">admin@betelcreativa.com</p>
-                            <p id="userSince">Miembro desde: Enero 2023</p>
-                            <span class="role-badge">Administrador</span>
+                            <h2 id="userName"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
+                            <p id="userEmail"><?php echo htmlspecialchars($_SESSION['user_email'] ?? ''); ?></p>
+                            <p id="userSince">Miembro desde: --</p>
+                            <span class="role-badge"><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'user')); ?></span>
                         </div>
                     </div>
 
@@ -107,7 +117,16 @@
                             <i class="fas fa-shield-alt"></i>
                             <span>Seguridad</span>
                         </button>
-                        
+                        <?php if (($_SESSION['user_role'] ?? '') === 'admin'): ?>
+                        <button class="config-tab" data-target="system">
+                            <i class="fas fa-cogs"></i>
+                            <span>Sistema</span>
+                        </button>
+                        <button class="config-tab" data-target="users">
+                            <i class="fas fa-users-cog"></i>
+                            <span>Usuarios</span>
+                        </button>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Contenido de las tabs -->
@@ -118,32 +137,20 @@
                             
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="fullName"><i class="fas fa-user"></i> Nombre Completo</label>
-                                    <input type="text" id="fullName" value="Ismael Maestre" placeholder="Ingresa tu nombre completo">
+                                    <label for="name"><i class="fas fa-user"></i> Nombre</label>
+                                    <input type="text" id="name" placeholder="Tu nombre">
                                 </div>
                                 <div class="form-group">
-                                    <label for="username"><i class="fas fa-user-tag"></i> Nombre de Usuario</label>
-                                    <input type="text" id="username" value="isma_admin" placeholder="Nombre de usuario único">
+                                    <label for="lastName"><i class="fas fa-user"></i> Apellido</label>
+                                    <input type="text" id="lastName" placeholder="Tu apellido">
                                 </div>
                                 <div class="form-group">
                                     <label for="email"><i class="fas fa-envelope"></i> Correo Electrónico</label>
-                                    <input type="email" id="email" value="admin@betelcreativa.com" placeholder="tu@email.com">
+                                    <input type="email" id="email" placeholder="tu@email.com">
                                 </div>
-                                
                                 <div class="form-group">
                                     <label for="phone"><i class="fas fa-phone"></i> Teléfono</label>
-                                    <input type="tel" id="phone" value="+1 234 567 8900" placeholder="+1 234 567 8900">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="position"><i class="fas fa-briefcase"></i> Cargo</label>
-                                    <input type="text" id="position" value="Administrador General" placeholder="Tu cargo en la empresa">
-                                </div>
-                                
-                                
-                                <div class="form-group">
-                                    <label for="birthdate"><i class="fas fa-birthday-cake"></i> Fecha de Nacimiento</label>
-                                    <input type="date" id="birthdate" value="1990-05-15">
+                                    <input type="tel" id="phone" placeholder="0412-123-45-67">
                                 </div>
                             </div>
                             
@@ -167,22 +174,11 @@
                             <div class="notification-list">
                                 <div class="notification-item">
                                     <div class="notification-info">
-                                        <h4>Notificaciones de Email</h4>
-                                        <p>Recibir notificaciones por correo electrónico</p>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" checked>
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-                                
-                                <div class="notification-item">
-                                    <div class="notification-info">
                                         <h4>Alertas de Stock Bajo</h4>
                                         <p>Notificaciones cuando materiales estén por agotarse</p>
                                     </div>
                                     <label class="switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="notify_low_stock">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -193,7 +189,7 @@
                                         <p>Notificaciones de eventos y citas próximas</p>
                                     </div>
                                     <label class="switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="notify_appointments">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -204,7 +200,7 @@
                                         <p>Notificaciones sobre actividad inusual en la cuenta</p>
                                     </div>
                                     <label class="switch">
-                                        <input type="checkbox" checked>
+                                        <input type="checkbox" id="notify_security">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -215,7 +211,7 @@
                                         <p>Resumen semanal de ventas y actividades</p>
                                     </div>
                                     <label class="switch">
-                                        <input type="checkbox">
+                                        <input type="checkbox" id="notify_reports">
                                         <span class="slider"></span>
                                     </label>
                                 </div>
@@ -363,53 +359,88 @@
                             
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="backupFrequency"><i class="fas fa-database"></i> Frecuencia de Respaldo</label>
-                                    <select id="backupFrequency">
+                                    <label for="set_low_stock_threshold"><i class="fas fa-exclamation-triangle"></i> Umbral de Stock Bajo</label>
+                                    <input type="number" id="set_low_stock_threshold" min="1" placeholder="Ej: 10">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_pagination_default"><i class="fas fa-list"></i> Registros por Página</label>
+                                    <input type="number" id="set_pagination_default" min="5" placeholder="Ej: 20">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_dashboard_refresh_interval"><i class="fas fa-sync"></i> Refresco Dashboard (seg)</label>
+                                    <input type="number" id="set_dashboard_refresh_interval" min="10" placeholder="Ej: 60">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_password_min_length"><i class="fas fa-lock"></i> Longitud Mínima Contraseña</label>
+                                    <input type="number" id="set_password_min_length" min="4" placeholder="Ej: 6">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_appointment_default_duration"><i class="fas fa-clock"></i> Duración Cita (min)</label>
+                                    <input type="number" id="set_appointment_default_duration" min="15" placeholder="Ej: 60">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_business_hours_start"><i class="fas fa-sun"></i> Hora Apertura</label>
+                                    <input type="time" id="set_business_hours_start">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_business_hours_end"><i class="fas fa-moon"></i> Hora Cierre</label>
+                                    <input type="time" id="set_business_hours_end">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_working_days"><i class="fas fa-calendar-week"></i> Días Laborales</label>
+                                    <input type="text" id="set_working_days" placeholder="Ej: 1,2,3,4,5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="set_backup_frequency"><i class="fas fa-database"></i> Frecuencia Respaldo</label>
+                                    <select id="set_backup_frequency">
                                         <option value="daily">Diario</option>
-                                        <option value="weekly" selected>Semanal</option>
+                                        <option value="weekly">Semanal</option>
                                         <option value="monthly">Mensual</option>
                                     </select>
                                 </div>
-                                
                                 <div class="form-group">
-                                    <label for="autoUpdate"><i class="fas fa-sync-alt"></i> Actualizaciones Automáticas</label>
-                                    <select id="autoUpdate">
-                                        <option value="enabled" selected>Activadas</option>
-                                        <option value="disabled">Desactivadas</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="logRetention"><i class="fas fa-history"></i> Retención de Logs</label>
-                                    <select id="logRetention">
-                                        <option value="30">30 días</option>
-                                        <option value="90" selected>90 días</option>
-                                        <option value="180">180 días</option>
-                                        <option value="365">1 año</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="maintenanceMode"><i class="fas fa-tools"></i> Modo Mantenimiento</label>
-                                    <select id="maintenanceMode">
-                                        <option value="disabled" selected>Desactivado</option>
-                                        <option value="enabled">Activado</option>
-                                    </select>
+                                    <label for="set_log_retention_days"><i class="fas fa-history"></i> Retención de Logs (días)</label>
+                                    <input type="number" id="set_log_retention_days" min="1" placeholder="Ej: 90">
                                 </div>
                             </div>
                             
                             <div class="form-controls">
-                                <button class="btn btn-secondary">
-                                    <i class="fas fa-download"></i> Exportar Configuración
-                                </button>
                                 <button class="btn btn-primary" id="saveSystem">
                                     <i class="fas fa-save"></i> Guardar Configuración
                                 </button>
-                                <button class="btn btn-danger">
-                                    <i class="fas fa-redo"></i> Reiniciar Sistema
-                                </button>
                             </div>
                         </div>
+                        <!-- Sección: Usuarios (solo admin) -->
+                        <?php if (($_SESSION['user_role'] ?? '') === 'admin'): ?>
+                        <div class="config-section" id="users-section">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="color: var(--primary); margin: 0;"><i class="fas fa-users-cog"></i> Gestión de Usuarios</h3>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <input type="text" id="userSearch" placeholder="Buscar por nombre, email o usuario..." style="width: 100%; max-width: 400px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+
+                            <div style="overflow-x: auto;">
+                                <table class="table" style="width: 100%; border-collapse: collapse;">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuario</th>
+                                            <th>Email</th>
+                                            <th>Rol</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                        <tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--gray);">Cargando usuarios...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div id="usersPagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;"></div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -421,6 +452,7 @@
     <script>
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
+        const USER_ID = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
     </script>
     <script>
         document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
@@ -431,6 +463,7 @@
             document.getElementById('settingsDropdown')?.classList.remove('show');
         });
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/config.js"></script>
 </body>
 </html>

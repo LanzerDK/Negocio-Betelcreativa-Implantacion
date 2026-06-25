@@ -142,7 +142,7 @@ function guardarCategoria() {
     const status = document.getElementById('categoryStatus').value;
 
     if (!name) {
-        alert('El nombre de la categoría es obligatorio.');
+        toast('El nombre de la categoría es obligatorio.', 'warning');
         return;
     }
 
@@ -163,11 +163,11 @@ function guardarCategoria() {
                 document.getElementById('categoryModal').style.display = 'none';
                 cargarCategorias();
             } else {
-                alert('Error: ' + data.message);
+                toast('Error: ' + data.message, 'error');
             }
         })
         .catch(err => {
-            alert('Error de conexión. Intente de nuevo.');
+            toast('Error de conexión.', 'error');
             console.error(err);
         });
 }
@@ -193,12 +193,19 @@ function toggleEstadoCategoria(id, currentStatus, card, button) {
                 badge.textContent = isActive ? 'Activa' : 'Inactiva';
                 badge.className = 'category-status ' + (isActive ? 'status-active' : 'status-inactive');
                 card.dataset.status = newStatus;
+
+                // Actualiza estadísticas en tiempo real
+                const activasEl = document.querySelector('.stat-card:nth-child(3) .stat-value');
+                if (activasEl) {
+                    const current = parseInt(activasEl.textContent);
+                    activasEl.textContent = isActive ? current + 1 : current - 1;
+                }
             } else {
-                alert('Error: ' + data.message);
+                toast('Error: ' + data.message, 'error');
             }
         })
         .catch(err => {
-            alert('Error de conexión. Intente de nuevo.');
+            toast('Error de conexión.', 'error');
             console.error(err);
         });
 }
@@ -210,11 +217,7 @@ function filtrarCategorias() {
         if (!term) {
             card.style.display = '';
         } else {
-            // Busca coincidencia exacta de palabra (no substrings parciales)
-            // Ej: "Globos" NO debe coincidir con "Globos de animales"
-            const words = name.split(/\s+/);
-            const matches = words.some(w => w === term);
-            card.style.display = matches ? '' : 'none';
+            card.style.display = name.includes(term) ? '' : 'none';
         }
     });
 }

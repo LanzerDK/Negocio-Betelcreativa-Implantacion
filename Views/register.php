@@ -7,10 +7,10 @@
     <title>Registro - Bet-El Creativa</title>
 
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/registerStyle.css">
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
 </head>
 
 <body>
@@ -142,11 +142,12 @@
         </form>
 
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         window.APP_URL = "<?php echo APP_URL; ?>";
         window.CSRF_TOKEN = "<?php echo $_SESSION['csrf_token'] ?? ''; ?>";
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/register.js?v=2"></script>
 </body>
 

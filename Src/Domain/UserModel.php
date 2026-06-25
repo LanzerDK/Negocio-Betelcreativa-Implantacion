@@ -12,6 +12,8 @@ class UserModel
     private string $ci;
     private string $phone; 
     private string $passwordHash;
+    private string $role = 'user';
+    private ?string $avatarUrl = null;
     private ?string $checkinTime;
 
     public function __construct(array $data = [])
@@ -25,6 +27,8 @@ class UserModel
         // EXPLICACIÓN: Mapeamos el teléfono desde el array que envía el controlador.
         $this->phone = $data['phone'] ?? ''; 
         $this->passwordHash = $data['passwordHash'] ?? '';
+        $this->role = $data['role'] ?? 'user';
+        $this->avatarUrl = $data['avatarUrl'] ?? null;
         $this->checkinTime = $data['checkinTime'] ?? null;
     }
 
@@ -37,6 +41,8 @@ class UserModel
     public function getCi(): string { return $this->ci; }
     public function getPhone(): string { return $this->phone; } 
     public function getPasswordHash(): string { return $this->passwordHash; }
+    public function getRole(): string { return $this->role; }
+    public function getAvatarUrl(): ?string { return $this->avatarUrl; }
     public function getCheckinTime(): ?string { return $this->checkinTime; }
 
     // Setters
@@ -47,6 +53,7 @@ class UserModel
     
     public function setPhone(string $phone): void { $this->phone = $phone; }
     public function setPasswordHash(string $hash): void { $this->passwordHash = $hash; }
+    public function setAvatarUrl(?string $url): void { $this->avatarUrl = $url; }
     public function setCheckinTime(?string $time): void { $this->checkinTime = $time; }
 
     public function verificarPassword(string $passwordPlana): bool

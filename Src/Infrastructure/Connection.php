@@ -14,8 +14,8 @@ class Connection
 
         try {
             //Conexion a la base
-            $dns = "mysql:host=" . Database::DB_SERVER . ";dbname=" . Database::DB_NAME;
-            $Connect = new PDO($dns, Database::DB_USER, Database::DB_PASSWORD);
+            $dsn = "mysql:host=" . Database::DB_SERVER . ";dbname=" . Database::DB_NAME;
+            $Connect = new PDO($dsn, Database::DB_USER, Database::DB_PASSWORD);
             $Connect->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             return $Connect;

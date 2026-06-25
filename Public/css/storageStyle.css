@@ -131,6 +131,29 @@
   font-size: 1.2rem;
 }
 
+/* Botón dentro del sidebar de filtros */
+.filter-button {
+  background: var(--secondary);
+  color: var(--gold-button);
+  padding: 12px 25px;
+  border-radius: 50px;
+  border: 1px solid var(--gold-button);
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+  width: 100%;
+  justify-content: center;
+}
+
+.filter-button:hover {
+  background: var(--primary-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
 /* Área de contenido principal */
 .content-main {
   display: flex;

@@ -1,0 +1,112 @@
+<?php
+
+namespace BetelCreativa\Controllers;
+
+use BetelCreativa\Infrastructure\TaskRepository;
+use BetelCreativa\Domain\TaskModel;
+use BetelCreativa\Helpers\ApiResponse;
+use BetelCreativa\Helpers\CsrfHelper;
+use BetelCreativa\Helpers\SessionHelpers;
+
+class TaskController
+{
+    public static function handleRequest(): void
+    {
+        SessionHelpers::requireAuth();
+        $method = $_SERVER['REQUEST_METHOD'];
+        $repo = new TaskRepository();
+
+        switch ($method) {
+            case 'GET':
+                if (isset($_GET['completed'])) {
+                    $tasks = $repo->findAllCompleted();
+                } else {
+                    $tasks = $repo->findAllPending();
+                }
+                ApiResponse::success(array_map(fn($t) => self::toArray($t), $tasks));
+                break;
+
+            case 'POST':
+                CsrfHelper::validateRequestOrFail();
+                $input = json_decode(file_get_contents('php://input'), true);
+                $title = trim($input['title'] ?? '');
+                $priority = $input['priority'] ?? 'medium';
+
+                if (!$title) {
+                    ApiResponse::error('El título de la tarea es requerido.');
+                }
+                if (!in_array($priority, ['low', 'medium', 'high'])) {
+                    ApiResponse::error('Prioridad inválida.');
+                }
+
+                $task = new TaskModel([
+                    'title' => $title,
+                    'priority' => $priority,
+                    'status' => 'pending',
+                ]);
+
+                if ($repo->save($task)) {
+                    ApiResponse::success(null, 'Tarea creada exitosamente.');
+                } else {
+                    ApiResponse::error('Error al crear la tarea.', 500);
+                }
+                break;
+
+            case 'PUT':
+                CsrfHelper::validateRequestOrFail();
+                $id = (int)($_GET['id'] ?? 0);
+                if (!$id) {
+                    ApiResponse::error('ID de tarea requerido.');
+                }
+
+                $existing = $repo->findById($id);
+                if (!$existing) {
+                    ApiResponse::error('Tarea no encontrada.', 404);
+                }
+
+                $input = json_decode(file_get_contents('php://input'), true);
+                $newStatus = $input['status'] ?? $existing->getStatus();
+
+                if (!in_array($newStatus, ['pending', 'completed'])) {
+                    ApiResponse::error('Estado inválido.');
+                }
+
+                $existing->setStatus($newStatus);
+
+                if ($repo->update($existing)) {
+                    ApiResponse::success(null, 'Tarea actualizada.');
+                } else {
+                    ApiResponse::error('Error al actualizar la tarea.', 500);
+                }
+                break;
+
+            case 'DELETE':
+                CsrfHelper::validateRequestOrFail();
+                $id = (int)($_GET['id'] ?? 0);
+                if (!$id) {
+                    ApiResponse::error('ID de tarea requerido.');
+                }
+                if ($repo->delete($id)) {
+                    ApiResponse::success(null, 'Tarea eliminada.');
+                } else {
+                    ApiResponse::error('Error al eliminar la tarea.', 500);
+                }
+                break;
+
+            default:
+                ApiResponse::error('Método no soportado.', 405);
+        }
+    }
+
+    private static function toArray(TaskModel $task): array
+    {
+        return [
+            'id' => $task->getId(),
+            'title' => $task->getTitle(),
+            'priority' => $task->getPriority(),
+            'status' => $task->getStatus(),
+            'createdAt' => $task->getCreatedAt(),
+            'completedAt' => $task->getCompletedAt(),
+        ];
+    }
+}

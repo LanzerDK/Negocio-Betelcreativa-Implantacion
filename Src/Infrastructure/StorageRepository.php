@@ -5,6 +5,7 @@ namespace BetelCreativa\Infrastructure;
 use BetelCreativa\Config\Database;
 use BetelCreativa\Domain\InventoryMovementModel;
 use BetelCreativa\Helpers\ApiResponse;
+use BetelCreativa\Helpers\Logger;
 use PDO;
 use PDOException;
 
@@ -17,15 +18,28 @@ class StorageRepository
         $this->db = Database::getConnection();
     }
 
-    public function recordAdjustment(int $materialId, int $userId, string $type, int $quantity, string $reason, ?string $notes): bool
+    public function recordAdjustment(int $materialId, int $userId, string $type, int $quantity, string $reason, ?string $notes, ?int $locationId = null): bool
     {
         try {
             $this->db->beginTransaction();
 
-            if ($type === 'entry') {
-                $this->db->exec("UPDATE materials SET current_stock = current_stock + $quantity WHERE material_id = $materialId");
-            } else {
-                $this->db->exec("UPDATE materials SET current_stock = GREATEST(current_stock - $quantity, 0) WHERE material_id = $materialId");
+            $change = $type === 'entry' ? $quantity : -$quantity;
+
+            $stmt = $this->db->prepare("UPDATE materials SET current_stock = GREATEST(current_stock + :change, 0) WHERE material_id = :id");
+            $stmt->execute([':change' => $change, ':id' => $materialId]);
+
+            // Si no se especificó ubicación, usar la ubicación principal del material
+            if (!$locationId) {
+                $locStmt = $this->db->prepare("SELECT current_location_id FROM materials WHERE material_id = :id");
+                $locStmt->execute([':id' => $materialId]);
+                $loc = $locStmt->fetch();
+                $locationId = $loc ? (int)$loc['current_location_id'] : null;
+            }
+
+            if ($locationId) {
+                $this->upsertStockLocation($materialId, $locationId, $change);
+                $delStmt = $this->db->prepare("DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0");
+                $delStmt->execute([':id' => $materialId]);
             }
 
             $actionType = $type === 'entry' ? 'Entry' : 'Exit';
@@ -46,7 +60,8 @@ class StorageRepository
             return true;
         } catch (PDOException $e) {
             $this->db->rollBack();
-            ApiResponse::error('Error al registrar ajuste: ' . $e->getMessage(), 500);
+            Logger::error('Error al registrar ajuste', ['material_id' => $materialId, 'exception' => $e->getMessage()]);
+            ApiResponse::error('Error al registrar ajuste.', 500);
             return false;
         }
     }
@@ -70,16 +85,22 @@ class StorageRepository
             $this->upsertStockLocation($materialId, $fromLocationId, -$quantity);
             $this->upsertStockLocation($materialId, $toLocationId, $quantity);
 
-            $this->db->exec(
-                "DELETE FROM material_stock_locations WHERE material_id = $materialId AND quantity <= 0"
+            $delStmt = $this->db->prepare(
+                "DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0"
             );
+            $delStmt->execute([':id' => $materialId]);
 
-            $checkCurrent = $this->db->query(
-                "SELECT location_id FROM material_stock_locations WHERE material_id = $materialId ORDER BY quantity DESC LIMIT 1"
-            )->fetch();
+            $checkStmt = $this->db->prepare(
+                "SELECT location_id FROM material_stock_locations WHERE material_id = :id ORDER BY quantity DESC LIMIT 1"
+            );
+            $checkStmt->execute([':id' => $materialId]);
+            $checkCurrent = $checkStmt->fetch();
 
             if ($checkCurrent) {
-                $this->db->exec("UPDATE materials SET current_location_id = {$checkCurrent['location_id']} WHERE material_id = $materialId");
+                $updStmt = $this->db->prepare(
+                    "UPDATE materials SET current_location_id = :loc WHERE material_id = :id"
+                );
+                $updStmt->execute([':loc' => $checkCurrent['location_id'], ':id' => $materialId]);
             }
 
             $stmt = $this->db->prepare(
@@ -100,7 +121,8 @@ class StorageRepository
             return true;
         } catch (PDOException $e) {
             $this->db->rollBack();
-            ApiResponse::error('Error al mover material: ' . $e->getMessage(), 500);
+            Logger::error('Error al mover material', ['material_id' => $materialId, 'exception' => $e->getMessage()]);
+            ApiResponse::error('Error al mover material.', 500);
             return false;
         }
     }
@@ -149,16 +171,22 @@ class StorageRepository
                 'totalPages' => max(1, (int)ceil($total / $perPage))
             ];
         } catch (PDOException $e) {
-            ApiResponse::error('Error al obtener historial: ' . $e->getMessage(), 500);
+            Logger::error('Error al obtener historial', ['exception' => $e->getMessage()]);
+            ApiResponse::error('Error al obtener historial.', 500);
         }
     }
 
     public function getSummary(): array
     {
         try {
+            $settingsRepo = new SettingsRepository();
+            $threshold = $settingsRepo->getInt('low_stock_threshold', 10);
+
             $totalMaterials = (int)$this->db->query("SELECT COUNT(*) FROM materials WHERE is_active = 1")->fetchColumn();
             $totalLocations = (int)$this->db->query("SELECT COUNT(*) FROM locations")->fetchColumn();
-            $lowStock = (int)$this->db->query("SELECT COUNT(*) FROM materials WHERE is_active = 1 AND current_stock > 0 AND current_stock <= 10")->fetchColumn();
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM materials WHERE is_active = 1 AND current_stock > 0 AND current_stock <= :threshold");
+            $stmt->execute([':threshold' => $threshold]);
+            $lowStock = (int)$stmt->fetchColumn();
             $outOfStock = (int)$this->db->query("SELECT COUNT(*) FROM materials WHERE is_active = 1 AND (current_stock IS NULL OR current_stock <= 0)")->fetchColumn();
 
             return [
@@ -168,7 +196,8 @@ class StorageRepository
                 'outOfStock' => $outOfStock
             ];
         } catch (PDOException $e) {
-            ApiResponse::error('Error al obtener resumen: ' . $e->getMessage(), 500);
+            Logger::error('Error al obtener resumen', ['exception' => $e->getMessage()]);
+            ApiResponse::error('Error al obtener resumen.', 500);
         }
     }
 

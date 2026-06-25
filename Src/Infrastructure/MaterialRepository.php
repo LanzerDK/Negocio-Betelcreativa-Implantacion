@@ -125,9 +125,17 @@ class MaterialRepository
     public function update(MaterialModel $material): bool
     {
         try {
+            $this->db->beginTransaction();
+
+            $stmtOld = $this->db->prepare(
+                "SELECT current_stock, current_location_id FROM materials WHERE material_id = :id"
+            );
+            $stmtOld->execute([':id' => $material->getId()]);
+            $old = $stmtOld->fetch();
+
             $sql = "UPDATE materials SET material_code = :code, name = :name, price = :price, cost_type = :cost_type, wholesale_qty = :wholesale_qty, current_stock = :stock, category_id = :category_id, supplier_id = :supplier_id, current_location_id = :location_id, is_active = :is_active WHERE material_id = :id";
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
+            $ok = $stmt->execute([
                 ':id' => $material->getId(),
                 ':code' => $material->getCode(),
                 ':name' => $material->getName(),
@@ -140,9 +148,57 @@ class MaterialRepository
                 ':location_id' => $material->getLocationId(),
                 ':is_active' => $material->getIsActive() ? 1 : 0
             ]);
+
+            if ($ok) {
+                $newStock = $material->getStock();
+                $newLocId = $material->getLocationId();
+                $oldLocId = $old ? (int)$old['current_location_id'] : null;
+                $oldStock = $old ? (int)$old['current_stock'] : 0;
+
+                if ($oldLocId && $newLocId && $newLocId !== $oldLocId) {
+                    // Location changed: old location loses all, new location gets all
+                    $this->upsertStockLocation($material->getId(), $oldLocId, -$oldStock);
+                    $this->upsertStockLocation($material->getId(), $newLocId, $newStock);
+                } elseif ($oldLocId && $newStock !== $oldStock) {
+                    // Same location, stock changed
+                    $this->upsertStockLocation($material->getId(), $oldLocId, $newStock - $oldStock);
+                } elseif (!$oldLocId && $newLocId) {
+                    // New location assigned (had none before)
+                    $this->upsertStockLocation($material->getId(), $newLocId, $newStock);
+                }
+
+                $delStmt = $this->db->prepare(
+                    "DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0"
+                );
+                $delStmt->execute([':id' => $material->getId()]);
+            }
+
+            $this->db->commit();
+            return true;
         } catch (PDOException $e) {
+            $this->db->rollBack();
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
             return false;
+        }
+    }
+
+    private function upsertStockLocation(int $materialId, int $locationId, int $quantityChange): void
+    {
+        $existing = $this->db->prepare(
+            "SELECT quantity FROM material_stock_locations WHERE material_id = :material_id AND location_id = :location_id"
+        );
+        $existing->execute([':material_id' => $materialId, ':location_id' => $locationId]);
+        $row = $existing->fetch();
+
+        if ($row) {
+            $newQty = max(0, (int)$row['quantity'] + $quantityChange);
+            $this->db->prepare(
+                "UPDATE material_stock_locations SET quantity = :qty WHERE material_id = :material_id AND location_id = :location_id"
+            )->execute([':qty' => $newQty, ':material_id' => $materialId, ':location_id' => $locationId]);
+        } else {
+            $this->db->prepare(
+                "INSERT INTO material_stock_locations (material_id, location_id, quantity) VALUES (:material_id, :location_id, :qty)"
+            )->execute([':material_id' => $materialId, ':location_id' => $locationId, ':qty' => max(0, $quantityChange)]);
         }
     }
 

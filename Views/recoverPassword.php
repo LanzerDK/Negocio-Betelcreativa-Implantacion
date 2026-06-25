@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Contraseña</title>
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/recoverPasswordStyle.css">
-   <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+   <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
 
 </head>
 <body>
     <div class="recovery-container">
         <div class="recovery-header">
             <h1>Recuperar Contraseña</h1>
-            <p>Ingresa tu número de teléfono para recibir un código de verificación y restablecer tu contraseña.</p>
+            <p>Ingresa tu correo electrónico o número de teléfono para recibir un código de verificación.</p>
         </div>
         
         <div class="step-indicator">
@@ -23,24 +23,22 @@
         </div>
         
         <form id="recoveryForm">
-            <!-- Paso 1: Ingresar número de teléfono -->
+            <!-- Paso 1: Ingresar correo o teléfono -->
             <div class="form-step active" id="step1">
                 <div class="input-group">
-                    <i class="bi bi-phone"></i>
-                    <input type="tel" id="phone" placeholder="Número de teléfono" required pattern="[0-9]{4}-[0-9]{3}-[0-9]{2}-[0-9]{2}">
-                    <div class="feedback" id="phone-feedback"></div>
+                    <i class="bi bi-envelope"></i>
+                    <input type="text" id="contact" placeholder="Correo electrónico o teléfono" required autocomplete="off">
+                    <div class="feedback" id="contact-feedback"></div>
                 </div>
-                <p style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 20px;">
-                    Ejemplo de formato: 0414-555-12-34
-                </p>
                 <button type="button" class="recovery-button" id="sendCodeBtn">Enviar Código</button>
             </div>
             
             <!-- Paso 2: Ingresar código de verificación -->
             <div class="form-step" id="step2">
-                <p style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 20px;">
-                    Hemos enviado un código de 6 dígitos a tu teléfono. Por favor, ingrésalo a continuación.
+                <p id="codeSentMessage" style="color: rgba(255,255,255,0.8); text-align: center; margin-bottom: 20px;">
+                    Hemos enviado un código de 6 dígitos. Revisa tu correo o teléfono.
                 </p>
+                <input type="hidden" id="resetCode" value="">
                 <div class="code-inputs">
                     <input type="text" maxlength="1" class="code-input" data-index="0">
                     <input type="text" maxlength="1" class="code-input" data-index="1">
@@ -68,19 +66,18 @@
                     <div class="feedback" id="confirm-password-feedback"></div>
                 </div>
                 <ul style="color: rgba(255,255,255,0.7); font-size: 0.9rem; margin-bottom: 20px; padding-left: 20px;">
-                    <li>Mínimo 8 caracteres</li>
-                    <li>Al menos una letra mayúscula</li>
-                    <li>Al menos un número o símbolo</li>
+                    <li>Mínimo 6 caracteres</li>
                 </ul>
                 <button type="submit" class="recovery-button">Restablecer Contraseña</button>
             </div>
         </form>
         
         <!-- Mensaje de éxito -->
-        <div class="success-message" id="successMessage">
+        <div class="success-message" id="successMessage" style="display:none;">
             <i class="bi bi-check-circle-fill"></i>
             <h3>¡Contraseña Restablecida!</h3>
             <p>Tu contraseña ha sido actualizada correctamente.</p>
+            <a href="<?php echo APP_URL; ?>login" class="recovery-button" style="display:inline-block;margin-top:15px;text-decoration:none;">Ir al inicio de sesión</a>
         </div>
         
         <div class="back-to-login">
@@ -92,6 +89,7 @@
         window.APP_URL = "<?php echo APP_URL; ?>";
         window.CSRF_TOKEN = "<?php echo $_SESSION['csrf_token'] ?? ''; ?>";
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/recuperar.js"></script>
 </body>
 </html>

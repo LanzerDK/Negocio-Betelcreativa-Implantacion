@@ -1,0 +1,98 @@
+<?php
+
+namespace BetelCreativa\Helpers;
+
+use Resend;
+
+/**
+ * EmailService — Envío de correos vía Resend API
+ * ------------------------------------------------------------
+ * Resend (https://resend.com) es un servicio de email para desarrolladores.
+ * 
+ * Plan gratuito: 100 emails/día, requiere verificar un dominio propio
+ * o usar onboarding@resend.dev para pruebas.
+ * 
+ * API key: obtener en https://resend.com/api-keys
+ * Documentación: https://resend.com/docs/send-with-php
+ */
+class EmailService
+{
+    /**
+     * Envía un código de verificación por correo electrónico
+     *
+     * @param string $email  Dirección de correo del destinatario
+     * @param string $code   Código de 6 dígitos
+     * @return array ['success' => bool, 'message' => string]
+     */
+    public static function sendCode(string $email, string $code): array
+    {
+        // ── 1. Validar que la API key esté configurada ───────────────
+        $apiKey = defined('RESEND_API_KEY') ? RESEND_API_KEY : '';
+        if (empty($apiKey)) {
+            Logger::warning("Email no enviado a {$email}: RESEND_API_KEY no configurada");
+            return [
+                'success' => false,
+                'message' => 'El servicio de correo no está configurado. Contacta al administrador.',
+            ];
+        }
+
+        // ── 2. Configurar remitente ──────────────────────────────────
+        $appName = defined('APP_NAME') ? APP_NAME : 'Betel Creativa';
+        $fromEmail = defined('RESEND_FROM_EMAIL') ? RESEND_FROM_EMAIL : 'onboarding@resend.dev';
+        $from = "{$appName} <{$fromEmail}>";
+
+        // ── 3. Construir HTML del correo ─────────────────────────────
+        $html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 480px; margin: 40px auto; background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+        .logo { text-align: center; font-size: 24px; font-weight: 700; color: #0A369D; margin-bottom: 8px; }
+        .code { text-align: center; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #0A369D; background: #f0f4ff; border-radius: 8px; padding: 16px; margin: 24px 0; }
+        .info { color: #666; font-size: 14px; text-align: center; margin-bottom: 8px; }
+        .footer { text-align: center; color: #999; font-size: 12px; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">{$appName}</div>
+        <p style="text-align:center;color:#444;">Tu código de verificación</p>
+        <div class="code">{$code}</div>
+        <p class="info">Este código expira en 10 minutos.</p>
+        <p class="info">Si no solicitaste este cambio, ignora este mensaje.</p>
+        <div class="footer">&copy; "{$appName}" — Todos los derechos reservados.</div>
+    </div>
+</body>
+</html>
+HTML;
+
+        // ── 4. Enviar vía Resend SDK ─────────────────────────────────
+        try {
+            $resend = Resend::client($apiKey);
+
+            $result = $resend->emails->send([
+                'from'    => $from,
+                'to'      => [$email],
+                'subject' => "{$appName} — Código de verificación",
+                'html'    => $html,
+            ]);
+
+            Logger::info("Email enviado a {$email} (id: {$result->id})");
+
+            return [
+                'success' => true,
+                'message' => 'Código enviado por correo electrónico.',
+            ];
+
+        } catch (\Throwable $e) {
+            Logger::warning("Email falló para {$email}: {$e->getMessage()}");
+            return [
+                'success' => false,
+                'message' => 'Error al enviar el correo electrónico: ' . $e->getMessage(),
+            ];
+        }
+    }
+}

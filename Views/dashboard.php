@@ -5,45 +5,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Creativo - Bet-El Creativa</title>
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/dashboardStyle.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
+    <script src="<?php echo APP_URL; ?>Public/assets/vendor/chart.min.js"></script>
 </head>
 
 <body>
     <div class="app-container">
         <header class="app-header">
             <div class="logo-container">
-                <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
-                <div class="user-info">
-                    <h1>Bienvenido, Ismael Maestre</h1>
-                    <p>Administrador de Bet-El Creativa</p>
+                <h1 class="logo-icon"><i class="fas fa-tachometer-alt"></i></h1>
+                <div class="app-info">
+                    <h1>Bienvenido, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h1>
+                    <p>Panel de Control - Bet-El Creativa</p>
                 </div>
             </div>
-            
-<div class="user-settings" id="userSettings">
-                <button class="settings-btn" id="settingsBtn">
-                    <i class="fas fa-cog"></i>
-                </button>
-                <div class="settings-dropdown" id="settingsDropdown">
-                    <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
-                        <i class="fas fa-user"></i> Cuenta
-                    </a>
-                    <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
-                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                    </a>
+            <div class="user-container">
+                <div class="imagenfoto">
+                    <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
+                </div>
+                <div class="user-details">
+                    <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
+                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
+                </div>
+                <div class="user-settings" id="userSettings">
+                    <button class="settings-btn" id="settingsBtn">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="settings-dropdown" id="settingsDropdown">
+                        <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
+                            <i class="fas fa-user"></i> Cuenta
+                        </a>
+                        <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </a>
+                    </div>
                 </div>
             </div>
         </header>
 
-        <!-- Menú principal -->
-        
-
-            <nav class="main-menu">
+        <nav class="main-menu">
             <a class="menu-item active">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Panel de Control</span>
@@ -72,23 +76,21 @@
                 <i class="fas fa-chart-line"></i>
                 <span>Reportes</span>
             </a>
-
-            
         </nav>
-        <!-- Contenido principal -->
+
         <main class="main-content">
-            <h2 style="color:var(--secondary); padding: 5px; margin-bottom: 25px;">Panel de Control</h2>
+            <h2 class="page-title">Panel de Control</h2>
 
             <!-- Estadísticas rápidas -->
             <div class="stats-container">
                 <div class="stat-card">
-                    <div class="stat-label">Citas Pendiente</div>
-                    <div class="stat-value">10</div>
-                    <div>+2 desde ayer</div>
+                    <div class="stat-label">Citas Pendientes</div>
+                    <div class="stat-value" id="statPendingAppts">0</div>
+                    <div>Esperando confirmación</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Stock Bajos</div>
-                    <div class="stat-value">12</div>
+                    <div class="stat-value" id="statLowStock">0</div>
                     <div>Abastecer Materiales</div>
                 </div>
                 <div class="stat-card">
@@ -97,9 +99,9 @@
                     <div>+15% mes anterior</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Clientes Nuevos</div>
-                    <div class="stat-value">34</div>
-                    <div>+5% de Popularidad este mes</div>
+                    <div class="stat-label">Clientes</div>
+                    <div class="stat-value" id="statNewCustomers">0</div>
+                    <div>Registrados</div>
                 </div>
             </div>
 
@@ -108,49 +110,8 @@
                 <div class="card-header">
                     <i class="fas fa-exclamation-circle"></i> Alertas Importantes
                 </div>
-                <div class="card-alert">
-                    <div class="alert-card critical">
-                        <i class="fas fa-fire"></i>
-                        <div class="alert-text">
-                            <strong>Stock Crítico!</strong>
-                            <p>Globos dorados - solo quedan 15 unidades</p>
-                        </div>
-                    </div>
-                    <div class="alert-card">
-                        <i class="fas fa-calendar-exclamation"></i>
-                        <div class="alert-text">
-                            <strong>Evento Pendiente</strong>
-                            <p>Boda Maestre - faltan materiales por confirmar</p>
-                        </div>
-                    </div>
-                    <div class="alert-card">
-                        <i class="fas fa-truck"></i>
-                        <div class="alert-text">
-                            <strong>Entrega Retrasada</strong>
-                            <p>Pedido #21 - retraso de 2 horas</p>
-                        </div>
-                    </div>
-                    <div class="alert-card critical">
-                        <i class="fas fa-fire"></i>
-                        <div class="alert-text">
-                            <strong>Herramienta Dañada!!</strong>
-                            <p>Maquina de Inflar Globos - Esta quebrada por fuera</p>
-                        </div>
-                    </div>
-                    <div class="alert-card critical">
-                        <i class="fas fa-fire"></i>
-                        <div class="alert-text">
-                            <strong>Herramienta Dañada!!</strong>
-                            <p>Maquina de Inflar Globos - Esta quebrada por fuera</p>
-                        </div>
-                    </div>
-                    <div class="alert-card info">
-                        <i class="fas fa-tools"></i>
-                        <div class="alert-text">
-                            <strong>Mantenimiento de Herramientas</strong>
-                            <p>Calibración de equipos - programada para el viernes</p>
-                        </div>
-                    </div>
+                <div class="card-alert" id="alertsContainer">
+                    <div class="alert-placeholder">Cargando alertas...</div>
                 </div>
             </div>
 
@@ -180,34 +141,44 @@
                     </div>
                 </div>
 
-                <!-- Tareas pendientes -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-tasks"></i> Tareas Pendientes
-                    </div>
-                    <div class="card-body">
-                        <ul class="task-list">
-                            <li class="task-item">
-                                <div class="task-check"><i class="fas fa-check"></i></div>
-                                <div class="task-text">Confirmar materiales para evento del sábado</div>
-                                <span class="task-priority priority-high">Alta</span>
-                            </li>
-                            <li class="task-item">
-                                <div class="task-check"><i class="fas fa-check"></i></div>
-                                <div class="task-text">Cotización para fiesta de 15 años</div>
-                                <span class="task-priority priority-high">Alta</span>
-                            </li>
-                            <li class="task-item">
-                                <div class="task-check"><i class="fas fa-check"></i></div>
-                                <div class="task-text">Revisar inventario de globos</div>
-                                <span class="task-priority priority-medium">Media</span>
-                            </li>
-                            <li class="task-item completed">
-                                <div class="task-check"><i class="fas fa-check"></i></div>
-                                <div class="task-text">Mantenimiento de los Mteriales</div>
-                                <span class="task-priority priority-medium">Media</span>
-                            </li>
-                        </ul>
+                <!-- Tareas pendientes (card con flip) -->
+                <div class="card card-flip" id="tasksCard">
+                    <div class="card-inner">
+                        <!-- FRENTE -->
+                        <div class="card-front">
+                            <div class="card-header">
+                                <i class="fas fa-tasks"></i> Tareas Pendientes
+                                <div class="card-header-actions">
+                                    <button class="btn-header-icon" id="addTaskBtn" title="Nueva tarea">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button class="btn-header-icon" id="toggleHistoryBtn" title="Historial">
+                                        <i class="fas fa-history"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <ul class="task-list" id="pendingTaskList">
+                                    <li class="task-placeholder">Cargando tareas...</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <!-- DORSO -->
+                        <div class="card-back">
+                            <div class="card-header">
+                                <i class="fas fa-check-double"></i> Tareas Completadas
+                                <div class="card-header-actions">
+                                    <button class="btn-header-icon" id="toggleBackBtn" title="Volver">
+                                        <i class="fas fa-arrow-left"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <ul class="task-list" id="completedTaskList">
+                                    <li class="task-placeholder">Cargando tareas completadas...</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -216,32 +187,40 @@
                     <div class="card-header">
                         <i class="fas fa-calendar-day"></i> Próximos Eventos
                     </div>
-                    <div class="card-body">
-                        <div class="event-item">
-                            <h3><i class="fas fa-star"></i> Boda Maestre</h3>
-                            <p>10 Dias, 15:00 - Salón Las Rosas</p>
-                            <p>Materiales: Globos dorados, arco floral, velas...</p>
-                        </div>
-                        <hr>
-                        <div class="event-item">
-                            <h3><i class="fas fa-star"></i> Cumpleaños Infantil</h3>
-                            <p>Viernes, 11:00 - Residencia López</p>
-                            <p>Materiales: Kit "Frozen", piñata, decoración temática</p>
-                        </div>
-                        <hr>
-                        <div class="event-item">
-                            <h3><i class="fas fa-star"></i> Evento Corporativo</h3>
-                            <p>Sabado, 18:00 - Centro de Convenciones</p>
-                            <p>Materiales: Manteles negros, centros de mesa, iluminación..</p>
-                        </div>
+                    <div class="card-body" id="upcomingEventsContainer">
+                        <div class="event-placeholder">Cargando eventos...</div>
                     </div>
-
                 </div>
             </div>
         </main>
+    </div>
 
-
-
+    <!-- Modal Nueva Tarea -->
+    <div class="modal-overlay" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Nueva Tarea</h2>
+                <button class="close-btn" id="closeTaskModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="taskTitle">Tarea</label>
+                    <textarea id="taskTitle" class="form-control" rows="3" placeholder="Describe la tarea..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="taskPriority">Prioridad</label>
+                    <select id="taskPriority" class="form-select">
+                        <option value="high">Alta</option>
+                        <option value="medium" selected>Media</option>
+                        <option value="low">Baja</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="cancelTaskBtn">Cancelar</button>
+                <button class="btn-save" id="saveTaskBtn"><i class="fas fa-save"></i> Guardar</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -257,7 +236,9 @@
             document.getElementById('settingsDropdown')?.classList.remove('show');
         });
     </script>
-    <script src="<?php echo APP_URL; ?>Public/js/deshboard.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/js/dashboard.js"></script>
 </body>
 
 </html>

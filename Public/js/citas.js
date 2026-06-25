@@ -83,11 +83,11 @@ async function createAppointment(appData)
         if (data.success) {
             await fetchAppointments();
         } else {
-            alert('Error: ' + data.message);
+            toast('Error: ' + data.message, 'error');
         }
     } catch (err) {
         console.error('Error al crear cita:', err);
-        alert('Error de conexión');
+        toast('Error de conexión.', 'error');
     }
 }
 
@@ -106,11 +106,11 @@ async function updateAppointment(id, appData)
         if (data.success) {
             await fetchAppointments();
         } else {
-            alert('Error: ' + data.message);
+            toast('Error: ' + data.message, 'error');
         }
     } catch (err) {
         console.error('Error al actualizar cita:', err);
-        alert('Error de conexión');
+        toast('Error de conexión.', 'error');
     }
 }
 
@@ -129,11 +129,11 @@ async function cancelAppointment(id)
             await fetchAllAppointments();
             await fetchCancelledAppointments();
         } else {
-            alert('Error: ' + data.message);
+            toast('Error: ' + data.message, 'error');
         }
     } catch (err) {
         console.error('Error al cancelar cita:', err);
-        alert('Error de conexión');
+        toast('Error de conexión.', 'error');
     }
 }
 
@@ -155,11 +155,11 @@ async function reactivateAppointment(id)
             await fetchAllAppointments();
             await fetchCancelledAppointments();
         } else {
-            alert('Error: ' + data.message);
+            toast('Error: ' + data.message, 'error');
         }
     } catch (err) {
         console.error('Error al reactivar cita:', err);
-        alert('Error de conexión');
+        toast('Error de conexión.', 'error');
     }
 }
 
@@ -386,6 +386,8 @@ function filterAppointments()
     const searchVal = document.getElementById('searchInput')?.value?.toLowerCase() || '';
     const typeFilter = document.getElementById('eventTypeFilter')?.value || '';
     const statusFilter = document.getElementById('statusFilter')?.value || '';
+    const dateFrom = document.getElementById('filterDateFrom')?.value || '';
+    const dateTo = document.getElementById('filterDateTo')?.value || '';
 
     document.querySelectorAll('.table-row:not(.table-header)').forEach(row => {
         const id = parseInt(row.dataset.id);
@@ -395,7 +397,8 @@ function filterAppointments()
         const matchSearch = name.includes(searchVal);
         const matchType = !typeFilter || (app.eventType || '') === typeFilter;
         const matchStatus = !statusFilter || (app.status || '') === statusFilter;
-        row.style.display = (matchSearch && matchType && matchStatus) ? 'grid' : 'none';
+        const matchDate = (!dateFrom || app.date >= dateFrom) && (!dateTo || app.date <= dateTo);
+        row.style.display = (matchSearch && matchType && matchStatus && matchDate) ? 'grid' : 'none';
     });
 }
 
@@ -465,19 +468,19 @@ function openEditModal(appointment)
 
 function validateAppointmentData(data) {
     if (!data.customerId) {
-        alert('Debe seleccionar un cliente.');
+        toast('Debe seleccionar un cliente.', 'warning');
         return false;
     }
     if (!data.date) {
-        alert('La fecha es obligatoria.');
+        toast('La fecha es obligatoria.', 'warning');
         return false;
     }
     if (!data.startTime) {
-        alert('La hora de inicio es obligatoria.');
+        toast('La hora de inicio es obligatoria.', 'warning');
         return false;
     }
     if (data.endTime && data.startTime >= data.endTime) {
-        alert('La hora de fin debe ser posterior a la hora de inicio.');
+        toast('La hora de fin debe ser posterior a la hora de inicio.', 'warning');
         return false;
     }
     return true;
@@ -501,7 +504,7 @@ function initApp()
     if (addBtn) {
         addBtn.addEventListener('click', () => {
             if (customersList.length === 0) {
-                alert('Debe registrar al menos un cliente antes de crear una cita.');
+                toast('Debe registrar al menos un cliente antes de crear una cita.', 'warning');
                 return;
             }
             const modal = document.getElementById('newAppointmentModal');
@@ -511,7 +514,7 @@ function initApp()
             }
             const form = document.getElementById('newAppointmentForm');
             if (form) form.reset();
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date().toLocaleDateString('en-CA');
             const dateInput = document.getElementById('newDate');
             if (dateInput) dateInput.min = today;
         });
@@ -636,7 +639,7 @@ function initApp()
         });
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA');
     const dateFields = ['newDate', 'editDate'];
     dateFields.forEach(id => {
         const el = document.getElementById(id);

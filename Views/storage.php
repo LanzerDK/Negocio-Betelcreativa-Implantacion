@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Almacén - Bet-El Creativa</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/storageStyle.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
 </head>
 <body>
     <!-- Header -->
@@ -27,7 +27,7 @@
             </div>
             <div class="user-details">
                 <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
-                <p>Administrador</p>
+                <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
             </div>
             <div class="user-settings" id="userSettings">
                 <button class="settings-btn" id="settingsBtn">
@@ -237,6 +237,12 @@
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Ubicación</label>
+                        <select class="form-select" id="adjustLocation">
+                            <option value="">Ubicación principal del material</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Cantidad</label>
                         <input type="number" class="form-control" id="adjustQuantity" required min="1">
                         <div class="invalid-feedback">Ingrese una cantidad válida</div>
@@ -440,7 +446,8 @@
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/almacen.js"></script>
 </body>
 </html>

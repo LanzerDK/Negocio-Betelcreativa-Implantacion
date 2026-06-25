@@ -1,79 +1,5 @@
 /* dashboardStyle.css - Estilos específicos del Dashboard */
 
-/* Header del dashboard */
-.app-header {
-  background: linear-gradient(to right, var(--primary), var(--secondary));
-  color: var(--gold-text);
-  padding: 15px 25px;
-  display: flex;
-  align-items: center;
-  z-index: 100;
-}
-
-.logo-container img {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: 3px solid var(--gold);
-  transition: var(--transition);
-  margin-right: 15px;
-}
-
-.logo-container img:hover {
-  transform: scale(1.1);
-  box-shadow: 0px 2px 20px rgb(0 0 0 / 90%);
-}
-
-.user-info {
-  flex: 1;
-  text-align: right;
-  padding-right: 20px;
-}
-
-.user-info h1 {
-  font-size: 1.4rem;
-  font-weight: 500;
-  margin-bottom: 5px;
-}
-
-.user-info p {
-  font-size: 0.9rem;
-  padding-right: 75px;
-  color: var(--gold-text);
-}
-
-.settings-btn {
-  color: var(--gold);
-  background: none;
-  border: none;
-  font-size: 1.3rem;
-  cursor: pointer;
-}
-
-/* Íconos del menú en dorado */
-.menu-item i {
-  color: var(--gold);
-}
-
-.menu-item:hover i {
-  color: #ffffff;
-}
-
-.menu-item.active i {
-  color: var(--primary);
-}
-
-/* Item activo con fondo dorado degradado */
-.menu-item.active {
-  background: var(--gold-gradient);
-  color: var(--primary);
-  border-radius: 12px;
-}
-
-.menu-item.active span {
-  color: var(--primary);
-}
-
 /* Grid de dashboard con tarjetas */
 .dashboard-grid {
   display: grid;
@@ -82,27 +8,69 @@
   margin-top: 20px;
 }
 
-/* Tarjeta del dashboard con hover personalizado */
-.card {
-  background: #ffffff;
-  box-shadow: 0px 2px 20px rgb(0 0 0 / 90%), 0px 2px 20px rgba(212, 175, 55, 0.35);
-  border-radius: 15px;
-  overflow: hidden;
-  transition: var(--transition);
+/* Título de página */
+.page-title {
+  color: var(--gold-text);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 25px;
+  padding: 5px;
 }
 
-/* Ícono dentro de la cabecera de tarjeta (dashboards) */
+/* Ícono dentro de la cabecera de tarjeta */
 .card-header i {
   margin-right: 10px;
   font-size: 1.2rem;
 }
 
-/* Tarjeta de alertas en grid de 3 columnas */
+/* Acciones en la cabecera de tarjeta (derecha) */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-header-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.btn-header-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--gold-button);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 1rem;
+}
+
+.btn-header-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.15);
+}
+
+/* Tarjeta de alertas */
 .card-alert {
   background: #ffffff;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
+  padding: 20px;
+}
+
+.alert-placeholder,
+.event-placeholder,
+.task-placeholder {
+  color: var(--gray);
+  font-size: 0.9rem;
+  text-align: center;
   padding: 20px;
 }
 
@@ -172,17 +140,27 @@
   padding: 15px;
   border-radius: 8px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
 }
 
 .alert-card i {
   color: #B45309;
   font-size: 1.5rem;
-  margin-right: 15px;
+  margin-right: 12px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .alert-card .alert-text strong {
   color: #B45309;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.alert-card .alert-text p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dark);
 }
 
 .alert-card.critical {
@@ -198,6 +176,19 @@
   color: #C81E1E;
 }
 
+.alert-card.warning {
+  background: #FEF9E7;
+  border-left: 4px solid #B45309;
+}
+
+.alert-card.warning i {
+  color: #B45309;
+}
+
+.alert-card.warning .alert-text strong {
+  color: #B45309;
+}
+
 .alert-card.info {
   background: #EAF2F8;
   border-left: 4px solid #2471A3;
@@ -211,16 +202,110 @@
   color: #2471A3;
 }
 
-/* Lista de tareas */
+.alert-card.success {
+  background: #E8F5E9;
+  border-left: 4px solid #2E7D32;
+}
+
+.alert-card.success i {
+  color: #2E7D32;
+}
+
+.alert-card.success .alert-text strong {
+  color: #2E7D32;
+}
+
+/* ── CARD FLIP ───────────────────── */
+.card-flip {
+  perspective: 1000px;
+  overflow: visible;
+  background: none;
+  box-shadow: none;
+}
+
+.card-flip::before {
+  display: none;
+}
+
+.card-inner {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  width: 100%;
+  transition: transform 0.6s ease;
+  transform-style: preserve-3d;
+}
+
+.card-flip.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front,
+.card-back {
+  grid-area: 1 / 1;
+  position: relative;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0px 2px 10px rgb(0 0 0 / 90%), 0px 2px 20px rgba(212, 175, 55, 0.35);
+}
+
+.card-front::before,
+.card-back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 2px;
+  background: var(--gold-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card-front .card-header,
+.card-back .card-header {
+  position: relative;
+  z-index: 1;
+  padding: 18px 20px;
+  background: var(--secondary);
+  color: var(--gold-button);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  border-radius: 12px 12px 0 0;
+}
+
+.card-front .card-body,
+.card-back .card-body {
+  position: relative;
+  z-index: 1;
+  padding: 20px;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
+.card-flip:not(.flipped) .card-back,
+.card-flip.flipped .card-front {
+  pointer-events: none;
+}
+
+/* ── TASK LIST ───────────────────── */
 .task-list {
   list-style: none;
 }
 
 .task-item {
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--light-gray);
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .task-item:last-child {
@@ -228,20 +313,25 @@
 }
 
 .task-check {
-  margin-right: 12px;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border: 2px solid var(--gray);
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.task-check:hover {
+  border-color: var(--primary);
 }
 
 .task-check i {
   display: none;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: white;
 }
 
@@ -261,14 +351,16 @@
 
 .task-text {
   flex: 1;
+  font-size: 0.9rem;
 }
 
 /* Prioridad de tareas */
 .task-priority {
-  padding: 3px 8px;
+  padding: 3px 10px;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .priority-high {
@@ -286,62 +378,74 @@
   color: #4caf50;
 }
 
-/* Footer del dashboard */
-.app-footer {
-  background: var(--dark);
-  color: var(--dark);
-  padding: 15px;
-  text-align: center;
-  font-size: 0.9rem;
+/* ── MODAL TASK ──────────────────── */
+#taskModal {
+  display: none;
 }
 
-/* Eventos - estrellas doradas */
-.event-item i.fa-star {
-  color: var(--gold-light);
+#taskModal.show {
+  display: flex;
+}
+
+#taskModal .modal-content {
+  width: 90%;
+  max-width: 500px;
+}
+
+#taskModal .modal-header h2 {
+  color: var(--gold-text);
+}
+
+#taskModal .modal-body {
+  padding: 25px;
+}
+
+#taskModal .modal-footer {
+  padding: 15px 25px;
+  background: #ffffff;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--light-gray);
+}
+
+/* ── EVENTOS ─────────────────────── */
+.event-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.event-item:last-child {
+  border-bottom: none;
 }
 
 .event-item h3 {
+  font-size: 0.95rem;
   color: var(--primary);
+  margin-bottom: 4px;
 }
 
-/* Responsive */
+.event-item h3 i {
+  color: var(--gold-light);
+  margin-right: 6px;
+}
+
+.event-item p {
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin: 2px 0;
+}
+
+/* ── RESPONSIVE ──────────────────── */
 @media (max-width: 768px) {
-  .app-header {
-    flex-direction: column;
-    text-align: center;
-    padding: 15px;
+  .card-alert {
+    grid-template-columns: 1fr;
   }
-
-  .logo-container {
-    margin-right: 0;
-    margin-bottom: 15px;
-  }
-
-  .user-info {
-    text-align: left;
-    padding-right: 15px;
-  }
-
-  .main-menu {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .menu-item {
-    min-width: 80px;
-    padding: 12px 15px;
-  }
-
-  .menu-item i {
-    font-size: 18px;
-  }
-
   .main-content {
     padding: 15px;
   }
-
-  .card-alert {
-    grid-template-columns: 1fr;
+  .card-inner {
+    min-height: 250px;
   }
 }
 
@@ -349,7 +453,6 @@
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
-
   .menu-item span {
     font-size: 0.8rem;
   }

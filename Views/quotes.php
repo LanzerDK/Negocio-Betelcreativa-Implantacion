@@ -8,10 +8,10 @@
     
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/quoteStyle.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fullcalendar/css/main.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
 </head>
 
 <body>
@@ -30,8 +30,8 @@
                     <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
                 </div>
                 <div class="user-details">
-                    <h2>Ismael Maestre</h2>
-                    <p>Administrador</p>
+                    <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
+                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
                 </div>
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
@@ -349,8 +349,8 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/assets/fullcalendar/js/main.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/assets/fullcalendar/locales/es.min.js"></script>
     <script>
         // Constantes globales usadas por citas.js para comunicarse con la API
         const APP_URL = '<?php echo APP_URL; ?>';
@@ -365,6 +365,7 @@
             document.getElementById('settingsDropdown')?.classList.remove('show');
         });
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/citas.js"></script>
 </body>
 

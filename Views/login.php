@@ -6,14 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de Sesión</title>
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/loginStyle.css">
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/boostrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
 </head>
 
 <body>
     <div class="login-container">
         <div class="login-header">
-            <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Logo Bet-El" width="150" height="100">
+            <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Logo Bet-El" class="logo-img" id="loginLogo" width="150" height="150">
             <h1>Iniciar Sesión</h1>
 
             <p>Por favor ingresa tus credenciales para continuar</p>
@@ -33,7 +33,7 @@
             <div class="input-group">
                 <i class="bi bi-lock icon1"></i>
                 <input type="password" id="password" name="password" placeholder="Contraseña">
-                <i class="bi bi-eye-slash toggle-password icon2" id="togglePassword"></i>
+                <i class="bi bi-eye-slash toggle-password" id="togglePassword"></i>
                 <div class="feedback" id="password-feedback"></div>
             </div>
 
@@ -51,10 +51,22 @@
 
         </form>
 
-        <div class="register-link">
+        <div class="register-link" id="registerLink">
             ¿No tienes una cuenta? <a href="<?php echo APP_URL; ?>register">Regístrate ahora</a>
         </div>
 
+    </div>
+
+    <!-- Modal de registro (aparece tras 3 clics en el logo) -->
+    <div class="secret-modal-overlay" id="secretModal">
+        <div class="secret-modal">
+            <h2><i class="bi bi-shield-lock"></i> Acceso restringido</h2>
+            <p>Para registrar un nuevo usuario, haga clic en el siguiente enlace.<br>Necesitará el código de seguridad para completar el registro.</p>
+            <div class="register-link-in-modal" id="registerLinkInModal" style="display: block;">
+                <a href="<?php echo APP_URL; ?>register"><i class="bi bi-arrow-right-circle"></i> Ir al registro</a>
+            </div>
+            <button class="btn-close-modal" id="closeSecretModal">Cerrar</button>
+        </div>
     </div>
 </body>
 
@@ -62,6 +74,7 @@
     window.APP_URL = "<?php echo APP_URL; ?>";
     window.CSRF_TOKEN = "<?php echo $_SESSION['csrf_token'] ?? ''; ?>";
 </script>
+<script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
 <script src="<?php echo APP_URL; ?>Public/js/inicio.js?v=2"></script>
 
 </html>
