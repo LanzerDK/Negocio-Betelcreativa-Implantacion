@@ -20,8 +20,11 @@ class CsrfHelper
 
     public static function validateRequestOrFail(): void
     {
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+
         $token = $_POST['csrf_token']
               ?? $_SERVER['HTTP_X_CSRF_TOKEN']
+              ?? $input['csrf_token']
               ?? '';
 
         if (!self::validate($token)) {

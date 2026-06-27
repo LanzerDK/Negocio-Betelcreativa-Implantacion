@@ -124,7 +124,7 @@ class CustomerController
                     'source'     => trim($input['source'] ?? $existing->getSource()),
                     'notes'      => trim($input['notes'] ?? $existing->getNotes()),
                     'preferences'=> trim($input['preferences'] ?? $existing->getPreferences()),
-                    'isActive'   => array_key_exists('is_active', $input) ? (bool)$input['is_active'] : $existing->isActive()
+                    'isActive'   => array_key_exists('is_active', $input) ? filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN) : $existing->isActive()
                 ]);
 
                 if ($repo->update($customer)) {

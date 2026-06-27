@@ -14,8 +14,7 @@ let calendar = null;
 async function fetchCustomers()
 {
     try {
-        const res = await fetch(APP_URL + 'api/customers.php?_=' + Date.now());
-        const data = await res.json();
+        const data = await callApi(APP_URL + 'Public/api/customers.php?_=' + Date.now());
         if (data.success) {
             customersList = data.data;
             populateClientSelectors();
@@ -28,8 +27,7 @@ async function fetchCustomers()
 async function fetchAppointments()
 {
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php?_=' + Date.now());
-        const data = await res.json();
+        const data = await callApi(APP_URL + 'Public/api/appointments.php?_=' + Date.now());
         if (data.success) {
             appointmentsList = data.data;
             renderAppointmentsTable(currentPage);
@@ -43,8 +41,7 @@ async function fetchAppointments()
 async function fetchAllAppointments()
 {
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php?all=1&_=' + Date.now());
-        const data = await res.json();
+        const data = await callApi(APP_URL + 'Public/api/appointments.php?all=1&_=' + Date.now());
         if (data.success) {
             allAppointments = data.data;
             if (calendar) calendar.refetchEvents();
@@ -57,8 +54,7 @@ async function fetchAllAppointments()
 async function fetchCancelledAppointments()
 {
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php?cancelled=1&_=' + Date.now());
-        const data = await res.json();
+        const data = await callApi(APP_URL + 'Public/api/appointments.php?cancelled=1&_=' + Date.now());
         if (data.success) {
             cancelledAppointments = data.data;
             renderHistory();
@@ -71,7 +67,7 @@ async function fetchCancelledAppointments()
 async function createAppointment(appData)
 {
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php', {
+        const data = await callApi(APP_URL + 'Public/api/appointments.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -79,7 +75,6 @@ async function createAppointment(appData)
             },
             body: JSON.stringify(appData)
         });
-        const data = await res.json();
         if (data.success) {
             await fetchAppointments();
         } else {
@@ -94,7 +89,7 @@ async function createAppointment(appData)
 async function updateAppointment(id, appData)
 {
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php?id=' + id, {
+        const data = await callApi(APP_URL + 'Public/api/appointments.php?id=' + id, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -102,7 +97,6 @@ async function updateAppointment(id, appData)
             },
             body: JSON.stringify(appData)
         });
-        const data = await res.json();
         if (data.success) {
             await fetchAppointments();
         } else {
@@ -118,11 +112,10 @@ async function cancelAppointment(id)
 {
     if (!confirm('¿Estás seguro de cancelar esta cita?')) return;
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php?id=' + id, {
+        const data = await callApi(APP_URL + 'Public/api/appointments.php?id=' + id, {
             method: 'DELETE',
             headers: { 'X-CSRF-Token': CSRF_TOKEN }
         });
-        const data = await res.json();
         if (data.success) {
             currentPage = 1;
             await fetchAppointments();
@@ -141,7 +134,7 @@ async function reactivateAppointment(id)
 {
     if (!confirm('¿Reactivar esta cita? Se cambiará a estado Pendiente.')) return;
     try {
-        const res = await fetch(APP_URL + 'api/appointments.php?id=' + id, {
+        const data = await callApi(APP_URL + 'Public/api/appointments.php?id=' + id, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -149,7 +142,6 @@ async function reactivateAppointment(id)
             },
             body: JSON.stringify({ status: 'pending' })
         });
-        const data = await res.json();
         if (data.success) {
             await fetchAppointments();
             await fetchAllAppointments();

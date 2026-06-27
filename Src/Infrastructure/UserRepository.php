@@ -49,7 +49,7 @@ class UserRepository
                 ':email'         => $user->getEmail(),
                 ':id_number'     => $user->getCi(),
                 ':password'      => $user->getPasswordHash(),
-                ':security_code' => 'XBX-89X-XsA', // El código que definimos
+                ':security_code' => '',
                 ':phone'         => $user->getPhone()
             ]);
         } catch (PDOException $e) {
@@ -88,6 +88,7 @@ class UserRepository
             return null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -117,6 +118,7 @@ class UserRepository
             return null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -153,6 +155,7 @@ class UserRepository
             return null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -284,6 +287,7 @@ class UserRepository
             ];
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 

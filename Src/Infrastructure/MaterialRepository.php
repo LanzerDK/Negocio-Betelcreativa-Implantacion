@@ -30,6 +30,7 @@ class MaterialRepository
             return $materials;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -44,6 +45,7 @@ class MaterialRepository
             return $data ? new MaterialModel($data) : null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -61,6 +63,7 @@ class MaterialRepository
             return $materials;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -78,6 +81,7 @@ class MaterialRepository
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
         }
     }
 

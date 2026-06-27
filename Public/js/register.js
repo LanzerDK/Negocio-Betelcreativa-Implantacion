@@ -183,12 +183,11 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
     if (formIsValid) {
         const formData = new FormData(form);
 
-        fetch(window.APP_URL + 'Public/api/register.php', {
+        callApi(window.APP_URL + 'Public/api/register.php', {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' },
             body: formData
         })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 toast(data.message, 'success');

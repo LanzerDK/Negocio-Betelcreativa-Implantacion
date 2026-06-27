@@ -30,6 +30,7 @@ class LocationRepository
             return $locations;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -44,6 +45,7 @@ class LocationRepository
             return $data ? new LocationModel($data) : null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -56,6 +58,7 @@ class LocationRepository
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 

@@ -84,8 +84,8 @@ try {
             ':ctype'   => $contactType,
         ]);
 
-        // ── 5. Registrar en log (siempre) ────────────────────────────
-        Logger::info("Código de recuperación para {$contactValue}: {$code}");
+        // ── 5. Registrar en log (sin incluir el código por seguridad) ──
+        Logger::info("Código de recuperación solicitado para usuario ID {$user['user_id']} vía {$contactType}");
 
         // ── 6. Enviar el código por SMS o Email ──────────────────────
         $deliverySuccess = false;

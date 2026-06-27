@@ -7,11 +7,16 @@ class SessionHelpers
 
         public static function start()
         {
-
-
                 if (session_status() === PHP_SESSION_NONE) {
-                        # code...
                         session_name(\APP_SESSION_NAME);
+                        session_set_cookie_params([
+                            'lifetime' => 0,
+                            'path'     => '/',
+                            'domain'   => '',
+                            'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+                            'httponly' => true,
+                            'samesite' => 'Lax',
+                        ]);
                         session_start();
                 }
         }

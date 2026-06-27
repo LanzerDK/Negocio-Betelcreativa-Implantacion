@@ -25,6 +25,17 @@ class StorageRepository
 
             $change = $type === 'entry' ? $quantity : -$quantity;
 
+            if ($type === 'exit') {
+                $stmtCheck = $this->db->prepare("SELECT current_stock FROM materials WHERE material_id = :id");
+                $stmtCheck->execute([':id' => $materialId]);
+                $available = (int)$stmtCheck->fetchColumn();
+                if ($available < $quantity) {
+                    throw new \RuntimeException(
+                        "Stock insuficiente. Disponible: {$available}, solicitado: {$quantity}."
+                    );
+                }
+            }
+
             $stmt = $this->db->prepare("UPDATE materials SET current_stock = GREATEST(current_stock + :change, 0) WHERE material_id = :id");
             $stmt->execute([':change' => $change, ':id' => $materialId]);
 
@@ -58,10 +69,10 @@ class StorageRepository
 
             $this->db->commit();
             return true;
-        } catch (PDOException $e) {
+        } catch (\PDOException | \RuntimeException $e) {
             $this->db->rollBack();
             Logger::error('Error al registrar ajuste', ['material_id' => $materialId, 'exception' => $e->getMessage()]);
-            ApiResponse::error('Error al registrar ajuste.', 500);
+            ApiResponse::error($e->getMessage(), 400);
             return false;
         }
     }
@@ -173,6 +184,7 @@ class StorageRepository
         } catch (PDOException $e) {
             Logger::error('Error al obtener historial', ['exception' => $e->getMessage()]);
             ApiResponse::error('Error al obtener historial.', 500);
+            return [];
         }
     }
 
@@ -198,6 +210,7 @@ class StorageRepository
         } catch (PDOException $e) {
             Logger::error('Error al obtener resumen', ['exception' => $e->getMessage()]);
             ApiResponse::error('Error al obtener resumen.', 500);
+            return [];
         }
     }
 

@@ -7,13 +7,13 @@ use BetelCreativa\Infrastructure\UserRepository;
 use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 
+use BetelCreativa\Config\EnvLoader;
+
 class ControllerRegister
 {
-    private const AUTH_CODE_PLAIN = 'XBX-89X-XsA';
-
-    public static function getSecurityCodeHash(): string
+    public static function getSecurityCode(): string
     {
-        return hash('sha256', self::AUTH_CODE_PLAIN);
+        return EnvLoader::get('REGISTER_SECRET_CODE', 'XBX-89X-XsA');
     }
 
     public static function registerSecurityCodeFromPost(): void
@@ -36,7 +36,7 @@ class ControllerRegister
         $password = $_POST['password'] ?? '';
         $telefono = trim($_POST['telefono'] ?? '');
 
-        if (strcasecmp($codigo, self::AUTH_CODE_PLAIN) !== 0) {
+        if (!hash_equals(self::getSecurityCode(), $codigo)) {
             ApiResponse::error('El código de seguridad ingresado no es válido.');
         }
 

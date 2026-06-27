@@ -18,7 +18,7 @@ class TaskController
 
         switch ($method) {
             case 'GET':
-                if (isset($_GET['completed'])) {
+                if (($_GET['completed'] ?? '') === '1') {
                     $tasks = $repo->findAllCompleted();
                 } else {
                     $tasks = $repo->findAllPending();
@@ -34,6 +34,9 @@ class TaskController
 
                 if (!$title) {
                     ApiResponse::error('El título de la tarea es requerido.');
+                }
+                if (strlen($title) > 255) {
+                    ApiResponse::error('El título no puede exceder los 255 caracteres.');
                 }
                 if (!in_array($priority, ['low', 'medium', 'high'])) {
                     ApiResponse::error('Prioridad inválida.');

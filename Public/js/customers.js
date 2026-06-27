@@ -23,8 +23,7 @@ function showError(msg) {
 async function fetchClients()
 {
     try {
-        const res = await fetch(APP_URL + 'api/customers.php');
-        const data = await res.json();
+        const data = await callApi(APP_URL + 'Public/api/customers.php');
         if (data.success) {
             clients = data.data;
             updateClientCounter();
@@ -48,7 +47,7 @@ async function fetchClients()
 async function createClient(clientData)
 {
     try {
-        const res = await fetch(APP_URL + 'api/customers.php', {
+        const data = await callApi(APP_URL + 'Public/api/customers.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -56,7 +55,6 @@ async function createClient(clientData)
             },
             body: JSON.stringify(clientData)
         });
-        const data = await res.json();
         if (data.success) {
             await fetchClients();
         } else {
@@ -71,7 +69,7 @@ async function createClient(clientData)
 async function updateClient(id, clientData)
 {
     try {
-        const res = await fetch(APP_URL + 'api/customers.php?id=' + id, {
+        const data = await callApi(APP_URL + 'Public/api/customers.php?id=' + id, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -79,7 +77,6 @@ async function updateClient(id, clientData)
             },
             body: JSON.stringify(clientData)
         });
-        const data = await res.json();
         if (data.success) {
             const idx = clients.findIndex(c => c.id === id);
             if (idx !== -1) {
@@ -98,12 +95,11 @@ async function updateClient(id, clientData)
 async function toggleClientStatus(id, isActive)
 {
     try {
-        const res = await fetch(APP_URL + 'api/customers.php?id=' + id, {
+        const data = await callApi(APP_URL + 'Public/api/customers.php?id=' + id, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
             body: JSON.stringify({ is_active: isActive ? 0 : 1 })
         });
-        const data = await res.json();
         if (data.success) {
             await fetchClients();
         } else {

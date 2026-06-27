@@ -35,7 +35,7 @@ class EnvLoader
     {
         return self::$loaded[$key]
             ?? $_ENV[$key]
-            ?? getenv($key)
-            ?: $default;
+            ?? (($val = getenv($key)) !== false ? $val : null)
+            ?? $default;
     }
 }

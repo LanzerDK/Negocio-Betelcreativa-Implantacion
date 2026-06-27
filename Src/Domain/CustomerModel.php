@@ -37,7 +37,7 @@ class CustomerModel
         $this->notes = $data['notes'] ?? null;
         $this->preferences = $data['preferences'] ?? null;
         $this->avatar = $data['avatar'] ?? null;
-        $this->isActive = isset($data['isActive']) ? (bool)$data['isActive'] : true;
+        $this->isActive = isset($data['isActive']) ? filter_var($data['isActive'], FILTER_VALIDATE_BOOLEAN) : true;
     }
 
     // Getters: permiten leer los datos desde fuera de la clase

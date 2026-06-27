@@ -23,6 +23,10 @@ class ControllerSystem
     {
         SessionHelpers::requireAuth();
 
+        if (SessionHelpers::get('user_role') !== 'admin') {
+            ApiResponse::error('Solo los administradores pueden consultar la configuración del sistema.', 403);
+        }
+
         $repo = new SettingsRepository();
         $all = $repo->getAll();
 
@@ -45,6 +49,10 @@ class ControllerSystem
     public static function get(): void
     {
         SessionHelpers::requireAuth();
+
+        if (SessionHelpers::get('user_role') !== 'admin') {
+            ApiResponse::error('Solo los administradores pueden consultar la configuración del sistema.', 403);
+        }
 
         $key = trim($_GET['key'] ?? '');
         if (empty($key)) {

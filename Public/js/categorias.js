@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function cargarCategorias() {
     Promise.all([
-        fetch(APP_URL + 'api/categories.php').then(r => r.json()),
-        fetch(APP_URL + 'api/materials.php').then(r => r.json())
+        callApi(APP_URL + 'Public/api/categories.php'),
+        callApi(APP_URL + 'Public/api/materials.php')
     ])
         .then(([catRes, matRes]) => {
             if (catRes.success) {
@@ -120,7 +120,7 @@ function renderizarCategorias(categorias, materiales) {
 
         card.querySelector('.toggle-btn').addEventListener('click', function (e) {
             e.stopPropagation();
-            toggleEstadoCategoria(cat.id, cat.status, card, this);
+            toggleEstadoCategoria(cat.id, card.dataset.status, card, this);
         });
 
         container.appendChild(card);
@@ -146,10 +146,10 @@ function guardarCategoria() {
         return;
     }
 
-    const url = APP_URL + 'api/categories.php' + (editingCategoryId ? '?id=' + editingCategoryId : '');
+    const url = APP_URL + 'Public/api/categories.php' + (editingCategoryId ? '?id=' + editingCategoryId : '');
     const method = editingCategoryId ? 'PUT' : 'POST';
 
-    fetch(url, {
+    callApi(url, {
         method: method,
         headers: {
             'Content-Type': 'application/json',
@@ -157,7 +157,6 @@ function guardarCategoria() {
         },
         body: JSON.stringify({ name, description, status })
     })
-        .then(res => res.json())
         .then(data => {
             if (data.success) {
                 document.getElementById('categoryModal').style.display = 'none';
@@ -175,7 +174,7 @@ function guardarCategoria() {
 function toggleEstadoCategoria(id, currentStatus, card, button) {
     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
 
-    fetch(APP_URL + 'api/categories.php?id=' + id, {
+    callApi(APP_URL + 'Public/api/categories.php?id=' + id, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -183,7 +182,6 @@ function toggleEstadoCategoria(id, currentStatus, card, button) {
         },
         body: JSON.stringify({ status: newStatus })
     })
-        .then(res => res.json())
         .then(data => {
             if (data.success) {
                 card.classList.toggle('inhabilitado');

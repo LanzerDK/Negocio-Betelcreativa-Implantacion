@@ -54,6 +54,14 @@ class MaterialController
                     ApiResponse::error('El nombre y código del material son obligatorios.');
                 }
 
+                if ($material->getPrice() < 0) {
+                    ApiResponse::error('El precio no puede ser negativo.');
+                }
+
+                if ($material->getStock() < 0) {
+                    ApiResponse::error('El stock no puede ser negativo.');
+                }
+
                 if ($repo->existsByCode($material->getCode())) {
                     ApiResponse::error('Ya existe un material con ese código.');
                 }
@@ -93,6 +101,14 @@ class MaterialController
                     'supplierId' => array_key_exists('supplier_id', $input) ? (!empty($input['supplier_id']) ? (int)$input['supplier_id'] : null) : $existing->getSupplierId(),
                     'locationId' => array_key_exists('location_id', $input) ? (!empty($input['location_id']) ? (int)$input['location_id'] : null) : $existing->getLocationId()
                 ]);
+
+                if ($material->getPrice() < 0) {
+                    ApiResponse::error('El precio no puede ser negativo.');
+                }
+
+                if ($material->getStock() < 0) {
+                    ApiResponse::error('El stock no puede ser negativo.');
+                }
 
                 if ($repo->existsByCode($newCode, $id)) {
                     ApiResponse::error('Ya existe otro material con ese código.');

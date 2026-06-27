@@ -486,7 +486,7 @@
     
     <script>
         const APP_URL = '<?php echo APP_URL; ?>';
-        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
+        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
     <script>
         document.getElementById('settingsBtn')?.addEventListener('click', function (e) {

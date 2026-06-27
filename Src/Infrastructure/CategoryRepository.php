@@ -30,6 +30,7 @@ class CategoryRepository
             return $categories;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -44,6 +45,7 @@ class CategoryRepository
             return $data ? new CategoryModel($data) : null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -61,6 +63,7 @@ class CategoryRepository
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
         }
     }
 

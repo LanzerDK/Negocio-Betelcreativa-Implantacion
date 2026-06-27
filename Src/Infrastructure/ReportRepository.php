@@ -296,7 +296,7 @@ class ReportRepository
                         s.company_name
                  FROM inventory_movements im
                  LEFT JOIN materials m ON im.material_id = m.material_id
-                 LEFT JOIN suppliers s ON 1=0
+                  LEFT JOIN suppliers s ON m.supplier_id = s.supplier_id
                  WHERE im.action_type = 'Entry'
                    AND im.movement_date BETWEEN :from AND :to
                  ORDER BY im.movement_date DESC

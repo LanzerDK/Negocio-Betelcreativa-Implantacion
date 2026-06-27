@@ -42,6 +42,7 @@ class CustomerRepository
             return $customers;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -60,6 +61,7 @@ class CustomerRepository
             return $data ? new CustomerModel($data) : null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -68,9 +70,11 @@ class CustomerRepository
     {
         try {
             $sql = "INSERT INTO customers (first_name, last_name, email, phone, address,
-                                           client_type, source, notes, preferences)
+                                           client_type, source, notes, preferences,
+                                           avatar, is_active)
                     VALUES (:firstName, :lastName, :email, :phone, :address,
-                            :clientType, :source, :notes, :preferences)";
+                            :clientType, :source, :notes, :preferences,
+                            :avatar, :isActive)";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':firstName'    => $customer->getFirstName(),
@@ -81,7 +85,9 @@ class CustomerRepository
                 ':clientType'   => $customer->getClientType(),
                 ':source'       => $customer->getSource(),
                 ':notes'        => $customer->getNotes(),
-                ':preferences'  => $customer->getPreferences()
+                ':preferences'  => $customer->getPreferences(),
+                ':avatar'       => $customer->getAvatar(),
+                ':isActive'     => $customer->isActive() ? 1 : 0
             ]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
@@ -98,7 +104,7 @@ class CustomerRepository
                         email = :email, phone = :phone, address = :address,
                         client_type = :clientType, source = :source,
                         notes = :notes, preferences = :preferences,
-                        is_active = :isActive
+                        avatar = :avatar, is_active = :isActive
                     WHERE customer_id = :id";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
@@ -112,6 +118,7 @@ class CustomerRepository
                 ':source'       => $customer->getSource(),
                 ':notes'        => $customer->getNotes(),
                 ':preferences'  => $customer->getPreferences(),
+                ':avatar'       => $customer->getAvatar(),
                 ':isActive'     => $customer->isActive() ? 1 : 0
             ]);
         } catch (PDOException $e) {

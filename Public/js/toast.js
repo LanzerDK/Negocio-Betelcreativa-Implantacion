@@ -21,6 +21,13 @@
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 4200);
   };
 
+  window.callApi = async function (url, options = {}) {
+    const res = await fetch(url, options);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'HTTP ' + res.status);
+    return data;
+  };
+
   function escapeHtml(text) {
     var div = document.createElement('div');
     div.textContent = text;

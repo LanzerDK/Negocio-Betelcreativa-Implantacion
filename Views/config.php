@@ -451,7 +451,7 @@
 
     <script>
         const APP_URL = '<?php echo APP_URL; ?>';
-        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
+        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
         const USER_ID = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
     </script>
     <script>

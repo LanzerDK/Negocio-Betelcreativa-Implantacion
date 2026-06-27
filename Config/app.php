@@ -41,8 +41,7 @@ define('RESEND_FROM_EMAIL', EnvLoader::get('RESEND_FROM_EMAIL', 'onboarding@rese
 \BetelCreativa\Helpers\Logger::init();
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_name(EnvLoader::get('APP_SESSION_NAME', 'BetEl'));
-    session_start();
+    \BetelCreativa\Helpers\SessionHelpers::start();
 }
 
 if (empty($_SESSION['csrf_token'])) {

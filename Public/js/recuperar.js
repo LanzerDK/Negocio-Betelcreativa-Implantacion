@@ -49,14 +49,14 @@ function hideFeedback(el) {
 }
 
 function callApi(data) {
-  return fetch(window.APP_URL + 'Public/api/recover.php', {
+  return window.callApi(window.APP_URL + 'Public/api/recover.php', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-CSRF-Token': window.CSRF_TOKEN || ''
     },
     body: JSON.stringify(data)
-  }).then(r => r.json());
+  });
 }
 
 sendCodeBtn.addEventListener('click', function () {

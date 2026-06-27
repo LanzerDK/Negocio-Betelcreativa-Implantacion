@@ -36,6 +36,7 @@ class TaskRepository
             return $tasks;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -56,6 +57,7 @@ class TaskRepository
             return $tasks;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -72,6 +74,7 @@ class TaskRepository
             return $data ? new TaskModel($data) : null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -88,6 +91,7 @@ class TaskRepository
             ]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
         }
     }
 
@@ -110,6 +114,7 @@ class TaskRepository
             ]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
         }
     }
 
@@ -120,6 +125,7 @@ class TaskRepository
             return $stmt->execute([':id' => $id]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
         }
     }
 }

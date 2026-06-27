@@ -147,7 +147,7 @@
                         <div class="warehouse-layout">
                             <div class="section-header">
                                 <h3 class="section-title">Distribución del Almacén</h3>
-                                <button class="btn btn-outline" id="addShelfBtn">
+                                <button class="btn" id="addShelfBtn">
                                     <i class="fas fa-plus"></i> Agregar Estante
                                 </button>
                             </div>
@@ -230,16 +230,10 @@
                         <input type="text" class="form-control" id="adjustCurrentStock" disabled>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Tipo de Movimiento</label>
+                        <label class="form-label">Tipo de Ajuste</label>
                         <select class="form-select" id="adjustType" required>
                             <option value="entry">Entrada (Añadir Stock)</option>
                             <option value="exit">Salida (Reducir Stock)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Ubicación</label>
-                        <select class="form-select" id="adjustLocation">
-                            <option value="">Ubicación principal del material</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -444,7 +438,7 @@
 
     <script>
         const APP_URL = '<?php echo APP_URL; ?>';
-        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token']; ?>';
+        const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
     <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>

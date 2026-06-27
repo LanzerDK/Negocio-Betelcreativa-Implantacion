@@ -225,9 +225,9 @@
 /* Ícono circular de la zona */
 .zone-icon {
   font-size: 1.8rem;
-  color: var(--primary);
+  color: white;
   margin-right: 15px;
-  background: rgba(13, 71, 161, 0.1);
+  background: rgba(255, 255, 255, 0.15);
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -240,7 +240,7 @@
 .zone-title {
   font-size: 1.3rem;
   font-weight: 600;
-  color: var(--primary);
+  color: white;
 }
 
 /* Estante individual dentro de una zona */
@@ -282,18 +282,21 @@
 /* Encabezado de tabla con columnas específicas del almacén */
 .table-header {
   display: grid;
-  grid-template-columns: 60px 2fr 1fr 1fr 1fr 120px;
+  grid-template-columns: auto minmax(160px, 2.5fr) minmax(100px, 1.2fr) minmax(80px, 0.8fr) minmax(90px, 1fr) auto;
+  gap: 16px;
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: white;
-  padding: 15px 20px;
+  padding: 12px 20px;
   font-weight: 600;
+  align-items: center;
 }
 
 /* Fila de datos con mismas columnas que el encabezado */
 .table-row {
   display: grid;
-  grid-template-columns: 60px 2fr 1fr 1fr 1fr 120px;
-  padding: 15px 20px;
+  grid-template-columns: auto minmax(160px, 2.5fr) minmax(100px, 1.2fr) minmax(80px, 0.8fr) minmax(90px, 1fr) auto;
+  gap: 16px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--dark);
   align-items: center;
 }
@@ -308,15 +311,37 @@
 
 /* Imagen circular del material en tabla */
 .material-img {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--light-gray);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--primary);
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+/* Contenido textual del material en tabla */
+.material-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.material-info strong {
+  display: block;
+  line-height: 1.3;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.material-code {
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin-top: 4px;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Indicador de estado con badge redondeado */
@@ -425,6 +450,26 @@
   margin-top: 20px;
 }
 
+/* Botón Agregar Estante con estilo del sistema: fondo azul + texto dorado */
+#addShelfBtn {
+  background: var(--secondary);
+  color: var(--gold-button);
+  border: 1px solid var(--gold-button);
+  padding: 10px 22px;
+  border-radius: 50px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+}
+#addShelfBtn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+
 /* Botón de eliminar estante con estilo danger */
 .shelf-delete {
   background: none;
@@ -444,25 +489,45 @@
 
 
 
-/* Contenedor del historial con fondo */
+/* Contenedor del historial con fondo y borde dorado característico */
 .history-container {
+  position: relative;
   background: rgba(255, 255, 255, 0.747);
   border-radius: 15px;
   padding: 25px;
   box-shadow: var(--shadow);
 }
 
+.history-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 15px;
+  padding: 2px;
+  background: var(--gold-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 /* Tabla de historial con estructura HTML table */
 .history-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.9rem;
 }
 
-.history-table th {
+.history-table thead tr {
   background: linear-gradient(to right, var(--primary), var(--secondary));
+  border-radius: 10px 10px 0 0;
+}
+
+.history-table th {
+  background: transparent;
   color: white;
-  padding: 12px 15px;
+  padding: 14px 15px;
   text-align: left;
   font-weight: 600;
   white-space: nowrap;
@@ -515,7 +580,9 @@
 @media (max-width: 1200px) {
   .table-header,
   .table-row {
-    grid-template-columns: 50px 2fr 1fr 1fr 1fr 90px;
+    grid-template-columns: auto minmax(140px, 2fr) minmax(80px, 1fr) minmax(70px, 0.8fr) minmax(80px, 1fr) auto;
+    gap: 10px;
+    padding: 10px 15px;
   }
 }
 
@@ -534,6 +601,7 @@
     display: flex;
     align-items: center;
     gap: 15px;
+    
   }
 
   .table-row > div:not(.col-2)::before {
@@ -616,4 +684,11 @@
     flex-direction: column;
     gap: 15px;
   }
+}
+
+.materials-table [class^="col-"] {
+  flex: none;
+  width: auto;
+  max-width: none;
+  padding: 0;
 }

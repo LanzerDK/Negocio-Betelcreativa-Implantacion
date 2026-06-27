@@ -64,8 +64,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function cargarMateriales() {
   Promise.all([
-    fetch(APP_URL + 'api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message || 'HTTP ' + r.status); return d; })),
-    fetch(APP_URL + 'api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message || 'HTTP ' + r.status); return d; }))
+    fetch(APP_URL + 'Public/api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message || 'HTTP ' + r.status); return d; })),
+    fetch(APP_URL + 'Public/api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message || 'HTTP ' + r.status); return d; }))
   ])
     .then(([matRes, catRes]) => {
       if (catRes && catRes.success) {
@@ -84,8 +84,7 @@ function cargarMateriales() {
 }
 
 function cargarCategoriasParaSelect() {
-  return fetch(APP_URL + 'api/categories.php')
-    .then(r => r.json())
+  return callApi(APP_URL + 'Public/api/categories.php')
     .then(data => {
       if (data.success) {
         const newMap = {};
@@ -98,8 +97,7 @@ function cargarCategoriasParaSelect() {
 }
 
 function cargarUbicacionesParaSelect() {
-  return fetch(APP_URL + 'api/locations.php')
-    .then(r => r.json())
+  return callApi(APP_URL + 'Public/api/locations.php')
     .then(data => {
       if (data.success && Array.isArray(data.data)) {
         const selects = ['newLocation', 'editLocation'];
@@ -301,7 +299,7 @@ function renderizarMateriales(materials) {
 function toggleEstadoMaterial(boton, id) {
   const habilitar = boton.classList.contains('is-disabled');
 
-  fetch(APP_URL + 'api/materials.php?id=' + id, {
+  fetch(APP_URL + 'Public/api/materials.php?id=' + id, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
     body: JSON.stringify({ is_active: habilitar ? 1 : 0 })
@@ -376,7 +374,7 @@ function agregarNuevoMaterial() {
     price = unitPrice;
   }
 
-  fetch(APP_URL + 'api/materials.php', {
+  fetch(APP_URL + 'Public/api/materials.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
     body: JSON.stringify({
@@ -434,7 +432,7 @@ function guardarEdicionMaterial() {
 
   const locationId = parseInt(document.getElementById('editLocation').value) || null;
 
-  fetch(APP_URL + 'api/materials.php?id=' + editingMaterialId, {
+  fetch(APP_URL + 'Public/api/materials.php?id=' + editingMaterialId, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
     body: JSON.stringify({

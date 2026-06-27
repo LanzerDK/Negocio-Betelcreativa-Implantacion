@@ -27,8 +27,7 @@ async function loadAll()
 async function fetchDashboard()
 {
     try {
-        const res = await fetch(APP_URL + 'api/dashboard.php?_=' + Date.now());
-        const json = await res.json();
+        const json = await callApi(APP_URL + 'Public/api/dashboard.php?_=' + Date.now());
         if (json.success) {
             dashboardData = json.data;
             renderStats();
@@ -188,8 +187,7 @@ function initCharts()
 async function fetchTasks()
 {
     try {
-        const res = await fetch(APP_URL + 'api/tasks.php?_=' + Date.now());
-        const json = await res.json();
+        const json = await callApi(APP_URL + 'Public/api/tasks.php?_=' + Date.now());
         if (json.success) {
             pendingTasks = json.data;
             renderPendingTasks();
@@ -202,8 +200,7 @@ async function fetchTasks()
 async function fetchCompletedTasks()
 {
     try {
-        const res = await fetch(APP_URL + 'api/tasks.php?completed=1&_=' + Date.now());
-        const json = await res.json();
+        const json = await callApi(APP_URL + 'Public/api/tasks.php?completed=1&_=' + Date.now());
         if (json.success) {
             completedTasks = json.data;
             renderCompletedTasks();
@@ -265,7 +262,7 @@ function escapeHtml(str)
 async function completeTask(id)
 {
     try {
-        const res = await fetch(APP_URL + 'api/tasks.php?id=' + id, {
+        const json = await callApi(APP_URL + 'Public/api/tasks.php?id=' + id, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -273,7 +270,6 @@ async function completeTask(id)
             },
             body: JSON.stringify({ status: 'completed' }),
         });
-        const json = await res.json();
         if (json.success) {
             await Promise.all([fetchTasks(), fetchCompletedTasks()]);
         } else {
@@ -307,7 +303,7 @@ function initTaskModal()
         const title = titleInput.value.trim();
         if (!title) { toast('Ingresa una descripción para la tarea.', 'warning'); return; }
         try {
-            const res = await fetch(APP_URL + 'api/tasks.php', {
+            const json = await callApi(APP_URL + 'Public/api/tasks.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -315,7 +311,6 @@ function initTaskModal()
                 },
                 body: JSON.stringify({ title, priority: priorityInput.value }),
             });
-            const json = await res.json();
             if (json.success) {
                 close();
                 await Promise.all([fetchTasks(), fetchCompletedTasks()]);

@@ -86,6 +86,15 @@ class AppointmentController
                     ApiResponse::error('La hora de inicio es obligatoria.');
                     return;
                 }
+                if (empty($appointment->getEndTime())) {
+                    ApiResponse::error('La hora de fin es obligatoria.');
+                    return;
+                }
+
+                if (strtotime($appointment->getEndTime()) <= strtotime($appointment->getStartTime())) {
+                    ApiResponse::error('La hora de fin debe ser posterior a la hora de inicio.');
+                    return;
+                }
 
                 // Validar conflicto de horario
                 if ($repo->hasTimeConflict(
@@ -130,6 +139,12 @@ class AppointmentController
                     'status'     => trim($input['status'] ?? $existing->getStatus()),
                     'notes'      => trim($input['notes'] ?? $existing->getNotes())
                 ]);
+
+                if (!empty($appointment->getStartTime()) && !empty($appointment->getEndTime())
+                    && strtotime($appointment->getEndTime()) <= strtotime($appointment->getStartTime())) {
+                    ApiResponse::error('La hora de fin debe ser posterior a la hora de inicio.');
+                    return;
+                }
 
                 // Validar conflicto de horario (excluyendo la cita actual)
                 if ($repo->hasTimeConflict(

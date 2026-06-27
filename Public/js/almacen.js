@@ -233,11 +233,11 @@ function renderTabla() {
     row.innerHTML = `
       <div class="col-1" data-label="ID">#${m.id}</div>
       <div class="col-2" data-label="Material">
-        <div style="display:flex;align-items:center;gap:15px;">
+        <div style="display:flex;align-items:center;gap:16px;">
           <div class="material-img"><i class="fas fa-box"></i></div>
-          <div>
+          <div class="material-info">
             <strong>${escapeHtml(m.name)}</strong>
-            <div style="font-size:0.85rem;color:var(--gray)">Código: ${escapeHtml(m.code || '—')}</div>
+            <div class="material-code">Código: ${escapeHtml(m.code || '—')}</div>
           </div>
         </div>
       </div>
@@ -287,18 +287,13 @@ function renderPaginacion(page, totalPages, total) {
 async function abrirAjustar(material) {
   document.getElementById('adjustId').value = material.id;
   document.getElementById('adjustMaterial').value = material.id;
+  document.getElementById('adjustMaterial').disabled = true;
   document.getElementById('adjustType').value = 'entry';
   document.getElementById('adjustQuantity').value = '';
   document.getElementById('adjustReason').value = 'ajuste';
   document.getElementById('adjustNotes').value = '';
   document.getElementById('adjustCurrentStock').value = material.stock || 0;
-  const locSel = document.getElementById('adjustLocation');
-  llenarSelectUbicacion('adjustLocation', null);
-  const firstOpt = document.createElement('option');
-  firstOpt.value = '';
-  firstOpt.textContent = 'Ubicación principal del material';
-  locSel.prepend(firstOpt);
-  locSel.value = '';
+  actualizarMotivosAjuste();
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   const modal = new bootstrap.Modal(document.getElementById('adjustModal'));
   modal.show();
@@ -327,8 +322,7 @@ async function abrirMover(material) {
 
 async function fetchStockLocations(materialId) {
   try {
-    const res = await fetch(APP_URL + 'api/storage.php?action=stock&material_id=' + materialId);
-    const data = await res.json();
+    const data = await callApi(APP_URL + 'Public/api/storage.php?action=stock&material_id=' + materialId);
     return data.success ? data.data : [];
   } catch {
     return [];
@@ -337,6 +331,7 @@ async function fetchStockLocations(materialId) {
 
 document.getElementById('guardarAjusteBtn')?.addEventListener('click', guardarAjuste);
 document.getElementById('guardarMovimientoBtn')?.addEventListener('click', guardarMovimiento);
+document.getElementById('adjustType')?.addEventListener('change', actualizarMotivosAjuste);
 document.getElementById('addMatCostType')?.addEventListener('change', function () {
   document.getElementById('addMatWholesaleQtyGroup').style.display = this.value === 'wholesale' ? 'block' : 'none';
 });
@@ -347,21 +342,30 @@ async function guardarAjuste() {
   const quantity = parseInt(document.getElementById('adjustQuantity').value);
   const reason = document.getElementById('adjustReason').value;
   const notes = document.getElementById('adjustNotes').value.trim();
-  const locationId = parseInt(document.getElementById('adjustLocation').value) || null;
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   let valid = true;
   if (!materialId) { valid = false; }
   if (!quantity || quantity <= 0) { marcarError('adjustQuantity'); valid = false; }
   if (!valid) return toast('Complete todos los campos requeridos.', 'error');
+  if (type === 'entry' && (reason === 'venta' || reason === 'perdida')) {
+    return toast('Motivo inválido: para una entrada de stock el motivo no puede ser venta o pérdida.', 'error');
+  }
+  if (type === 'exit' && reason === 'compra') {
+    return toast('Motivo inválido: para una salida de stock el motivo no puede ser compra.', 'error');
+  }
+  const currentStock = parseInt(document.getElementById('adjustCurrentStock').value);
+  if (type === 'exit' && quantity > currentStock) {
+    marcarError('adjustQuantity');
+    return toast('Cantidad inválida, la salida no puede ser mayor al stock actual.', 'error');
+  }
   if (!confirm('¿Está seguro de registrar este ajuste de inventario?')) return;
   setLoading('guardarAjusteBtn', true);
   try {
-    const res = await fetch(APP_URL + 'api/storage.php', {
+    const data = await callApi(APP_URL + 'Public/api/storage.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-      body: JSON.stringify({ action: 'adjust', material_id: materialId, type, quantity, reason, notes, location_id: locationId })
+      body: JSON.stringify({ action: 'adjust', material_id: materialId, type, quantity, reason, notes })
     });
-    const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('adjustModal'))?.hide();
       toast('Ajuste registrado exitosamente.', 'success');
@@ -394,12 +398,11 @@ async function guardarMovimiento() {
   if (!confirm('¿Está seguro de mover ' + quantity + ' unidades a la nueva ubicación?')) return;
   setLoading('guardarMovimientoBtn', true);
   try {
-    const res = await fetch(APP_URL + 'api/storage.php', {
+    const data = await callApi(APP_URL + 'Public/api/storage.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
       body: JSON.stringify({ action: 'move', material_id: materialId, from_location_id: fromLocationId, to_location_id: toLocationId, quantity, reason, notes })
     });
-    const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('moveModal'))?.hide();
       toast('Material movido exitosamente.', 'success');
@@ -430,12 +433,11 @@ async function guardarEstante() {
   if (!confirm(`¿Está seguro de agregar el estante "${name}" en la zona "${zone}"?`)) return;
   setLoading('guardarEstanteBtn', true);
   try {
-    const res = await fetch(APP_URL + 'api/locations.php', {
+    const data = await callApi(APP_URL + 'Public/api/locations.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
       body: JSON.stringify({ name, description: zone })
     });
-    const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('shelfModal'))?.hide();
       document.getElementById('shelfForm').reset();
@@ -464,12 +466,11 @@ async function eliminarEstante() {
   if (!id) return;
   setLoading('confirmDeleteShelfModalBtn', true);
   try {
-    const res = await fetch(APP_URL + 'api/locations.php', {
+    const data = await callApi(APP_URL + 'Public/api/locations.php', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
       body: JSON.stringify({ id })
     });
-    const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('deleteShelfModal'))?.hide();
       toast('Estante eliminado exitosamente.', 'success');
@@ -487,10 +488,10 @@ async function eliminarEstante() {
 async function recargarDatos() {
   try {
     const [mat, cat, loc, sum] = await Promise.all([
-      fetch(APP_URL + 'api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'api/locations.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'api/storage.php?action=summary').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
+      fetch(APP_URL + 'Public/api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
+      fetch(APP_URL + 'Public/api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
+      fetch(APP_URL + 'Public/api/locations.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
+      fetch(APP_URL + 'Public/api/storage.php?action=summary').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
     ]);
     if (mat.success) allMaterials = mat.data;
     if (cat.success) allCategories = cat.data;
@@ -514,8 +515,7 @@ async function cargarHistorial(page) {
   const container = document.getElementById('historyBody');
   if (!container) return;
   try {
-    const res = await fetch(APP_URL + 'api/storage.php?action=history&page=' + page + '&per_page=' + HISTORY_PER_PAGE);
-    const data = await res.json();
+    const data = await callApi(APP_URL + 'Public/api/storage.php?action=history&page=' + page + '&per_page=' + HISTORY_PER_PAGE);
     if (!data.success) { container.innerHTML = '<tr><td colspan="7">Error al cargar historial</td></tr>'; return; }
     historyData = data.data.data || [];
     const total = data.data.total || 0;
@@ -585,12 +585,11 @@ async function guardarNuevoMaterial() {
   if (!code) { marcarError('addMatCode'); return toast('El código del material es obligatorio.', 'error'); }
   setLoading('guardarNuevoMaterialBtn', true);
   try {
-    const res = await fetch(APP_URL + 'api/materials.php', {
+    const data = await callApi(APP_URL + 'Public/api/materials.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
       body: JSON.stringify({ name, code, category_id: categoryId, stock, cost_type: costType, price, wholesale_qty: wholesaleQty, location_id: locationId })
     });
-    const data = await res.json();
     if (data.success) {
       bootstrap.Modal.getInstance(document.getElementById('addMaterialModal'))?.hide();
       toast('Material creado exitosamente.', 'success');
@@ -603,6 +602,24 @@ async function guardarNuevoMaterial() {
     console.error(err);
   } finally {
     setLoading('guardarNuevoMaterialBtn', false);
+  }
+}
+
+function actualizarMotivosAjuste() {
+  const type = document.getElementById('adjustType').value;
+  const sel = document.getElementById('adjustReason');
+  Array.from(sel.options).forEach(opt => {
+    opt.disabled = false;
+    if (type === 'entry' && (opt.value === 'venta' || opt.value === 'perdida')) {
+      opt.disabled = true;
+    }
+    if (type === 'exit' && opt.value === 'compra') {
+      opt.disabled = true;
+    }
+  });
+  if (sel.selectedOptions[0]?.disabled) {
+    const firstValid = Array.from(sel.options).find(o => !o.disabled);
+    if (firstValid) sel.value = firstValid.value;
   }
 }
 

@@ -110,14 +110,13 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     if (isUsernameValid && isPasswordValid) {
         const formData = new FormData(this);
 
-        fetch(window.APP_URL + 'Public/api/login.php', {
+        callApi(window.APP_URL + 'Public/api/login.php', {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': window.CSRF_TOKEN || ''
             },
             body: formData
         })
-        .then(response => response.json())
         .then(data => {
             if (data.success) {
                 window.location.href = window.APP_URL + 'dashboard';

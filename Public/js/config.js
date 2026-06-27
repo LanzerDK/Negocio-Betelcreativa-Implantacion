@@ -24,8 +24,7 @@ document.getElementById('avatarInput').addEventListener('change', async function
     formData.append('csrf_token', CSRF_TOKEN);
 
     try {
-        const res = await fetch(API + 'upload.php', { method: 'POST', body: formData });
-        const json = await res.json();
+        const json = await callApi(API + 'upload.php', { method: 'POST', body: formData });
         if (json.success) {
             document.getElementById('userAvatar').src = APP_URL + 'Public/' + json.data.avatar_url;
             toast('Avatar actualizado', 'success');
@@ -40,8 +39,7 @@ document.getElementById('avatarInput').addEventListener('change', async function
 // ── Cargar perfil ───────────────────────────────────────
 async function loadProfile() {
     try {
-        const res = await fetch(API + 'users.php?action=profile', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
-        const json = await res.json();
+        const json = await callApi(API + 'users.php?action=profile', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
         if (!json.success) return;
         const d = json.data;
         document.getElementById('name').value = d.name || '';
@@ -61,12 +59,11 @@ document.getElementById('saveProfile')?.addEventListener('click', async function
     });
 
     try {
-        const res = await fetch(API + 'users.php?action=profile', {
+        const json = await callApi(API + 'users.php?action=profile', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
             body,
         });
-        const json = await res.json();
         if (json.success) {
             toast('Perfil actualizado', 'success');
             document.querySelector('.user-details h2').textContent = document.getElementById('name').value + ' ' + document.getElementById('lastName').value;
@@ -81,8 +78,7 @@ document.getElementById('saveProfile')?.addEventListener('click', async function
 // ── Notificaciones: cargar ──────────────────────────────
 async function loadPreferences() {
     try {
-        const res = await fetch(API + 'users.php?action=preferences', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
-        const json = await res.json();
+        const json = await callApi(API + 'users.php?action=preferences', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
         if (!json.success) return;
         const p = json.data;
         document.getElementById('notify_low_stock').checked = p.notify_low_stock;
@@ -102,12 +98,11 @@ document.getElementById('saveNotifications')?.addEventListener('click', async fu
     });
 
     try {
-        const res = await fetch(API + 'users.php?action=preferences', {
+        const json = await callApi(API + 'users.php?action=preferences', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
             body,
         });
-        const json = await res.json();
         if (json.success) {
             toast('Preferencias guardadas', 'success');
         } else {
@@ -147,12 +142,11 @@ document.getElementById('savePassword')?.addEventListener('click', async functio
     }
 
     try {
-        const res = await fetch(API + 'users.php?action=change-password', {
+        const json = await callApi(API + 'users.php?action=change-password', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
             body: JSON.stringify({ current_password: current, new_password: newPass }),
         });
-        const json = await res.json();
         if (json.success) {
             toast('Contraseña actualizada', 'success');
             document.getElementById('passwordForm').style.display = 'none';
@@ -170,8 +164,7 @@ document.getElementById('savePassword')?.addEventListener('click', async functio
 // ── Sistema: cargar settings ────────────────────────────
 async function loadSystemSettings() {
     try {
-        const res = await fetch(API + 'settings.php?action=list', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
-        const json = await res.json();
+        const json = await callApi(API + 'settings.php?action=list', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
         if (!json.success) return;
         json.data.forEach(item => {
             const el = document.getElementById('set_' + item.key);
@@ -195,12 +188,11 @@ document.getElementById('saveSystem')?.addEventListener('click', async function 
     }
     if (Object.keys(settings).length === 0) return;
     try {
-        const res = await fetch(API + 'settings.php?action=batch-update', {
+        const json = await callApi(API + 'settings.php?action=batch-update', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
             body: JSON.stringify({ settings }),
         });
-        const json = await res.json();
         if (json.success) {
             toast(json.message || 'Configuración del sistema guardada', 'success');
         } else {
@@ -221,8 +213,7 @@ async function loadUsers(page = 1) {
     usersSearch = search;
     try {
         const url = `${API}admin/users.php?action=list&page=${page}&search=${encodeURIComponent(search)}`;
-        const res = await fetch(url, { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
-        const json = await res.json();
+        const json = await callApi(url, { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
         if (!json.success) return;
         renderUsers(json.data);
     } catch (_) { /* ignore */ }
@@ -283,12 +274,11 @@ function renderUsers(data) {
             const userId = this.dataset.userId;
             const role = this.value;
             try {
-                const res = await fetch(`${API}admin/users.php?action=role`, {
+                const json = await callApi(`${API}admin/users.php?action=role`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                     body: JSON.stringify({ user_id: parseInt(userId), role }),
                 });
-                const json = await res.json();
                 if (json.success) {
                     toast('Rol actualizado', 'success');
                 } else {
@@ -306,12 +296,11 @@ function renderUsers(data) {
         btn.addEventListener('click', async function () {
             const userId = this.dataset.userId;
             try {
-                const res = await fetch(`${API}admin/users.php?action=toggle-active`, {
+                const json = await callApi(`${API}admin/users.php?action=toggle-active`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                     body: JSON.stringify({ user_id: parseInt(userId) }),
                 });
-                const json = await res.json();
                 if (json.success) {
                     toast('Estado cambiado', 'success');
                     loadUsers(usersPage);

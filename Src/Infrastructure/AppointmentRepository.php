@@ -44,6 +44,7 @@ class AppointmentRepository
             return $appointments;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -66,6 +67,7 @@ class AppointmentRepository
             return $appointments;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -85,6 +87,7 @@ class AppointmentRepository
             return $data ? new AppointmentModel($data) : null;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
@@ -139,6 +142,7 @@ class AppointmentRepository
             return $appointments;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 
@@ -215,6 +219,7 @@ class AppointmentRepository
             return $appointments;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return [];
         }
     }
 

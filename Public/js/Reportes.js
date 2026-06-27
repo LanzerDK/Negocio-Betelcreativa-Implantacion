@@ -146,10 +146,9 @@ function initGenerateButtons() {
 
 async function loadReport(report) {
     const params = getFilterParams(report);
-    const url = APP_URL + 'api/reports.php?action=' + report + '&' + new URLSearchParams(params);
+    const url = APP_URL + 'Public/api/reports.php?action=' + report + '&' + new URLSearchParams(params);
     try {
-        const res = await fetch(url);
-        const json = await res.json();
+        const json = await callApi(url);
         if (json.success) {
             renderReport(report, json.data);
         } else {
