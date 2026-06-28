@@ -5,13 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Materiales - Bet-El Creativa</title>
-   
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
+
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/materialStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
-    <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
 </head>
 
 <body>
@@ -54,7 +52,7 @@
         <nav class="main-menu">
             <a href="<?php echo APP_URL; ?>dashboard" class="menu-item ">
                 <i class="fas fa-tachometer-alt"></i>
-                <span>Panel de Control</span>
+                <span>Dashboard</span>
             </a>
             <a class="menu-item active">
                 <i class="fas fa-box-open"></i>
@@ -92,7 +90,7 @@
                         <button class="btn-limpiar">Limpiar</button>
                     </div>
 
-                    <button class="btn-nuevo-material" data-bs-toggle="modal" data-bs-target="#nuevoMaterialModal">
+                    <button class="btn-nuevo-material" onclick="Modal.open('nuevoMaterialModal')">
                         <i class="fas fa-plus"></i> Nuevo Material
                     </button>
 
@@ -115,7 +113,7 @@
                         <h3>Estado de Inventario</h3>
                         <div class="stock-filter">
                             <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <input type="checkbox" checked> En Stock
+                                <input type="checkbox"> En Stock
                             </label>
                             <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                                 <input type="checkbox"> Stock Bajo
@@ -136,18 +134,18 @@
         </div>
 
         <!-- Modal para nuevo material -->
-        <div class="modal fade" id="nuevoMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="nuevoMaterialModalLabel" aria-hidden="true">
+        <div class="modal" id="nuevoMaterialModal" tabindex="-1" aria-labelledby="nuevoMaterialModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5" id="nuevoMaterialModalLabel">Agregar Nuevo Material</h1>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-modal-dismiss="nuevoMaterialModal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <form id="nuevoMaterialForm">
                             <div class="mb-3">
                                 <label for="nuevoCodigo" class="form-label">Código</label>
-                                <input type="text" class="form-control" id="nuevoCodigo">
+                                <input type="text" class="form-control" id="nuevoCodigo" readonly>
                             </div>
                             <div class="mb-3">
                                 <label for="nuevoMaterial" class="form-label">Nombre del Material</label>
@@ -160,8 +158,11 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="nuevoStock" class="form-label">Stock Inicial</label>
-                                <input type="number" class="form-control" id="nuevoStock" min="0">
+                                <label for="nuevoTipoMaterial" class="form-label">Tipo de Material</label>
+                                <select class="form-select" id="nuevoTipoMaterial">
+                                    <option value="consumible">Consumibles</option>
+                                    <option value="activo_retornable">Activos/Retornables</option>
+                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="nuevoCostType" class="form-label">Tipo de Costo</label>
@@ -178,26 +179,8 @@
                                 <label for="nuevoWholesaleQty" class="form-label">Cantidad por Mayor</label>
                                 <input type="number" class="form-control" id="nuevoWholesaleQty" min="1" placeholder="Ej: 12">
                             </div>
-                            <div class="mb-3">
-                                <label for="nuevoProveedor" class="form-label">Proveedor</label>
-                                <select class="form-select" id="nuevoProveedor">
-                                    <option selected>Seleccionar proveedor</option>
-                                    <option>Decoraciones Festivas S.A.</option>
-                                    <option>Globos Creativos</option>
-                                    <option>Iluminación Mágica</option>
-                                    <option>Telas Elegantes</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                               <div class="form-group">
-                        <label class="form-label">Ubicación</label>
-                        <select class="form-select" id="newLocation">
-                             <option value="">Seleccionar ubicación...</option>
-                             
-                         </select>
-                    </div>
-                                
-                            </div>
+
+                           
                             <div class="mb-3">
                                 <label for="nuevaImagen" class="form-label">Imagen del Material</label>
                                 <input type="file" class="form-control" id="nuevaImagen" accept="image/*">
@@ -205,7 +188,7 @@
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-secondary" data-modal-dismiss="nuevoMaterialModal">Cancelar</button>
                         <button type="button" class="btn btn-primary" id="guardarMaterialBtn">Guardar Material</button>
                     </div>
                 </div>
@@ -213,18 +196,18 @@
         </div>
 
         <!-- Modal para editar material -->
-        <div class="modal fade" id="editarMaterialModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="editarMaterialModalLabel" aria-hidden="true">
+        <div class="modal" id="editarMaterialModal" tabindex="-1" aria-labelledby="editarMaterialModalLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5" id="editarMaterialModalLabel">Editar Material</h1>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-modal-dismiss="editarMaterialModal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <form>
                             <div class="mb-3">
                                 <label for="codigo" class="form-label">Código</label>
-                                <input type="text" class="form-control" id="codigo">
+                                <input type="text" class="form-control" id="codigo" readonly>
                             </div>
                             <div class="mb-3">
                                 <label for="material" class="form-label">Material</label>
@@ -236,10 +219,7 @@
                                     <option value="">Seleccionar categoría</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label for="stock" class="form-label">Stock</label>
-                                <input type="number" class="form-control" id="stock">
-                            </div>
+                           
                             <div class="mb-3">
                                 <label for="costType" class="form-label">Tipo de Costo</label>
                                 <select class="form-select" id="costType">
@@ -255,37 +235,19 @@
                                 <label for="wholesaleQty" class="form-label">Cantidad por Mayor</label>
                                 <input type="number" class="form-control" id="wholesaleQty" min="1" placeholder="Ej: 12">
                             </div>
-                            <div class="mb-3">
-                                <label for="editLocation" class="form-label">Ubicación</label>
-                                <select class="form-select" id="editLocation">
-                                    <option value="">Seleccionar ubicación...</option>
-                                    <option value="1">Almacén A, Estante 1</option>
-                                    <option value="2">Almacén A, Estante 2</option>
-                                    <option value="3">Almacén A, Estante 3</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="proveedor" class="form-label">Proveedor</label>
-                                <select class="form-select" id="proveedor">
-                                    <option selected>Seleccionar proveedor</option>
-                                    <option>Decoraciones Festivas S.A.</option>
-                                    <option>Globos Creativos</option>
-                                    <option>Iluminación Mágica</option>
-                                    <option>Telas Elegantes</option>
-                                </select>
-                            </div>
+                           
                         </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-secondary" data-modal-dismiss="editarMaterialModal">Cancelar</button>
                         <button type="button" class="btn btn-primary" id="guardarCambiosBtn">Guardar Cambios</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        
-        
+
+
     </div>
 
     <script>
@@ -293,14 +255,15 @@
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
     <script>
-        document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
+        document.getElementById('settingsBtn')?.addEventListener('click', function(e) {
             e.stopPropagation();
             document.getElementById('settingsDropdown')?.classList.toggle('show');
         });
-        document.addEventListener('click', function () {
+        document.addEventListener('click', function() {
             document.getElementById('settingsDropdown')?.classList.remove('show');
         });
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/materiales.js"></script>
 </body>

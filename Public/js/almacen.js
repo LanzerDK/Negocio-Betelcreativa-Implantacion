@@ -67,8 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
     toggleShelfZoneType();
     llenarSelectZona();
     document.getElementById('shelfForm').reset();
-    const modal = new bootstrap.Modal(document.getElementById('shelfModal'));
-    modal.show();
+    Modal.open('shelfModal');
   });
   document.getElementById('guardarEstanteBtn')?.addEventListener('click', guardarEstante);
   document.getElementById('addMaterialInFilterBtn')?.addEventListener('click', function () {
@@ -295,8 +294,7 @@ async function abrirAjustar(material) {
   document.getElementById('adjustCurrentStock').value = material.stock || 0;
   actualizarMotivosAjuste();
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
-  const modal = new bootstrap.Modal(document.getElementById('adjustModal'));
-  modal.show();
+  Modal.open('adjustModal');
 }
 
 async function abrirMover(material) {
@@ -316,8 +314,7 @@ async function abrirMover(material) {
   document.getElementById('moveReason').value = 'reorganizacion';
   document.getElementById('moveNotes').value = '';
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
-  const modal = new bootstrap.Modal(document.getElementById('moveModal'));
-  modal.show();
+  Modal.open('moveModal');
 }
 
 async function fetchStockLocations(materialId) {
@@ -367,7 +364,7 @@ async function guardarAjuste() {
       body: JSON.stringify({ action: 'adjust', material_id: materialId, type, quantity, reason, notes })
     });
     if (data.success) {
-      bootstrap.Modal.getInstance(document.getElementById('adjustModal'))?.hide();
+      Modal.close('adjustModal');
       toast('Ajuste registrado exitosamente.', 'success');
       await recargarDatos();
     } else {
@@ -404,7 +401,7 @@ async function guardarMovimiento() {
       body: JSON.stringify({ action: 'move', material_id: materialId, from_location_id: fromLocationId, to_location_id: toLocationId, quantity, reason, notes })
     });
     if (data.success) {
-      bootstrap.Modal.getInstance(document.getElementById('moveModal'))?.hide();
+      Modal.close('moveModal');
       toast('Material movido exitosamente.', 'success');
       await recargarDatos();
     } else {
@@ -439,7 +436,7 @@ async function guardarEstante() {
       body: JSON.stringify({ name, description: zone })
     });
     if (data.success) {
-      bootstrap.Modal.getInstance(document.getElementById('shelfModal'))?.hide();
+      Modal.close('shelfModal');
       document.getElementById('shelfForm').reset();
       toast('Estante agregado exitosamente.', 'success');
       await recargarDatos();
@@ -457,8 +454,7 @@ async function guardarEstante() {
 function confirmarEliminarEstante(locationId, name) {
   document.getElementById('deleteShelfId').value = locationId;
   document.getElementById('deleteShelfName').textContent = name;
-  const modal = new bootstrap.Modal(document.getElementById('deleteShelfModal'));
-  modal.show();
+  Modal.open('deleteShelfModal');
 }
 
 async function eliminarEstante() {
@@ -472,7 +468,7 @@ async function eliminarEstante() {
       body: JSON.stringify({ id })
     });
     if (data.success) {
-      bootstrap.Modal.getInstance(document.getElementById('deleteShelfModal'))?.hide();
+      Modal.close('deleteShelfModal');
       toast('Estante eliminado exitosamente.', 'success');
       await recargarDatos();
     } else {
@@ -591,7 +587,7 @@ async function guardarNuevoMaterial() {
       body: JSON.stringify({ name, code, category_id: categoryId, stock, cost_type: costType, price, wholesale_qty: wholesaleQty, location_id: locationId })
     });
     if (data.success) {
-      bootstrap.Modal.getInstance(document.getElementById('addMaterialModal'))?.hide();
+      Modal.close('addMaterialModal');
       toast('Material creado exitosamente.', 'success');
       await recargarDatos();
     } else {
@@ -643,14 +639,12 @@ function toggleShelfZoneType() {
 }
 
 function abrirModalNuevoMaterial() {
-  const modal = new bootstrap.Modal(document.getElementById('addMaterialModal'));
   document.getElementById('addMaterialForm').reset();
   document.getElementById('addMatCode').value = '';
-  // Auto-generate code
   const codePrefix = 'MAT-';
   const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
   document.getElementById('addMatCode').value = codePrefix + randomSuffix;
-  modal.show();
+  Modal.open('addMaterialModal');
 }
 
 function marcarError(id) {

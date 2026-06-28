@@ -7,6 +7,7 @@
     <title>Categoria - Bet-El Creativa</title>
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/categoryStyle.css">
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
     
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">

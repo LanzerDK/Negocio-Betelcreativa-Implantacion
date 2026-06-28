@@ -36,16 +36,37 @@ class ControllerRegister
         $password = $_POST['password'] ?? '';
         $telefono = trim($_POST['telefono'] ?? '');
 
-        if (!hash_equals(self::getSecurityCode(), $codigo)) {
-            ApiResponse::error('El código de seguridad ingresado no es válido.');
-        }
-
         if (empty($nombre) || empty($apellido) || empty($usuario) || empty($correo) || empty($cedulaNum) || empty($telefono) || empty($password)) {
             ApiResponse::error('Por favor, complete todos los campos obligatorios del formulario.');
         }
 
+        $telefonoDigits = preg_replace('/\D/', '', $telefono);
+        if (strlen($telefonoDigits) < 10 || strlen($telefonoDigits) > 11) {
+            ApiResponse::error('El número de teléfono debe tener entre 10 y 11 dígitos.');
+        }
+
+        if (!hash_equals(self::getSecurityCode(), $codigo)) {
+            ApiResponse::error('El código de seguridad ingresado no es válido.');
+        }
+
         $cedulaCompleta = $tipoCedula . '-' . $cedulaNum;
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+
+        $userRepository = new UserRepository();
+
+        $errors = [];
+        if ($userRepository->existsByUsername($usuario)) {
+            $errors['usuario'] = 'El nombre de usuario ya está registrado.';
+        }
+        if ($userRepository->existsByEmail($correo)) {
+            $errors['correo'] = 'El correo electrónico ya está registrado.';
+        }
+        if ($userRepository->existsByIdNumber($cedulaCompleta)) {
+            $errors['cedula'] = 'La cédula ya está registrada.';
+        }
+        if (!empty($errors)) {
+            ApiResponse::error('Corrige los siguientes campos', 400, $errors);
+        }
 
         $nuevoUsuario = new UserModel([
             'name'         => $nombre,
@@ -56,12 +77,6 @@ class ControllerRegister
             'passwordHash' => $passwordHash,
             'phone'        => $telefono
         ]);
-
-        $userRepository = new UserRepository();
-
-        if ($userRepository->existsByEmailOrUser($correo, $usuario)) {
-            ApiResponse::error('El correo electrónico o usuario ya están en uso.');
-        }
 
         if ($userRepository->save($nuevoUsuario)) {
             ApiResponse::success(null, '¡Usuario registrado exitosamente en el sistema!');

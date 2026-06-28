@@ -90,7 +90,7 @@
 /* Grid de tarjetas de categorías responsive */
 .categories-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
@@ -105,7 +105,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 300px;
+  min-height: 480px;
 }
 
 .category-card::before {
@@ -122,8 +122,8 @@
 }
 
 .category-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0px 2px 20px rgba(212, 175, 55, 0.35);
 }
 
 /* Estado inhabilitado con overlay y escala */
@@ -173,7 +173,7 @@
 }
 
 .category-info {
-  padding: 25px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -184,12 +184,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .category-title h3 {
   color: var(--primary);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
+  margin: 0;
 }
 
 /* Badge de estado de categoría */
@@ -213,8 +214,9 @@
 /* Descripción de la categoría */
 .category-description {
   color: var(--dark);
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   line-height: 1.5;
+  font-size: 0.9rem;
   flex: 1;
 }
 
@@ -231,7 +233,7 @@
 /* Acciones de la tarjeta */
 .category-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   margin-top: auto;
   padding-top: 15px;
 }
@@ -248,6 +250,7 @@
   justify-content: center;
   gap: 8px;
   transition: var(--transition);
+  font-size: 0.85rem;
 }
 
 /* Botón de editar en verde accent */
@@ -281,6 +284,29 @@
 
 .action-btn:hover {
   transform: translateY(-2px);
+}
+
+/* Botón Nueva Categoría - estilo azul con dorado brillante */
+.btn-nueva {
+  background: var(--primary);
+  color: var(--gold-button);
+  border: 1px solid var(--gold-button);
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition);
+  font-size: 0.9rem;
+}
+
+.btn-nueva:hover {
+  background: var(--primary-dark);
+  color: var(--gold-button);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.3);
 }
 
 /* Sección de estadísticas */
@@ -370,6 +396,38 @@
 }
 
 /* Contenedor del modal de categorías - hereda .modal-content de _base.css */
+.category-modal {
+  max-width: 400px;
+}
+
+.category-modal .modal-header {
+  padding: 12px 18px;
+}
+
+.category-modal .modal-header h2 {
+  font-size: 1.1rem;
+}
+
+.category-modal .modal-body {
+  padding: 14px 18px;
+}
+
+.category-modal .modal-footer {
+  padding: 10px 18px;
+}
+
+.category-modal .form-row {
+  gap: 12px;
+}
+
+@media (max-width: 576px) {
+  .category-modal {
+    max-width: 95%;
+  }
+  .category-modal .modal-body {
+    padding: 12px 14px;
+  }
+}
 
 /* Responsive específico */
 @media (max-width: 992px) {

@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS materials (
     current_stock INT NOT NULL DEFAULT 0,
     image_url VARCHAR(500) DEFAULT NULL,
     category_id INT,
+    material_type ENUM('activo_retornable','consumible') NOT NULL DEFAULT 'consumible',
     supplier_id INT,
     current_location_id INT,
     is_active TINYINT(1) DEFAULT 1,
@@ -225,3 +226,10 @@ INSERT IGNORE INTO settings (setting_key, setting_value, description) VALUES
 ('working_days', '1,2,3,4,5,6', 'Días laborales (1=domingo, 7=sábado)'),
 ('backup_frequency', 'weekly', 'Frecuencia de respaldo: daily|weekly|monthly'),
 ('log_retention_days', '90', 'Días de retención de logs');
+
+-- =============================================
+-- Migration 2026-06-28: Agregar material_type a materials
+-- Ejecutar si la tabla ya existe:
+-- ALTER TABLE materials
+--   ADD COLUMN material_type ENUM('activo_retornable','consumible') NOT NULL DEFAULT 'consumible'
+--   AFTER category_id;

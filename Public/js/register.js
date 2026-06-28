@@ -39,7 +39,10 @@ function validateName(name) { return /^[a-zA-Z\u00C0-\u024F\s]{2,50}$/.test(name
 function validateUsername(username) { return /^[a-zA-Z0-9_]{3,20}$/.test(username); }
 function validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
 function validateCedula(cedula) { return /^\d{6,10}$/.test(cedula); }
-function validatePhone(phone) { return phone.trim().length >= 10; }
+function validatePhone(phone) {
+    var digits = phone.replace(/\D/g, '');
+    return digits.length >= 10 && digits.length <= 11;
+}
 function validatePassword(password) { return password.length >= 6; }
 function isSecurityCodeFormat(code) { return /^[A-Za-z0-9]{3}-[A-Za-z0-9]{3}-[A-Za-z0-9]{3}$/.test(code.trim()); }
 
@@ -118,7 +121,7 @@ document.getElementById('cedula').addEventListener('input', function() {
 });
 
 document.getElementById('telefono').addEventListener('input', function() {
-    validateField(this, 'telefono-feedback', validatePhone, "Telefono invalido (minimo 10 digitos)", "Telefono valido");
+    validateField(this, 'telefono-feedback', validatePhone, "Telefono invalido (10-11 digitos)", "Telefono valido");
 });
 
 document.getElementById('codigo_seguridad').addEventListener('input', function() {
@@ -133,6 +136,51 @@ document.getElementById('password').addEventListener('input', function() {
 
 document.getElementById('confirm-password').addEventListener('input', function() {
     validatePasswordMatch();
+});
+
+function checkFieldUniqueness(field, value, feedbackId) {
+    if (!value) return;
+    var fd = new FormData();
+    fd.append('field', field);
+    fd.append('value', value);
+    if (field === 'cedula') {
+        fd.append('tipo_cedula', document.getElementById('tipo-cedula').value);
+    }
+    fetch(window.APP_URL + 'Public/api/check-field.php', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': window.CSRF_TOKEN || '' },
+        body: fd
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var fb = document.getElementById(feedbackId);
+        if (!data.valid) {
+            document.getElementById(field).classList.remove('valid');
+            document.getElementById(field).classList.add('invalid');
+            fb.textContent = data.message;
+            fb.className = 'feedback invalid-feedback';
+            fb.style.display = 'block';
+        }
+    });
+}
+
+document.getElementById('usuario').addEventListener('blur', function() {
+    checkFieldUniqueness('usuario', this.value, 'usuario-feedback');
+});
+
+document.getElementById('correo').addEventListener('blur', function() {
+    checkFieldUniqueness('correo', this.value, 'correo-feedback');
+});
+
+document.getElementById('cedula').addEventListener('blur', function() {
+    checkFieldUniqueness('cedula', this.value, 'cedula-feedback');
+});
+
+document.getElementById('tipo-cedula').addEventListener('change', function() {
+    var cedulaInput = document.getElementById('cedula');
+    if (cedulaInput.value.trim()) {
+        checkFieldUniqueness('cedula', cedulaInput.value, 'cedula-feedback');
+    }
 });
 
 document.getElementById('togglePassword').addEventListener('click', function() {
@@ -199,8 +247,23 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
             }
         })
         .catch(error => {
-            console.error("Error en la peticion Fetch:", error);
-            toast("Error de conexión.", 'error');
+            if (error.errors) {
+                for (var field in error.errors) {
+                    if (error.errors.hasOwnProperty(field)) {
+                        var fb = document.getElementById(field + '-feedback');
+                        var input = document.getElementById(field);
+                        if (fb && input) {
+                            input.classList.remove('valid');
+                            input.classList.add('invalid');
+                            fb.textContent = error.errors[field];
+                            fb.className = 'feedback invalid-feedback';
+                            fb.style.display = 'block';
+                        }
+                    }
+                }
+            } else {
+                toast(error.message || "Error de conexión.", 'error');
+            }
         });
     }
 });

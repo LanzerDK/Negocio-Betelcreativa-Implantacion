@@ -3,6 +3,7 @@
 namespace BetelCreativa\Controllers;
 
 use BetelCreativa\Domain\MaterialModel;
+use BetelCreativa\Infrastructure\CategoryRepository;
 use BetelCreativa\Infrastructure\MaterialRepository;
 use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
@@ -44,10 +45,11 @@ class MaterialController
                     'price' => (float)($input['price'] ?? 0),
                     'costType' => $input['cost_type'] ?? 'unit',
                     'wholesaleQty' => isset($input['wholesale_qty']) ? (int)$input['wholesale_qty'] : null,
-                    'stock' => (int)($input['stock'] ?? 0),
+                    'stock' => 0,
                     'categoryId' => !empty($input['category_id']) ? (int)$input['category_id'] : null,
-                    'supplierId' => !empty($input['supplier_id']) ? (int)$input['supplier_id'] : null,
-                    'locationId' => !empty($input['location_id']) ? (int)$input['location_id'] : null
+                    'materialType' => $input['material_type'] ?? 'consumible',
+                    'supplierId' => null,
+                    'locationId' => null
                 ]);
 
                 if (empty($material->getName()) || empty($material->getCode())) {
@@ -58,12 +60,20 @@ class MaterialController
                     ApiResponse::error('El precio no puede ser negativo.');
                 }
 
-                if ($material->getStock() < 0) {
-                    ApiResponse::error('El stock no puede ser negativo.');
+                if ($material->getCategoryId()) {
+                    $catRepo = new CategoryRepository();
+                    $cat = $catRepo->findById($material->getCategoryId());
+                    if (!$cat || $cat->getStatus() !== 'Active') {
+                        ApiResponse::error('La categoría seleccionada no está disponible.');
+                    }
                 }
 
                 if ($repo->existsByCode($material->getCode())) {
                     ApiResponse::error('Ya existe un material con ese código.');
+                }
+
+                if ($repo->existsByName($material->getName())) {
+                    ApiResponse::error('Ya existe un material con ese nombre.');
                 }
 
                 if ($repo->save($material)) {
@@ -87,31 +97,41 @@ class MaterialController
                     ApiResponse::error('Material no encontrado.', 404);
                 }
 
-                $newCode = trim($input['code'] ?? $existing->getCode());
                 $material = new MaterialModel([
                     'id' => $id,
-                    'code' => $newCode,
+                    'code' => $existing->getCode(),
                     'name' => trim($input['name'] ?? $existing->getName()),
                     'price' => array_key_exists('price', $input) ? (float)$input['price'] : $existing->getPrice(),
                     'costType' => $input['cost_type'] ?? $existing->getCostType(),
                     'wholesaleQty' => array_key_exists('wholesale_qty', $input) ? (!empty($input['wholesale_qty']) ? (int)$input['wholesale_qty'] : null) : $existing->getWholesaleQty(),
-                    'stock' => array_key_exists('stock', $input) ? (int)$input['stock'] : $existing->getStock(),
-                    'isActive' => array_key_exists('is_active', $input) ? (bool)$input['is_active'] : $existing->getIsActive(),
+                    'stock' => $existing->getStock(),
+                    'isActive' => array_key_exists('is_active', $input) ? (int)$input['is_active'] : $existing->getIsActive(),
                     'categoryId' => array_key_exists('category_id', $input) ? (!empty($input['category_id']) ? (int)$input['category_id'] : null) : $existing->getCategoryId(),
-                    'supplierId' => array_key_exists('supplier_id', $input) ? (!empty($input['supplier_id']) ? (int)$input['supplier_id'] : null) : $existing->getSupplierId(),
-                    'locationId' => array_key_exists('location_id', $input) ? (!empty($input['location_id']) ? (int)$input['location_id'] : null) : $existing->getLocationId()
+                    'materialType' => $existing->getMaterialType(),
+                    'supplierId' => $existing->getSupplierId(),
+                    'locationId' => $existing->getLocationId()
                 ]);
 
                 if ($material->getPrice() < 0) {
                     ApiResponse::error('El precio no puede ser negativo.');
                 }
 
-                if ($material->getStock() < 0) {
-                    ApiResponse::error('El stock no puede ser negativo.');
+                $newCategoryId = $material->getCategoryId();
+                if ($newCategoryId !== null && $newCategoryId !== $existing->getCategoryId()) {
+                    $catRepo = new CategoryRepository();
+                    $cat = $catRepo->findById($newCategoryId);
+                    if (!$cat || $cat->getStatus() !== 'Active') {
+                        ApiResponse::error('La categoría seleccionada no está disponible.');
+                    }
                 }
 
-                if ($repo->existsByCode($newCode, $id)) {
-                    ApiResponse::error('Ya existe otro material con ese código.');
+                if ($material->getIsActive() === 0 && $existing->getStock() > 0) {
+                    ApiResponse::error('No se puede deshabilitar: el material tiene existencia (' . $existing->getStock() . ' unidades).');
+                }
+
+                $newName = $material->getName();
+                if ($repo->existsByName($newName, $id)) {
+                    ApiResponse::error('Ya existe otro material con ese nombre.');
                 }
 
                 if ($repo->update($material)) {
@@ -151,6 +171,7 @@ class MaterialController
             'stock' => $m->getStock(),
             'imageUrl' => $m->getImageUrl(),
             'category_id' => $m->getCategoryId(),
+            'material_type' => $m->getMaterialType(),
             'supplier_id' => $m->getSupplierId(),
             'location_id' => $m->getLocationId(),
             'is_active' => $m->getIsActive()

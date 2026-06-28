@@ -13,6 +13,7 @@ class MaterialModel
     private int $stock;
     private ?string $imageUrl;
     private ?int $categoryId;
+    private string $materialType;
     private ?int $supplierId;
     private ?int $locationId;
     private bool $isActive;
@@ -28,6 +29,7 @@ class MaterialModel
         $this->stock = (int)($data['stock'] ?? 0);
         $this->imageUrl = $data['imageUrl'] ?? null;
         $this->categoryId = $data['categoryId'] ?? null;
+        $this->materialType = $data['materialType'] ?? 'consumible';
         $this->supplierId = $data['supplierId'] ?? null;
         $this->locationId = $data['locationId'] ?? null;
         $this->isActive = (bool)($data['isActive'] ?? true);
@@ -42,6 +44,7 @@ class MaterialModel
     public function getStock(): int { return $this->stock; }
     public function getImageUrl(): ?string { return $this->imageUrl; }
     public function getCategoryId(): ?int { return $this->categoryId; }
+    public function getMaterialType(): string { return $this->materialType; }
     public function getSupplierId(): ?int { return $this->supplierId; }
     public function getLocationId(): ?int { return $this->locationId; }
     public function getIsActive(): bool { return $this->isActive; }

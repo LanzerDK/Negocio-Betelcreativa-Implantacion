@@ -120,10 +120,11 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0px 2px 20px rgba(212, 175, 55, 0.35);
 }
 
-/* Estado inhabilitado - escala reducida y borde rojo */
+/* Estado inhabilitado - escala reducida, borde rojo y sombra */
 .material-card.inhabilitado {
   transform: scale(0.98);
   border: 2px solid var(--danger);
+  box-shadow: 0 4px 20px rgba(244, 67, 54, 0.35);
   position: relative;
 }
 
@@ -149,6 +150,18 @@
 .material-card.inhabilitado .card-actions {
   position: relative;
   z-index: 3;
+}
+.material-card.inhabilitado .edit-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.material-card.inhabilitado .toggle-btn.is-disabled {
+  background-color: var(--success);
+  color: white;
+}
+.material-card.inhabilitado .toggle-btn.is-disabled:hover {
+  background-color: #388e3c;
+  color: white;
 }
 
 /* Badge de "Inhabilitado" flotante sobre la imagen */
@@ -292,7 +305,7 @@
 }
 
 /* Barra de progreso de stock */
-.progress-bar {
+.stock-progress-bar {
   height: 8px;
   background-color: var(--light-gray);
   border-radius: 4px;
@@ -415,6 +428,23 @@
 #wholesaleQtyGroup,
 #editWholesaleQtyGroup {
   display: none;
+}
+
+/* Evitar que Bootstrap sobrescriba estilos de inputs en modales de materiales */
+#nuevoMaterialModal .form-control,
+#editarMaterialModal .form-control {
+  border-radius: 0.375rem;
+}
+
+#nuevoMaterialModal .form-control[readonly],
+#editarMaterialModal .form-control[readonly] {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+#nuevoMaterialModal .modal-body,
+#editarMaterialModal .modal-body {
+  padding: 1.5rem;
 }
 
 /* Responsive - apila el layout en pantallas medianas */

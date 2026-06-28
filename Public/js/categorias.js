@@ -51,13 +51,16 @@ function renderizarCategorias(categorias, materiales) {
 
     materiales = materiales || [];
 
+    // Solo contar materiales activos
+    const activos = materiales.filter(m => m.is_active !== false && m.is_active !== 0);
+
     const total = categorias.length;
     const activas = categorias.filter(c => c.status === 'Active').length;
-    const totalMateriales = materiales.length;
+    const totalMateriales = activos.length;
 
-    // Cuenta materiales por categoría
+    // Cuenta materiales activos por categoría
     const matCountByCat = {};
-    materiales.forEach(m => {
+    activos.forEach(m => {
         const cid = m.category_id;
         matCountByCat[cid] = (matCountByCat[cid] || 0) + 1;
     });
@@ -94,13 +97,22 @@ function renderizarCategorias(categorias, materiales) {
         const isActive = cat.status === 'Active';
         const matCount = matCountByCat[cat.id] || 0;
 
+        const safeName = escapeHtml(cat.name);
+        const svgFallback = 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">' +
+            '<rect fill="#e0e0e0" width="600" height="400"/>' +
+            '<text x="300" y="200" text-anchor="middle" dy=".3em" font-size="24" fill="#999" font-family="Arial">' +
+            safeName.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
+            '</text></svg>'
+        );
+
         card.innerHTML = `
-            <div class="category-image" style="background-image: url('${cat.imageUrl || 'https://via.placeholder.com/600x400?text=' + encodeURIComponent(cat.name)}');">
+            <div class="category-image" style="background-image: url('${cat.imageUrl || svgFallback}');">
                 <div class="category-count">${matCount} materiales</div>
             </div>
             <div class="category-info">
                 <div class="category-title">
-                    <h3>${escapeHtml(cat.name)}</h3>
+                    <h3>${safeName}</h3>
                     <div class="category-status ${isActive ? 'status-active' : 'status-inactive'}">${isActive ? 'Activa' : 'Inactiva'}</div>
                 </div>
                 <div class="category-description">${escapeHtml(cat.description)}</div>
@@ -115,12 +127,16 @@ function renderizarCategorias(categorias, materiales) {
 
         card.querySelector('.edit-btn').addEventListener('click', function (e) {
             e.stopPropagation();
+            if (!isActive) {
+                toast('Categoría inhabilitada. Actívela primero para editarla.', 'warning');
+                return;
+            }
             editarCategoria(cat);
         });
 
         card.querySelector('.toggle-btn').addEventListener('click', function (e) {
             e.stopPropagation();
-            toggleEstadoCategoria(cat.id, card.dataset.status, card, this);
+            toggleEstadoCategoria(cat.id, card.dataset.status, card, this, matCount);
         });
 
         container.appendChild(card);
@@ -146,6 +162,11 @@ function guardarCategoria() {
         return;
     }
 
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(name)) {
+        toast('El nombre solo puede contener letras y espacios.', 'warning');
+        return;
+    }
+
     const url = APP_URL + 'Public/api/categories.php' + (editingCategoryId ? '?id=' + editingCategoryId : '');
     const method = editingCategoryId ? 'PUT' : 'POST';
 
@@ -162,17 +183,22 @@ function guardarCategoria() {
                 document.getElementById('categoryModal').style.display = 'none';
                 cargarCategorias();
             } else {
-                toast('Error: ' + data.message, 'error');
+                toast(data.message, 'error');
             }
         })
         .catch(err => {
-            toast('Error de conexión.', 'error');
+            toast(err.message, 'error');
             console.error(err);
         });
 }
 
-function toggleEstadoCategoria(id, currentStatus, card, button) {
+function toggleEstadoCategoria(id, currentStatus, card, button, matCount) {
     const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+
+    if (newStatus === 'Inactive' && matCount > 0) {
+        toast('No se puede Deshabilitar esta Categoría, Tiene Materiales Vinculados', 'warning');
+        return;
+    }
 
     callApi(APP_URL + 'Public/api/categories.php?id=' + id, {
         method: 'PUT',
@@ -192,18 +218,17 @@ function toggleEstadoCategoria(id, currentStatus, card, button) {
                 badge.className = 'category-status ' + (isActive ? 'status-active' : 'status-inactive');
                 card.dataset.status = newStatus;
 
-                // Actualiza estadísticas en tiempo real
                 const activasEl = document.querySelector('.stat-card:nth-child(3) .stat-value');
                 if (activasEl) {
                     const current = parseInt(activasEl.textContent);
                     activasEl.textContent = isActive ? current + 1 : current - 1;
                 }
             } else {
-                toast('Error: ' + data.message, 'error');
+                toast(data.message, 'error');
             }
         })
         .catch(err => {
-            toast('Error de conexión.', 'error');
+            toast(err.message, 'error');
             console.error(err);
         });
 }

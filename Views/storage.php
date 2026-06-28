@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Almacén - Bet-El Creativa</title>
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/storageStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
@@ -210,12 +209,12 @@
     </div>
 
     <!-- Modal Ajustar Inventario -->
-    <div class="modal fade" id="adjustModal" tabindex="-1">
+    <div class="modal" id="adjustModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Ajustar Inventario</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-modal-dismiss="adjustModal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="adjustId">
@@ -258,7 +257,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-modal-dismiss="adjustModal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="guardarAjusteBtn">Guardar Ajuste</button>
                 </div>
             </div>
@@ -266,12 +265,12 @@
     </div>
 
     <!-- Modal Mover Material -->
-    <div class="modal fade" id="moveModal" tabindex="-1">
+    <div class="modal" id="moveModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Mover Material</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-modal-dismiss="moveModal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="moveId">
@@ -308,7 +307,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-modal-dismiss="moveModal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="guardarMovimientoBtn">Mover Material</button>
                 </div>
             </div>
@@ -316,12 +315,12 @@
     </div>
 
     <!-- Modal Agregar Estante -->
-    <div class="modal fade" id="shelfModal" tabindex="-1">
+    <div class="modal" id="shelfModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Agregar Estante</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-modal-dismiss="shelfModal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="shelfForm">
@@ -347,7 +346,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-modal-dismiss="shelfModal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="guardarEstanteBtn">Guardar Estante</button>
                 </div>
             </div>
@@ -355,12 +354,12 @@
     </div>
 
     <!-- Modal Confirmar Eliminar Estante -->
-    <div class="modal fade" id="deleteShelfModal" tabindex="-1">
+    <div class="modal" id="deleteShelfModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Eliminar Estante</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-modal-dismiss="deleteShelfModal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="deleteShelfId">
@@ -368,7 +367,7 @@
                     <p class="text-muted">Esta acción no se puede deshacer. Los materiales no se eliminarán, solo se desasociarán.</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-modal-dismiss="deleteShelfModal">Cancelar</button>
                     <button type="button" class="btn btn-danger" id="confirmDeleteShelfModalBtn">Eliminar</button>
                 </div>
             </div>
@@ -376,12 +375,12 @@
     </div>
 
     <!-- Modal Agregar Material (Acceso Rápido) -->
-    <div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal" id="addMaterialModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Agregar Nuevo Material</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-modal-dismiss="addMaterialModal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addMaterialForm">
@@ -429,7 +428,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-modal-dismiss="addMaterialModal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="guardarNuevoMaterialBtn">Agregar Material</button>
                 </div>
             </div>
@@ -440,7 +439,7 @@
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
-    <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/almacen.js"></script>
 </body>

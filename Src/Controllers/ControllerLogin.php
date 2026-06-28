@@ -20,14 +20,18 @@ class ControllerLogin
         $password = $input['password'] ?? '';
 
         if (empty($username) || empty($password)) {
-            ApiResponse::error('Por favor ingrese usuario y contraseña.');
+            ApiResponse::error('Usuario/Correo o Contraseña No Son Correctas');
         }
 
         $userRepository = new UserRepository();
         $user = $userRepository->findByUsernameOrEmail($username);
 
-        if (!$user || !$user->verificarPassword($password)) {
-            ApiResponse::error('Usuario o contraseña incorrectos.', 401);
+        if (!$user) {
+            ApiResponse::error('Usuario/Correo o Contraseña No Son Correctas', 401);
+        }
+
+        if (!$user->verificarPassword($password)) {
+            ApiResponse::error('Usuario/Correo o Contraseña No Son Correctas', 401);
         }
 
         session_regenerate_id(true);

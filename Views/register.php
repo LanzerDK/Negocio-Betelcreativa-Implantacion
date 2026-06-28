@@ -7,7 +7,6 @@
     <title>Registro - Bet-El Creativa</title>
 
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/registerStyle.css">
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
@@ -142,7 +141,6 @@
         </form>
 
     </div>
-    <script src="<?php echo APP_URL; ?>Public/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script>
         window.APP_URL = "<?php echo APP_URL; ?>";
         window.CSRF_TOKEN = "<?php echo $_SESSION['csrf_token'] ?? ''; ?>";

@@ -17,20 +17,49 @@ class UserRepository
         $this->db = Database::getConnection();
     }
 
-    public function existsByEmailOrUser(string $email, string $username): bool
+    public function countAll(): int
     {
         try {
-            $sql = "SELECT COUNT(*) FROM users WHERE email = :email OR username = :username";
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                ':email'    => $email,
-                ':username' => $username
-            ]);
+            return (int)$this->db->query("SELECT COUNT(*) FROM users")->fetchColumn();
+        } catch (PDOException $e) {
+            return 1;
+        }
+    }
+
+    public function existsByUsername(string $username): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE username = :u");
+            $stmt->execute([':u' => $username]);
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
-        return false;
-            }
+            return false;
+        }
+    }
+
+    public function existsByEmail(string $email): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE email = :e");
+            $stmt->execute([':e' => $email]);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
+        }
+    }
+
+    public function existsByIdNumber(string $idNumber): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE id_number = :c");
+            $stmt->execute([':c' => $idNumber]);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
+        }
     }
 
     public function save(UserModel $user): bool
@@ -70,7 +99,7 @@ class UserRepository
                         id_number AS ci, 
                         phone, 
                         password AS passwordHash,
-                        registration_date AS checkinTime,
+                        checkin_time AS checkinTime,
                         role,
                         avatar AS avatarUrl
                     FROM users 
@@ -104,7 +133,7 @@ class UserRepository
                         id_number AS ci, 
                         phone, 
                         password AS passwordHash,
-                        registration_date AS checkinTime,
+                        checkin_time AS checkinTime,
                         role,
                         avatar AS avatarUrl
                     FROM users 
@@ -137,7 +166,7 @@ class UserRepository
                         id_number AS ci, 
                         phone, 
                         password AS passwordHash,
-                        registration_date AS checkinTime,
+                        checkin_time AS checkinTime,
                         role,
                         avatar AS avatarUrl
                     FROM users 
@@ -249,10 +278,10 @@ class UserRepository
                         role,
                         is_active,
                         avatar,
-                        registration_date AS checkinTime
+                        checkin_time AS checkinTime
                     FROM users 
                     $where
-                    ORDER BY registration_date DESC 
+                    ORDER BY checkin_time DESC 
                     LIMIT :limit OFFSET :offset";
 
             $stmt = $this->db->prepare($sql);

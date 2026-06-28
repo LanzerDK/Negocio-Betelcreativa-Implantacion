@@ -21,7 +21,7 @@ if (!empty($envUrl)) {
                || !empty($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'https')
               ? 'https' : 'http';
     $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
+    $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] );
     // Detecta si la petición es a Public/index.php o a Public/api/...
     $inApi  = strpos($script, '/Public/api/') !== false;
     $base   = $inApi

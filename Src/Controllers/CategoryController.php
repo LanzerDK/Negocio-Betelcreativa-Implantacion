@@ -46,7 +46,7 @@ class CategoryController
                 }
 
                 if ($repo->existsByName($category->getName())) {
-                    ApiResponse::error('Ya existe una categoría con ese nombre.');
+                    ApiResponse::error('Ya existe una categoría con este nombre.');
                 }
 
                 if ($repo->save($category)) {
@@ -71,15 +71,23 @@ class CategoryController
                 }
 
                 $newName = trim($input['name'] ?? $existing->getName());
+                $newStatus = trim($input['status'] ?? $existing->getStatus());
+
+                if ($newStatus === 'Inactive' && $existing->getStatus() === 'Active') {
+                    if ($repo->countMaterials($id) > 0) {
+                        ApiResponse::error('No se puede Deshabilitar esta Categoría, Tiene Materiales Vinculados');
+                    }
+                }
+
                 $category = new CategoryModel([
                     'id' => $id,
                     'name' => $newName,
                     'description' => trim($input['description'] ?? $existing->getDescription()),
-                    'status' => trim($input['status'] ?? $existing->getStatus())
+                    'status' => $newStatus
                 ]);
 
                 if ($repo->existsByName($newName, $id)) {
-                    ApiResponse::error('Ya existe otra categoría con ese nombre.');
+                    ApiResponse::error('Ya existe otra categoría con este nombre.');
                 }
 
                 if ($repo->update($category)) {

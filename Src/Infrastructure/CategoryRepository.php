@@ -100,6 +100,20 @@ class CategoryRepository
         }
     }
 
+    public function countMaterials(int $categoryId): int
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) FROM materials WHERE category_id = :id"
+            );
+            $stmt->execute([':id' => $categoryId]);
+            return (int) $stmt->fetchColumn();
+        } catch (PDOException $e) {
+            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return 0;
+        }
+    }
+
     public function delete(int $id): bool
     {
         try {
