@@ -7,17 +7,36 @@ let clients = [];
 let currentClientId = null;
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[\d\s\-\+\(\)]{7,20}$/;
+const PHONE_REGEX_VE = /^0[24]\d{9}$/;
+const PREF_LINE_REGEX = /^[^:]+:.+$/;
 
-function showError(msg) {
-    const existing = document.querySelector('.toast-error');
-    if (existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = 'toast-error';
-    toast.style.cssText = 'position:fixed;top:20px;right:20px;background:#dc3545;color:#fff;padding:15px 25px;border-radius:8px;z-index:9999;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
+function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.add('is-invalid');
+    const parent = field.closest('.form-group');
+    if (!parent) return;
+    let errorEl = parent.querySelector('.invalid-feedback');
+    if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.className = 'invalid-feedback';
+        parent.appendChild(errorEl);
+    }
+    errorEl.textContent = message;
+}
+
+function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    field.classList.remove('is-invalid');
+    const parent = field.closest('.form-group');
+    if (!parent) return;
+    const errorEl = parent.querySelector('.invalid-feedback');
+    if (errorEl) errorEl.remove();
+}
+
+function clearErrors() {
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 }
 
 async function fetchClients()
@@ -40,7 +59,7 @@ async function fetchClients()
         }
     } catch (err) {
         console.error('Error al cargar clientes:', err);
-        showError('Error al cargar clientes');
+        toast('Error al cargar clientes', 'error');
     }
 }
 
@@ -58,11 +77,11 @@ async function createClient(clientData)
         if (data.success) {
             await fetchClients();
         } else {
-            showError(data.message || 'Error al crear el cliente');
+            toast(data.message || 'Error al crear el cliente', 'error');
         }
     } catch (err) {
         console.error('Error al crear cliente:', err);
-        showError('Error de conexión');
+        toast('Error de conexión', 'error');
     }
 }
 
@@ -84,11 +103,11 @@ async function updateClient(id, clientData)
             }
             renderClientDetails(id);
         } else {
-            showError(data.message || 'Error al actualizar el cliente');
+            toast(data.message || 'Error al actualizar el cliente', 'error');
         }
     } catch (err) {
         console.error('Error al actualizar cliente:', err);
-        showError('Error de conexión');
+        toast('Error de conexión', 'error');
     }
 }
 
@@ -103,11 +122,11 @@ async function toggleClientStatus(id, isActive)
         if (data.success) {
             await fetchClients();
         } else {
-            showError(data.message || 'Error al cambiar estado del cliente');
+            toast(data.message || 'Error al cambiar estado del cliente', 'error');
         }
     } catch (err) {
         console.error('Error al cambiar estado del cliente:', err);
-        showError('Error de conexión');
+        toast('Error de conexión', 'error');
     }
 }
 
@@ -173,6 +192,7 @@ function renderClientDetails(clientId)
                         ${client.isActive ? '<i class="fas fa-eye-slash"></i> Inhabilitar' : '<i class="fas fa-check-circle"></i> Habilitar'}
                     </button>
                 </h2>
+                <p><i class="fas fa-id-card"></i> ${client.idNumber || '—'}</p>
                 <p><i class="fas fa-envelope"></i> ${client.email || '—'}</p>
                 <p><i class="fas fa-phone"></i> ${client.phone || '—'}</p>
                 <div class="client-tags">
@@ -196,6 +216,7 @@ function renderClientDetails(clientId)
                 </div>
                 <div class="info-card">
                     <h4>Información Adicional</h4>
+                    <div class="info-item"><i class="fas fa-id-card"></i><span>Cédula: ${client.idNumber || '—'}</span></div>
                     <div class="info-item"><i class="fas fa-user-tag"></i><span>${getClientTypeLabel(client.clientType)}</span></div>
                     <div class="info-item"><i class="fas fa-info-circle"></i><span>Nos conoció por: ${getSourceLabel(client.source)}</span></div>
                 </div>
@@ -208,8 +229,8 @@ function renderClientDetails(clientId)
 
         <div class="tab-content" id="preferences-tab">
             <h3>Preferencias de Decoración</h3>
-            <div class="preferences-grid">
-                ${getPreferencesCards(client.preferences)}
+            <div class="preferences-grid" data-client-id="${client.id}">
+                ${getPreferencesCards(client.preferences, (window._prefsPages && window._prefsPages[client.id]) || 1)}
             </div>
         </div>
     `;
@@ -239,6 +260,20 @@ function renderClientDetails(clientId)
 
     const toggleBtn = document.getElementById('toggleClientBtn');
     if (toggleBtn) toggleBtn.addEventListener('click', () => toggleClientStatus(client.id, client.isActive));
+
+    const prefsGrid = document.querySelector('#preferences-tab .preferences-grid');
+    if (prefsGrid) {
+        prefsGrid.addEventListener('click', function(e) {
+            const btn = e.target.closest('button[data-page]');
+            if (!btn) return;
+            const page = parseInt(btn.dataset.page);
+            if (page < 1) return;
+            if (!window._prefsPages) window._prefsPages = {};
+            window._prefsPages[client.id] = page;
+            const grid = document.querySelector('#preferences-tab .preferences-grid');
+            if (grid) grid.innerHTML = getPreferencesCards(client.preferences, page);
+        });
+    }
 }
 
 function getClientTypeLabel(type) {
@@ -251,37 +286,60 @@ function getSourceLabel(source) {
     return labels[source] || source;
 }
 
-function getPreferencesCards(preferences) {
+function getPreferencesCards(preferences, page) {
     if (!preferences) return '<p>Sin preferencias registradas</p>';
-    const lines = preferences.split('\n');
-    const cards = [];
+    const lines = preferences.split('\n').filter(l => l.trim());
+    const itemsPerPage = 6;
+    const totalPages = Math.max(1, Math.ceil(lines.length / itemsPerPage));
+    page = Math.min(page || 1, totalPages);
+    const start = (page - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const pageLines = lines.slice(start, end);
     const iconMap = { 'colores': 'fas fa-palette', 'estilo': 'fas fa-heart', 'no gusta': 'fas fa-times-circle', 'alergias': 'fas fa-allergies' };
-    lines.forEach(line => {
+    let html = '';
+    pageLines.forEach(line => {
         const parts = line.split(':');
         if (parts.length < 2) return;
         const title = parts[0].trim();
         const value = parts.slice(1).join(':').trim();
         const key = title.toLowerCase();
-        cards.push(`
+        html += `
             <div class="preference-card">
                 <div class="preference-icon"><i class="${iconMap[key] || 'fas fa-info-circle'}"></i></div>
                 <div class="preference-title">${title}</div>
                 <div class="preference-value">${value}</div>
             </div>
-        `);
+        `;
     });
-    return cards.join('') || '<p>Sin preferencias registradas</p>';
+    if (totalPages > 1) {
+        html += `
+            <div class="pref-pagination">
+                <button class="pref-prev-btn" data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i> Anterior
+                </button>
+                <span class="pref-page-info">${page} / ${totalPages}</span>
+                <button class="pref-next-btn" data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>
+                    Siguiente <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        `;
+    }
+    return html;
 }
 
 function openEditClientModal(client)
 {
     const modal = document.getElementById('editClientModal');
     if (!modal) return;
+    clearErrors();
     modal.style.display = 'flex';
 
     const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
     setVal('editFirstName', client.firstName);
     setVal('editLastName', client.lastName);
+    const idParts = (client.idNumber || '').split('-');
+    setVal('editIdType', idParts[0] || 'V');
+    setVal('editIdNumber', idParts.slice(1).join('-') || '');
     setVal('editEmail', client.email);
     setVal('editPhone', client.phone);
     setVal('editAddress', client.address);
@@ -295,39 +353,85 @@ function openEditClientModal(client)
         const newBtn = saveBtn.cloneNode(true);
         saveBtn.parentNode.replaceChild(newBtn, saveBtn);
         newBtn.addEventListener('click', () => {
-            const email = document.getElementById('editEmail')?.value?.trim() || '';
-            const phone = document.getElementById('editPhone')?.value?.trim() || '';
+            clearErrors();
             const firstName = document.getElementById('editFirstName')?.value?.trim() || '';
             const lastName = document.getElementById('editLastName')?.value?.trim() || '';
+            const editIdType = document.getElementById('editIdType')?.value || 'V';
+            const editIdNumber = document.getElementById('editIdNumber')?.value?.trim() || '';
+            const idNumber = editIdType + '-' + editIdNumber;
+            const email = document.getElementById('editEmail')?.value?.trim() || '';
+            const phone = document.getElementById('editPhone')?.value?.trim() || '';
+            const preferences = document.getElementById('editPreferences')?.value?.trim() || '';
 
             if (!firstName || !lastName) {
-                showError('El nombre y apellido son obligatorios');
+                showFieldError('editFirstName', 'El nombre es obligatorio');
+                showFieldError('editLastName', 'El apellido es obligatorio');
                 return;
             }
-            if (email && !EMAIL_REGEX.test(email)) {
-                showError('El formato del email no es válido');
+            if (!editIdNumber) {
+                showFieldError('editIdNumber', 'El número de cédula es obligatorio');
                 return;
             }
-            if (phone && !PHONE_REGEX.test(phone)) {
-                showError('El formato del teléfono no es válido');
+            if (!/^\d{6,8}$/.test(editIdNumber)) {
+                showFieldError('editIdNumber', 'La cédula debe tener 6 o 8 dígitos');
                 return;
+            }
+            if (idNumber !== client.idNumber && clients.find(c => c.idNumber === idNumber)) {
+                showFieldError('editIdNumber', 'Ya existe un cliente con esta cédula.');
+                return;
+            }
+            if (!email) {
+                showFieldError('editEmail', 'El correo electrónico es obligatorio');
+                return;
+            }
+            if (!EMAIL_REGEX.test(email)) {
+                showFieldError('editEmail', 'El formato del email no es válido');
+                return;
+            }
+            if (email !== client.email && clients.find(c => c.email === email && c.id !== client.id)) {
+                showFieldError('editEmail', 'Ya existe un cliente con este correo electrónico.');
+                return;
+            }
+            if (!phone) {
+                showFieldError('editPhone', 'El teléfono es obligatorio');
+                return;
+            }
+            if (!PHONE_REGEX_VE.test(phone)) {
+                showFieldError('editPhone', 'Debe tener 11 dígitos, formato: 0XX-XXX-XXXX.');
+                return;
+            }
+            if (phone !== client.phone && clients.find(c => c.phone === phone && c.id !== client.id)) {
+                showFieldError('editPhone', 'Ya existe un cliente con este número de teléfono.');
+                return;
+            }
+            if (preferences) {
+                const lines = preferences.split('\n');
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line && !PREF_LINE_REGEX.test(line)) {
+                        showFieldError('editPreferences', 'Cada preferencia debe tener el formato: Título: Valor.');
+                        return;
+                    }
+                }
             }
 
             const updated = {
                 firstName: firstName,
                 lastName: lastName,
+                idNumber: idNumber,
                 email: email,
                 phone: phone,
                 address: document.getElementById('editAddress')?.value?.trim() || '',
                 clientType: document.getElementById('editClientType')?.value || 'Regular',
                 source: document.getElementById('editSource')?.value || 'Other',
                 notes: document.getElementById('editNotes')?.value?.trim() || '',
-                preferences: document.getElementById('editPreferences')?.value?.trim() || ''
+                preferences: preferences
             };
             updateClient(client.id, updated);
             modal.style.display = 'none';
         });
     }
+    setupEditRealTimeValidation(client);
 }
 
 function setupNewClientForm()
@@ -339,34 +443,79 @@ function setupNewClientForm()
     saveBtn.parentNode.replaceChild(newBtn, saveBtn);
 
     newBtn.addEventListener('click', () => {
+        clearErrors();
         const firstName = document.getElementById('firstName')?.value?.trim();
         const lastName = document.getElementById('lastName')?.value?.trim();
+        const newIdType = document.getElementById('newIdType')?.value || 'V';
+        const newIdNumber = document.getElementById('newIdNumber')?.value?.trim() || '';
+        const idNumber = newIdType + '-' + newIdNumber;
         const email = document.getElementById('email')?.value?.trim() || '';
         const phone = document.getElementById('phone')?.value?.trim() || '';
+        const preferences = document.getElementById('preferences')?.value?.trim() || '';
 
         if (!firstName || !lastName) {
-            showError('Por favor, complete al menos nombre y apellido');
+            showFieldError('firstName', 'El nombre es obligatorio');
+            showFieldError('lastName', 'El apellido es obligatorio');
             return;
         }
-        if (email && !EMAIL_REGEX.test(email)) {
-            showError('El formato del email no es válido');
+        if (!newIdNumber) {
+            showFieldError('newIdNumber', 'El número de cédula es obligatorio');
             return;
         }
-        if (phone && !PHONE_REGEX.test(phone)) {
-            showError('El formato del teléfono no es válido');
+        if (!/^\d{6,8}$/.test(newIdNumber)) {
+            showFieldError('newIdNumber', 'La cédula debe tener 6 a 8 dígitos');
             return;
+        }
+        if (clients.find(c => c.idNumber === idNumber)) {
+            showFieldError('newIdNumber', 'Ya existe un cliente con esta cédula.');
+            return;
+        }
+        if (!email) {
+            showFieldError('email', 'El correo electrónico es obligatorio');
+            return;
+        }
+        if (!EMAIL_REGEX.test(email)) {
+            showFieldError('email', 'El formato del email no es válido');
+            return;
+        }
+        if (clients.find(c => c.email === email)) {
+            showFieldError('email', 'Ya existe un cliente con este correo electrónico.');
+            return;
+        }
+        if (!phone) {
+            showFieldError('phone', 'El teléfono es obligatorio');
+            return;
+        }
+        if (!PHONE_REGEX_VE.test(phone)) {
+            showFieldError('phone', 'Debe tener 11 dígitos, formato: 0XX-XXX-XXXX.');
+            return;
+        }
+        if (clients.find(c => c.phone === phone)) {
+            showFieldError('phone', 'Ya existe un cliente con este número de teléfono.');
+            return;
+        }
+        if (preferences) {
+            const lines = preferences.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line && !PREF_LINE_REGEX.test(line)) {
+                    showFieldError('preferences', 'Cada preferencia debe tener el formato: Título: Valor.');
+                    return;
+                }
+            }
         }
 
         const newClient = {
             firstName: firstName,
             lastName: lastName,
+            idNumber: idNumber,
             email: email,
             phone: phone,
             address: document.getElementById('address')?.value?.trim() || '',
             clientType: document.getElementById('clientType')?.value || 'Regular',
             source: document.getElementById('source')?.value || 'Other',
             notes: document.getElementById('notes')?.value?.trim() || '',
-            preferences: document.getElementById('preferences')?.value?.trim() || ''
+            preferences: preferences
         };
 
         createClient(newClient);
@@ -380,16 +529,130 @@ function updateClientCounter()
     if (span) span.textContent = 'Total: ' + clients.length;
 }
 
+// ── Validación en tiempo real ──────────────────────────────────
+
+function getFullId(idTypeId, idNumberId) {
+    const t = document.getElementById(idTypeId);
+    const n = document.getElementById(idNumberId);
+    return (t ? t.value : 'V') + '-' + (n ? n.value.trim() : '');
+}
+
+function validateCreateField(fieldId) {
+    clearFieldError(fieldId);
+    const val = (document.getElementById(fieldId)?.value || '').trim();
+    switch (fieldId) {
+        case 'firstName':
+        case 'lastName':
+            if (!val) { showFieldError(fieldId, 'Este campo es obligatorio'); return false; }
+            break;
+        case 'newIdNumber': {
+            if (!val) { showFieldError(fieldId, 'El número de cédula es obligatorio'); return false; }
+            if (!/^\d{6,8}$/.test(val)) { showFieldError(fieldId, 'Debe tener 6 a 8 dígitos'); return false; }
+            const full = getFullId('newIdType', 'newIdNumber');
+            if (clients.find(c => c.idNumber === full)) { showFieldError(fieldId, 'Ya existe un cliente con esta cédula.'); return false; }
+            break;
+        }
+        case 'email': {
+            if (!val) { showFieldError(fieldId, 'El correo electrónico es obligatorio'); return false; }
+            if (!EMAIL_REGEX.test(val)) { showFieldError(fieldId, 'El formato del email no es válido'); return false; }
+            if (clients.find(c => c.email === val)) { showFieldError(fieldId, 'Ya existe un cliente con este correo.'); return false; }
+            break;
+        }
+        case 'phone': {
+            if (!val) { showFieldError(fieldId, 'El teléfono es obligatorio'); return false; }
+            if (!PHONE_REGEX_VE.test(val)) { showFieldError(fieldId, 'Debe tener 11 dígitos, formato: 0XX-XXX-XXXX.'); return false; }
+            if (clients.find(c => c.phone === val)) { showFieldError(fieldId, 'Ya existe un cliente con este teléfono.'); return false; }
+            break;
+        }
+        case 'preferences': {
+            if (!val) break;
+            const lines = val.split('\n');
+            for (const line of lines) {
+                const l = line.trim();
+                if (l && !PREF_LINE_REGEX.test(l)) { showFieldError(fieldId, 'Formato: Título: Valor.'); return false; }
+            }
+            break;
+        }
+    }
+    return true;
+}
+
+function validateEditField(fieldId, currentClient) {
+    clearFieldError(fieldId);
+    const val = (document.getElementById(fieldId)?.value || '').trim();
+    switch (fieldId) {
+        case 'editFirstName':
+        case 'editLastName':
+            if (!val) { showFieldError(fieldId, 'Este campo es obligatorio'); return false; }
+            break;
+        case 'editIdNumber': {
+            if (!val) { showFieldError(fieldId, 'El número de cédula es obligatorio'); return false; }
+            if (!/^\d{6,8}$/.test(val)) { showFieldError(fieldId, 'Debe tener 6 a 8 dígitos'); return false; }
+            const full = getFullId('editIdType', 'editIdNumber');
+            if (full !== currentClient.idNumber && clients.find(c => c.idNumber === full)) { showFieldError(fieldId, 'Ya existe un cliente con esta cédula.'); return false; }
+            break;
+        }
+        case 'editEmail': {
+            if (!val) { showFieldError(fieldId, 'El correo electrónico es obligatorio'); return false; }
+            if (!EMAIL_REGEX.test(val)) { showFieldError(fieldId, 'El formato del email no es válido'); return false; }
+            if (val !== currentClient.email && clients.find(c => c.email === val && c.id !== currentClient.id)) { showFieldError(fieldId, 'Ya existe un cliente con este correo.'); return false; }
+            break;
+        }
+        case 'editPhone': {
+            if (!val) { showFieldError(fieldId, 'El teléfono es obligatorio'); return false; }
+            if (!PHONE_REGEX_VE.test(val)) { showFieldError(fieldId, 'Debe tener 11 dígitos, formato: 0XX-XXX-XXXX.'); return false; }
+            if (val !== currentClient.phone && clients.find(c => c.phone === val && c.id !== currentClient.id)) { showFieldError(fieldId, 'Ya existe un cliente con este teléfono.'); return false; }
+            break;
+        }
+        case 'editPreferences': {
+            if (!val) break;
+            const lines = val.split('\n');
+            for (const line of lines) {
+                const l = line.trim();
+                if (l && !PREF_LINE_REGEX.test(l)) { showFieldError(fieldId, 'Formato: Título: Valor.'); return false; }
+            }
+            break;
+        }
+    }
+    return true;
+}
+
+function setupCreateRealTimeValidation() {
+    const fields = ['firstName', 'lastName', 'newIdNumber', 'email', 'phone', 'preferences'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => validateCreateField(id));
+    });
+    const idType = document.getElementById('newIdType');
+    if (idType) idType.addEventListener('change', () => validateCreateField('newIdNumber'));
+}
+
+function setupEditRealTimeValidation(client) {
+    const fields = ['editFirstName', 'editLastName', 'editIdNumber', 'editEmail', 'editPhone', 'editPreferences'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => validateEditField(id, client));
+    });
+    const idType = document.getElementById('editIdType');
+    if (idType) idType.addEventListener('change', () => validateEditField('editIdNumber', client));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     fetchClients();
 
     const newBtn1 = document.getElementById('newClientBtn');
     const newBtn2 = document.getElementById('newClientBtn2');
-    const openModal = () => document.getElementById('clientModal').style.display = 'flex';
+    const openModal = () => {
+        clearErrors();
+        document.getElementById('clientModal').style.display = 'flex';
+    };
     if (newBtn1) newBtn1.addEventListener('click', openModal);
     if (newBtn2) newBtn2.addEventListener('click', openModal);
 
     setupNewClientForm();
+    setupCreateRealTimeValidation();
 
     const closeIds = ['closeModalBtn', 'closeEditModalBtn', 'cancelModalBtn', 'cancelEditModalBtn'];
     closeIds.forEach(id => {

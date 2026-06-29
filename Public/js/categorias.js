@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Nueva Categoría';
         document.getElementById('categoryName').value = '';
         document.getElementById('categoryDescription').value = '';
-        document.getElementById('categoryStatus').value = 'Active';
         document.getElementById('categoryModal').style.display = 'flex';
     });
 
@@ -127,7 +126,7 @@ function renderizarCategorias(categorias, materiales) {
 
         card.querySelector('.edit-btn').addEventListener('click', function (e) {
             e.stopPropagation();
-            if (!isActive) {
+            if (card.dataset.status !== 'Active') {
                 toast('Categoría inhabilitada. Actívela primero para editarla.', 'warning');
                 return;
             }
@@ -148,14 +147,12 @@ function editarCategoria(cat) {
     document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
     document.getElementById('categoryName').value = cat.name;
     document.getElementById('categoryDescription').value = cat.description;
-    document.getElementById('categoryStatus').value = cat.status;
     document.getElementById('categoryModal').style.display = 'flex';
 }
 
 function guardarCategoria() {
     const name = document.getElementById('categoryName').value.trim();
     const description = document.getElementById('categoryDescription').value.trim();
-    const status = document.getElementById('categoryStatus').value;
 
     if (!name) {
         toast('El nombre de la categoría es obligatorio.', 'warning');
@@ -176,7 +173,7 @@ function guardarCategoria() {
             'Content-Type': 'application/json',
             'X-CSRF-Token': CSRF_TOKEN
         },
-        body: JSON.stringify({ name, description, status })
+        body: JSON.stringify({ name, description })
     })
         .then(data => {
             if (data.success) {

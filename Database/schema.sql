@@ -70,8 +70,9 @@ CREATE TABLE IF NOT EXISTS customers (
     customer_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100),
-    phone VARCHAR(20),
+    id_number VARCHAR(20) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
     address TEXT,
     client_type VARCHAR(20) DEFAULT 'regular',
     source VARCHAR(20) DEFAULT 'other',
@@ -84,22 +85,41 @@ CREATE TABLE IF NOT EXISTS customers (
 ) ENGINE=InnoDB;
 
 -- =============================================
--- Tabla: appointments
+-- Tabla: citas (antes appointments)
+-- Incluye máquina de estados automática y
+-- auditoría de cancelaciones (soft-delete)
 -- =============================================
-CREATE TABLE IF NOT EXISTS appointments (
-    appointment_id INT AUTO_INCREMENT PRIMARY KEY,
-    customer_id INT NOT NULL,
-    date DATE NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    event_type VARCHAR(100),
-    location VARCHAR(255),
-    status VARCHAR(20) DEFAULT 'pending',
-    notes TEXT,
-    is_active TINYINT(1) DEFAULT 1,
+CREATE TABLE IF NOT EXISTS citas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    fecha_hora_inicio DATETIME NOT NULL,
+    fecha_hora_fin DATETIME NOT NULL,
+    event_type_id INT DEFAULT NULL,
+    ubicacion VARCHAR(255),
+    estado ENUM('En Proceso','Pendiente','En Progreso','Terminado','Cancelado') NOT NULL DEFAULT 'En Proceso',
+    estado_previo_cancelacion VARCHAR(20) DEFAULT NULL,
+    fecha_hora_cancelacion DATETIME DEFAULT NULL,
+    motivo_cancelacion TEXT DEFAULT NULL,
+    notas TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+    FOREIGN KEY (cliente_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (event_type_id) REFERENCES event_types(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabla: cita_materiales
+-- Relación muchos a muchos entre citas y materiales
+-- con cantidades utilizadas
+-- =============================================
+CREATE TABLE IF NOT EXISTS cita_materiales (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cita_id INT NOT NULL,
+    material_id INT NOT NULL,
+    cantidad_utilizada INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE CASCADE,
+    FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -228,8 +248,49 @@ INSERT IGNORE INTO settings (setting_key, setting_value, description) VALUES
 ('log_retention_days', '90', 'Días de retención de logs');
 
 -- =============================================
+-- Tabla: event_types
+-- Tipos de evento configurables por el usuario
+-- =============================================
+CREATE TABLE IF NOT EXISTS event_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- Valores iniciales de tipos de evento
+INSERT IGNORE INTO event_types (name) VALUES
+('Boda'),
+('Cumpleaños'),
+('Evento Corporativo'),
+('Quinceañero'),
+('Baby Shower'),
+('Bautizo'),
+('Graduación'),
+('Aniversario'),
+('Otro');
+
+-- =============================================
+-- Migration 2026-06-28: Agregar id_number a customers
+-- Ejecutar si la tabla ya existe:
+-- ALTER TABLE customers
+--   ADD COLUMN id_number VARCHAR(20) NOT NULL AFTER last_name;
+-- Luego: ALTER TABLE customers MODIFY email VARCHAR(100) NOT NULL;
+-- Luego: ALTER TABLE customers MODIFY phone VARCHAR(20) NOT NULL;
+
+-- =============================================
 -- Migration 2026-06-28: Agregar material_type a materials
 -- Ejecutar si la tabla ya existe:
 -- ALTER TABLE materials
 --   ADD COLUMN material_type ENUM('activo_retornable','consumible') NOT NULL DEFAULT 'consumible'
 --   AFTER category_id;
+
+-- =============================================
+-- Migration 2026-06-28: Renombrar appointments → citas
+-- (ya ejecutada; solo referencia para entornos nuevos)
+-- Las columnas event_type_id se migran con:
+--   UPDATE citas c
+--     JOIN event_types et ON LOWER(et.name) = LOWER(c.event_type)
+--     SET c.event_type_id = et.id
+--     WHERE c.event_type_id IS NULL;

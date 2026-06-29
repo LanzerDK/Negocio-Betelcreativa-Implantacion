@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citas - Bet-El Creativa</title>
     
+    <link rel="icon" type="image/png" href="<?php echo APP_URL; ?>Public/images/favicon.png">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/quoteStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fullcalendar/css/main.min.css">
@@ -123,11 +124,11 @@
                                 <h3>Estado de Cita</h3>
                                 <select id="statusFilter" class="form-select">
                                     <option value="">Todos</option>
-                                    <option value="pending">Pendientes</option>
-                                    <option value="confirmed">Confirmadas</option>
-                                    <option value="in-progress">En Progreso</option>
-                                    <option value="completed">Completadas</option>
-                                    <option value="cancelled">Canceladas</option>
+                                    <option value="En Proceso">En Proceso</option>
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="En Progreso">En Progreso</option>
+                                    <option value="Terminado">Terminado</option>
+                                    <option value="Cancelado">Cancelado</option>
                                 </select>
                             </div>
 
@@ -135,12 +136,10 @@
                                 <h3>Tipo de Evento</h3>
                                 <select id="eventTypeFilter" class="form-select">
                                     <option value="">Todos</option>
-                                    <option value="boda">Bodas</option>
-                                    <option value="cumpleanos">Cumpleaños</option>
-                                    <option value="corporativo">Corporativos</option>
-                                    <option value="quince">Quinceañeros</option>
-                                    <option value="otro">Otro</option>
                                 </select>
+                                <button class="btn btn-sm btn-outline" id="manageEventTypesBtn" style="margin-top:8px;width:100%;">
+                                    <i class="fas fa-cog"></i> Gestionar Tipos
+                                </button>
                             </div>
 
 
@@ -185,9 +184,7 @@
                             </div>
                             <div class="page-controls">
                                 <button class="page-btn" id="prevPage"><i class="fas fa-chevron-left"></i></button>
-                                <button class="page-btn active">1</button>
-                                <button class="page-btn">2</button>
-                                <button class="page-btn">3</button>
+                                <div class="page-buttons" id="pageButtons"></div>
                                 <button class="page-btn" id="nextPage"><i class="fas fa-chevron-right"></i></button>
                             </div>
                         </div>
@@ -198,7 +195,6 @@
                 <div class="history-container" id="historySection" style="display:none;">
                     <div class="history-header">
                         <h3><i class="fas fa-history"></i> Historial de Citas Canceladas</h3>
-                        <
                     </div>
                     <table class="history-table">
                         <thead>
@@ -220,131 +216,192 @@
         </div>
     </div>
 
-    <!-- Modal de Nueva Cita -->
+    <!-- Modal de Nueva Cita (con panel de materiales lateral) -->
     <div class="modal" id="newAppointmentModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Agregar Nueva Cita</h3>
-                <span class="close-modal">&times;</span>
+        <div class="modal-wrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Agregar Nueva Cita</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="newAppointmentForm">
+                        <div class="form-group">
+                            <label class="form-label">Cliente</label>
+                            <select class="form-select" id="newClient" required>
+                                <option value="">Seleccionar cliente...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha y Hora de Inicio</label>
+                            <input type="datetime-local" class="form-input" id="newFechaHoraInicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha y Hora de Fin</label>
+                            <input type="datetime-local" class="form-input" id="newFechaHoraFin" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Evento</label>
+                            <select class="form-select" id="newEventType" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ubicación</label>
+                            <input type="text" class="form-input" id="newUbicacion" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-outline" id="newAsignarMateriales" style="width:100%;">
+                                <i class="fas fa-boxes"></i> Asignar Materiales <span id="newMaterialCount" style="margin-left:8px;font-size:0.85rem;color:var(--gray);"></span>
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Notas</label>
+                            <textarea class="form-textarea" id="newNotas" rows="3" placeholder="Detalles adicionales del evento"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" id="cancelNew">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="newSubmitBtn">Agregar Cita</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <div class="modal-body">
-                <form id="newAppointmentForm">
-                    <div class="form-group">
-                        <label class="form-label">Cliente</label>
-                        <select class="form-select" id="newClient" required>
-                            <option value="">Seleccionar cliente...</option>
+            <!-- Panel de materiales (lateral) -->
+            <div class="material-panel" id="newMaterialPanel">
+                <div class="material-panel-header">
+                    <h4>Asignar Materiales</h4>
+                    <span class="close-sidebar">&times;</span>
+                </div>
+                <div class="material-panel-body">
+                    <div class="add-material-row">
+                        <select class="form-select" id="newMaterialSelect">
+                            <option value="">Seleccionar material...</option>
                         </select>
+                        <button type="button" class="btn btn-add-material" id="newAddMaterialBtn">+</button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Fecha</label>
-                        <input type="date" class="form-input" id="newDate" required>
+                    <input type="text" class="form-input material-search-input" id="newMaterialFilter" placeholder="Filtrar materiales agregados...">
+                    <div class="material-list" id="newMaterialList">
+                        <p class="material-empty">Presione <strong>+</strong> para agregar materiales.</p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Hora de Inicio</label>
-                        <input type="time" class="form-input" id="newStartTime" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Hora de Fin</label>
-                        <input type="time" class="form-input" id="newEndTime" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Tipo de Evento</label>
-                        <select class="form-select" id="newEventType" required>
-                            <option value="boda">Pool Party</option>
-                            <option value="cumpleanos">Cumpleaños</option>
-                            <option value="corporativo">Evento Corporativo</option>
-                            <option value="quince">Quinceañero</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Ubicación</label>
-                        <input type="text" class="form-input" id="newLocation" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Estado</label>
-                        <select class="form-select" id="newStatus" required>
-                            <option value="pending">Pendiente</option>
-                            <option value="confirmed">Confirmada</option>
-                            <option value="in-progress">En Progreso</option>
-                            <option value="completed">Completada</option>
-                            <option value="cancelled">Cancelada</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Notas</label>
-                        <textarea class="form-textarea" id="newNotes" rows="3" placeholder="Detalles adicionales del evento"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline" id="cancelNew">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Agregar Cita</button>
-                    </div>
-                </form>
+                    <div class="material-total" id="newMaterialTotal">Materiales totales: 0</div>
+                </div>
+                <div class="material-panel-footer">
+                    <button type="button" class="btn btn-outline" id="newCloseMaterialPanel">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="newConfirmMaterialPanel">Confirmar Materiales</button>
+                </div>
             </div>
         </div>
     </div>
-    <!-- Modal de edicion -->
+
+    <!-- Modal de Edición (con panel de materiales lateral) -->
     <div class="modal" id="editModal">
-        <div class="modal-content">
+        <div class="modal-wrapper">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Editar Cita</h3>
+                    <span class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editId">
+                        <div class="form-group">
+                            <label class="form-label">Cliente</label>
+                            <select class="form-select" id="editClient" required>
+                                <option value="">Seleccionar cliente...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha y Hora de Inicio</label>
+                            <input type="datetime-local" class="form-input" id="editFechaHoraInicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha y Hora de Fin</label>
+                            <input type="datetime-local" class="form-input" id="editFechaHoraFin" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tipo de Evento</label>
+                            <select class="form-select" id="editEventType" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ubicación</label>
+                            <input type="text" class="form-input" id="editUbicacion" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-outline" id="editAsignarMateriales" style="width:100%;">
+                                <i class="fas fa-boxes"></i> Asignar Materiales <span id="editMaterialCount" style="margin-left:8px;font-size:0.85rem;color:var(--gray);"></span>
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Notas</label>
+                            <textarea class="form-textarea" id="editNotas" rows="3" placeholder="Detalles adicionales del evento"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-outline" id="cancelEdit">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="editSubmitBtn">Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- Panel de materiales (lateral) -->
+            <div class="material-panel" id="editMaterialPanel">
+                <div class="material-panel-header">
+                    <h4>Asignar Materiales</h4>
+                    <span class="close-sidebar">&times;</span>
+                </div>
+                <div class="material-panel-body">
+                    <div class="add-material-row">
+                        <select class="form-select" id="editMaterialSelect">
+                            <option value="">Seleccionar material...</option>
+                        </select>
+                        <button type="button" class="btn btn-add-material" id="editAddMaterialBtn">+</button>
+                    </div>
+                    <input type="text" class="form-input material-search-input" id="editMaterialFilter" placeholder="Filtrar materiales agregados...">
+                    <div class="material-list" id="editMaterialList">
+                        <p class="material-empty">Presione <strong>+</strong> para agregar materiales.</p>
+                    </div>
+                    <div class="material-total" id="editMaterialTotal">Materiales totales: 0</div>
+                </div>
+                <div class="material-panel-footer">
+                    <button type="button" class="btn btn-outline" id="editCloseMaterialPanel">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="editConfirmMaterialPanel">Confirmar Materiales</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación de Cancelación -->
+    <div class="modal" id="cancelModal">
+        <div class="modal-content" style="max-width:450px;">
             <div class="modal-header">
-                <h3 class="modal-title">Editar Cita</h3>
+                <h3 class="modal-title">Cancelar Cita</h3>
                 <span class="close-modal">&times;</span>
             </div>
             <div class="modal-body">
-                <form id="editForm">
-                    <input type="hidden" id="editId">
-                    <div class="form-group">
-                        <label class="form-label">Cliente</label>
-                        <select class="form-select" id="editClient" required>
-                            <option value="">Seleccionar cliente...</option>
-                        </select>
-                    </div>
+                <p style="margin-bottom:12px;">Por favor indique el motivo de la cancelación:</p>
+                <textarea class="form-textarea" id="cancelMotivo" rows="4" placeholder="Motivo de cancelación..." required style="width:100%;"></textarea>
+                <div class="form-actions" style="margin-top:12px;">
+                    <button type="button" class="btn btn-outline" id="cancelCancelBtn">Volver</button>
+                    <button type="button" class="btn btn-danger" id="confirmCancelBtn">Cancelar Cita</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <div class="form-group">
-                        <label class="form-label">Fecha</label>
-                        <input type="date" class="form-input" id="editDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Hora de Inicio</label>
-                        <input type="time" class="form-input" id="editStartTime" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Hora de Fin</label>
-                        <input type="time" class="form-input" id="editEndTime" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Tipo de Evento</label>
-                        <select class="form-select" id="editEventType" required>
-                            <option value="boda">Pool Party</option>
-                            <option value="cumpleanos">Cumpleaños</option>
-                            <option value="corporativo">Evento Corporativo</option>
-                            <option value="quince">Quinceañero</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Ubicación</label>
-                        <input type="text" class="form-input" id="editLocation" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Estado</label>
-                        <select class="form-select" id="editStatus" required>
-                            <option value="pending">Pendiente</option>
-                            <option value="confirmed">Confirmada</option>
-                            <option value="in-progress">En Progreso</option>
-                            <option value="completed">Completada</option>
-                            <option value="cancelled">Cancelada</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Notas</label>
-                        <textarea class="form-textarea" id="editNotes" rows="3" placeholder="Detalles adicionales del evento"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-outline" id="cancelEdit">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-                    </div>
+    <!-- Modal de Gestión de Tipos de Evento -->
+    <div class="modal" id="eventTypeModal">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Gestionar Tipos de Evento</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="eventTypeForm" style="display:flex;gap:10px;margin-bottom:16px;">
+                    <input type="text" class="form-input" id="eventTypeName" placeholder="Nuevo tipo de evento..." required style="flex:1;">
+                    <button type="submit" class="btn btn-primary">Agregar</button>
                 </form>
+                <div id="eventTypeList" style="max-height:300px;overflow-y:auto;"></div>
             </div>
         </div>
     </div>

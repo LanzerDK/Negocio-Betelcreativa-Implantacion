@@ -1,0 +1,117 @@
+<?php
+
+namespace BetelCreativa\Controllers;
+
+use BetelCreativa\Domain\EventTypeModel;
+use BetelCreativa\Infrastructure\EventTypeRepository;
+use BetelCreativa\Helpers\ApiResponse;
+use BetelCreativa\Helpers\CsrfHelper;
+use BetelCreativa\Helpers\SessionHelpers;
+
+class EventTypeController
+{
+    public static function handleRequest(): void
+    {
+        SessionHelpers::requireAuth();
+        $method = $_SERVER['REQUEST_METHOD'];
+        $repo = new EventTypeRepository();
+
+        switch ($method) {
+            case 'GET':
+                if (isset($_GET['id'])) {
+                    $et = $repo->findById((int)$_GET['id']);
+                    if ($et) {
+                        ApiResponse::success(self::toArray($et));
+                    } else {
+                        ApiResponse::error('Tipo de evento no encontrado.', 404);
+                    }
+                } else {
+                    $types = $repo->findAll();
+                    ApiResponse::success(array_map([self::class, 'toArray'], $types));
+                }
+                break;
+
+            case 'POST':
+                CsrfHelper::validateRequestOrFail();
+                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+                $name = trim($input['name'] ?? '');
+                if (empty($name)) {
+                    ApiResponse::error('El nombre del tipo de evento es obligatorio.');
+                }
+
+                if ($repo->existsByName($name)) {
+                    ApiResponse::error('Ya existe un tipo de evento con este nombre.');
+                }
+
+                $type = new EventTypeModel(['name' => $name]);
+                if ($repo->save($type)) {
+                    ApiResponse::success(null, 'Tipo de evento creado exitosamente.');
+                } else {
+                    ApiResponse::error('Error al crear el tipo de evento.', 500);
+                }
+                break;
+
+            case 'PUT':
+                CsrfHelper::validateRequestOrFail();
+                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+                $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
+
+                if (!$id) {
+                    ApiResponse::error('ID de tipo de evento requerido.');
+                }
+
+                $existing = $repo->findById($id);
+                if (!$existing) {
+                    ApiResponse::error('Tipo de evento no encontrado.', 404);
+                }
+
+                $newName = trim($input['name'] ?? $existing->getName());
+                if ($repo->existsByName($newName, $id)) {
+                    ApiResponse::error('Ya existe otro tipo de evento con este nombre.');
+                }
+
+                $type = new EventTypeModel([
+                    'id' => $id,
+                    'name' => $newName
+                ]);
+
+                if ($repo->update($type)) {
+                    ApiResponse::success(null, 'Tipo de evento actualizado exitosamente.');
+                } else {
+                    ApiResponse::error('Error al actualizar el tipo de evento.', 500);
+                }
+                break;
+
+            case 'DELETE':
+                CsrfHelper::validateRequestOrFail();
+                $id = (int)($_GET['id'] ?? 0);
+                if (!$id) {
+                    ApiResponse::error('ID de tipo de evento requerido.');
+                }
+
+                if ($repo->hasAppointments($id)) {
+                    ApiResponse::error('No se puede eliminar: hay citas asociadas a este tipo de evento.');
+                }
+
+                if ($repo->delete($id)) {
+                    ApiResponse::success(null, 'Tipo de evento eliminado exitosamente.');
+                } else {
+                    ApiResponse::error('Error al eliminar el tipo de evento.', 500);
+                }
+                break;
+
+            default:
+                ApiResponse::error('Método no permitido.', 405);
+        }
+    }
+
+    private static function toArray(EventTypeModel $et): array
+    {
+        return [
+            'id' => $et->getId(),
+            'name' => $et->getName(),
+            'isActive' => $et->isActive()
+        ];
+    }
+}

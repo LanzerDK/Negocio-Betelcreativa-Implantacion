@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/customerStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/chart.min.js"></script>
     
 </head>
@@ -154,6 +155,21 @@
                 </div>
 
                 <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="newIdType">Tipo de Cédula</label>
+                        <select id="newIdType" class="form-control">
+                            <option value="V">V- Venezolano</option>
+                            <option value="E">E- Extranjero</option>
+                            <option value="J">J- Jurídico</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label for="newIdNumber">Número de Cédula</label>
+                        <input type="text" id="newIdNumber" class="form-control" placeholder="1234567">
+                    </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
                         <label for="email">Correo Electrónico</label>
                         <input type="email" id="email" class="form-control" placeholder="correo@ejemplo.com">
@@ -233,6 +249,21 @@
                 </div>
 
                 <div class="form-row">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="editIdType">Tipo de Cédula</label>
+                        <select id="editIdType" class="form-control">
+                            <option value="V">V- Venezolano</option>
+                            <option value="E">E- Extranjero</option>
+                            <option value="J">J- Jurídico</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label for="editIdNumber">Número de Cédula</label>
+                        <input type="text" id="editIdNumber" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
                         <label for="editEmail">Correo Electrónico</label>
                         <input type="email" id="editEmail" class="form-control">
@@ -304,6 +335,7 @@
             document.getElementById('settingsDropdown')?.classList.remove('show');
         });
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/customers.js"></script>
 </body>
 </html>

@@ -379,7 +379,7 @@ body {
 /* Mensaje de error debajo del input */
 .invalid-feedback {
   color: var(--danger);
-  font-size: 0.85rem;
+  font-size: 1rem;
   margin-top: 5px;
 }
 
@@ -755,6 +755,13 @@ body.modal-open { overflow: hidden; }
 
 /* Grupo de botones de página */
 .page-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Contenedor de botones numéricos generados dinámicamente */
+.page-buttons {
   display: flex;
   gap: 8px;
 }

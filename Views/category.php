@@ -155,19 +155,9 @@
                         <textarea id="categoryDescription" class="form-control" rows="3" placeholder="Describe esta categoría..."></textarea>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="categoryStatus">Estado</label>
-                            <select id="categoryStatus" class="form-control">
-                                <option value="Active">Activa</option>
-                                <option value="Inactive">Inactiva</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="categoryImage">Imagen (Opcional)</label>
-                            <input type="file" id="categoryImage" class="form-control">
-                        </div>
+                    <div class="form-group">
+                        <label for="categoryImage">Imagen (Opcional)</label>
+                        <input type="file" id="categoryImage" class="form-control">
                     </div>
 
                 </div>

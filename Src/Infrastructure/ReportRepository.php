@@ -224,10 +224,10 @@ class ReportRepository
         try {
             // Count completed appointments as a proxy
             $stmt = $this->db->prepare(
-                "SELECT DATE_FORMAT(date, '%Y-%m') AS month, COUNT(*) AS count
-                 FROM appointments
-                 WHERE status = 'Completed'
-                   AND date BETWEEN :from AND :to
+                "SELECT DATE_FORMAT(fecha_hora_inicio, '%Y-%m') AS month, COUNT(*) AS count
+                 FROM citas
+                 WHERE estado = 'Terminado'
+                   AND DATE(fecha_hora_inicio) BETWEEN :from AND :to
                  GROUP BY month
                  ORDER BY month ASC"
             );

@@ -33,6 +33,7 @@ async function fetchDashboard()
             renderStats();
             renderAlerts();
             renderUpcomingEvents();
+            renderEventTypeChart(dashboardData.eventTypeDistribution || []);
         }
     } catch (err) {
         console.error('Error al cargar dashboard:', err);
@@ -126,7 +127,10 @@ function formatTime(dateStr)
     return `${d.getDate()} ${months[d.getMonth()]}`;
 }
 
-// ── CHARTS (mock data) ──────────────────────
+// ── CHARTS ──────────────────────────────────
+const EVENT_COLORS = ['#002266','#0A369D','#D4AF37','#4A90E2','#F7E493','#28A745','#DC3545','#17A2B8','#6C757D'];
+let eventTypeChart = null;
+
 function initCharts()
 {
     const salesEl = document.getElementById('salesChart');
@@ -161,16 +165,9 @@ function initCharts()
 
     const eventEl = document.getElementById('eventTypeChart');
     if (eventEl) {
-        new Chart(eventEl.getContext('2d'), {
+        eventTypeChart = new Chart(eventEl.getContext('2d'), {
             type: 'doughnut',
-            data: {
-                labels: ['Bodas', 'Cumpleaños', 'Infantiles', 'Corporativos', 'Otros'],
-                datasets: [{
-                    data: [35, 25, 20, 15, 5],
-                    backgroundColor: ['#002266','#0A369D','#D4AF37','#4A90E2','#F7E493'],
-                    borderWidth: 0,
-                }]
-            },
+            data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -181,6 +178,18 @@ function initCharts()
             }
         });
     }
+}
+
+function renderEventTypeChart(distribution)
+{
+    if (!eventTypeChart) return;
+    const labels = distribution.map(d => d.name);
+    const data = distribution.map(d => parseInt(d.count));
+    const colors = distribution.map((_, i) => EVENT_COLORS[i % EVENT_COLORS.length]);
+    eventTypeChart.data.labels = labels;
+    eventTypeChart.data.datasets[0].data = data;
+    eventTypeChart.data.datasets[0].backgroundColor = colors;
+    eventTypeChart.update();
 }
 
 // ── TASKS API ────────────────────────────────

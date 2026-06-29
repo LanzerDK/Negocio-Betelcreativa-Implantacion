@@ -349,12 +349,17 @@ async function agregarNuevoMaterial() {
   let price, dataWholesaleQty = null;
   if (costType === 'wholesale') {
     const totalCost = parseFloat(document.getElementById('nuevoPrecio')?.value);
+    const errs = [];
+    if (totalCost < 0) errs.push('El costo total no puede ser negativo.');
+    if (wholesaleQty < 0) errs.push('La cantidad por mayor no puede ser negativa.');
+    if (errs.length) { errs.forEach(m => toast(m, 'warning')); return; }
     if (totalCost <= 0 || isNaN(totalCost)) { showError('nuevoPrecio', 'Costo total obligatorio'); return; }
     if (!wholesaleQty || wholesaleQty <= 0) { showError('nuevoWholesaleQty', 'Indique la cantidad'); return; }
     price = totalCost;
     dataWholesaleQty = wholesaleQty;
   } else {
     const unitPrice = parseFloat(document.getElementById('nuevoPrecio')?.value);
+    if (unitPrice < 0) { toast('El precio no puede ser negativo.', 'warning'); return; }
     if (unitPrice <= 0 || isNaN(unitPrice)) { showError('nuevoPrecio', 'Precio obligatorio'); return; }
     price = unitPrice;
   }
@@ -401,13 +406,18 @@ async function guardarEdicionMaterial() {
   let price, dataWholesaleQty = null;
   if (costType === 'wholesale') {
     const totalCost = parseFloat(document.getElementById('precio')?.value);
-    if (totalCost <= 0 || isNaN(totalCost)) { showError('precio', 'Costo total obligatorio'); return; }
     const wq = parseInt(document.getElementById('wholesaleQty')?.value);
+    const errs = [];
+    if (totalCost < 0) errs.push('El costo total no puede ser negativo.');
+    if (wq < 0) errs.push('La cantidad por mayor no puede ser negativa.');
+    if (errs.length) { errs.forEach(m => toast(m, 'warning')); return; }
+    if (totalCost <= 0 || isNaN(totalCost)) { showError('precio', 'Costo total obligatorio'); return; }
     if (!wq || wq <= 0) { showError('wholesaleQty', 'Indique la cantidad'); return; }
     price = totalCost;
     dataWholesaleQty = wq;
   } else {
     const unitPrice = parseFloat(document.getElementById('precio')?.value);
+    if (unitPrice < 0) { toast('El precio no puede ser negativo.', 'warning'); return; }
     if (unitPrice <= 0 || isNaN(unitPrice)) { showError('precio', 'Precio obligatorio'); return; }
     price = unitPrice;
   }

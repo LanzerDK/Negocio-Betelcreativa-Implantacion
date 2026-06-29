@@ -8,230 +8,200 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
-// =============================================
-// Repositorio de Citas (Appointments)
-// Capa de acceso a datos para la tabla `appointments`
-// Traduce columnas snake_case de la BD a camelCase
-// que el modelo AppointmentModel entiende
-// =============================================
 class AppointmentRepository
 {
     private PDO $db;
 
-    // Obtiene la conexión PDO singleton
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
-    // Devuelve todas las citas activas (no canceladas) ordenadas por fecha descendente
+    private const COLUMNS = "c.id, c.cliente_id AS clienteId,
+            c.fecha_hora_inicio AS fechaHoraInicio,
+            c.fecha_hora_fin AS fechaHoraFin,
+            COALESCE(et.name, '—') AS eventType,
+            c.event_type_id AS eventTypeId,
+            c.ubicacion, c.estado,
+            c.estado_previo_cancelacion AS estadoPrevioCancelacion,
+            c.fecha_hora_cancelacion AS fechaHoraCancelacion,
+            c.motivo_cancelacion AS motivoCancelacion,
+            c.notas, c.created_at AS createdAt";
+
     public function findAll(): array
     {
         try {
             $stmt = $this->db->query(
-                "SELECT appointment_id AS id, customer_id AS customerId,
-                        date, start_time AS startTime, end_time AS endTime,
-                        event_type AS eventType, location, status, notes,
-                        is_active AS isActive
-                 FROM appointments
-                 WHERE status != 'cancelled'
-                 ORDER BY date DESC, start_time DESC"
+                "SELECT " . self::COLUMNS . "
+                 FROM citas c
+                 LEFT JOIN event_types et ON c.event_type_id = et.id
+                 WHERE c.estado != 'Cancelado'
+                 ORDER BY c.fecha_hora_inicio DESC"
             );
-            $appointments = [];
-            while ($row = $stmt->fetch()) {
-                $appointments[] = new AppointmentModel($row);
-            }
-            return $appointments;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            ApiResponse::error('Error al cargar citas.', 500);
             return [];
         }
     }
 
-    // Devuelve todas las citas (incluyendo canceladas) para el calendario
-    public function findAllWithCancelled(): array
+    public function findAllWithCanceladas(): array
     {
         try {
             $stmt = $this->db->query(
-                "SELECT appointment_id AS id, customer_id AS customerId,
-                        date, start_time AS startTime, end_time AS endTime,
-                        event_type AS eventType, location, status, notes,
-                        is_active AS isActive
-                 FROM appointments
-                 ORDER BY date DESC, start_time DESC"
+                "SELECT " . self::COLUMNS . "
+                 FROM citas c
+                 LEFT JOIN event_types et ON c.event_type_id = et.id
+                 ORDER BY c.fecha_hora_inicio DESC"
             );
-            $appointments = [];
-            while ($row = $stmt->fetch()) {
-                $appointments[] = new AppointmentModel($row);
-            }
-            return $appointments;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            ApiResponse::error('Error al cargar citas.', 500);
             return [];
         }
     }
 
-    // Busca una cita por su ID único
-    public function findById(int $id): ?AppointmentModel
+    public function findById(int $id): ?array
     {
         try {
             $stmt = $this->db->prepare(
-                "SELECT appointment_id AS id, customer_id AS customerId,
-                        date, start_time AS startTime, end_time AS endTime,
-                        event_type AS eventType, location, status, notes,
-                        is_active AS isActive
-                 FROM appointments WHERE appointment_id = :id"
+                "SELECT " . self::COLUMNS . "
+                 FROM citas c
+                 LEFT JOIN event_types et ON c.event_type_id = et.id
+                 WHERE c.id = :id"
             );
             $stmt->execute([':id' => $id]);
-            $data = $stmt->fetch();
-            return $data ? new AppointmentModel($data) : null;
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $data ?: null;
         } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            ApiResponse::error('Error al buscar cita.', 500);
             return null;
         }
     }
 
-    // Verifica si existe un conflicto de horario para una cita
-    // (mismo cliente, misma fecha, horarios superpuestos)
-    // Si $excludeId no es null, excluye esa cita de la comprobación (para actualizaciones)
-    public function hasTimeConflict(int $customerId, string $date, string $startTime, string $endTime, ?int $excludeId = null): bool
+    public function findCanceladas(): array
     {
         try {
-            $sql = "SELECT COUNT(*) FROM appointments
-                    WHERE customer_id = :customerId
-                      AND date = :date
-                      AND status != 'cancelled'
-                      AND start_time < :endTime
-                      AND end_time > :startTime";
+            $stmt = $this->db->query(
+                "SELECT " . self::COLUMNS . "
+                 FROM citas c
+                 LEFT JOIN event_types et ON c.event_type_id = et.id
+                 WHERE c.estado = 'Cancelado'
+                 ORDER BY c.fecha_hora_cancelacion DESC"
+            );
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            ApiResponse::error('Error al cargar canceladas.', 500);
+            return [];
+        }
+    }
+
+    public function findByClienteId(int $clienteId): array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT " . self::COLUMNS . "
+                 FROM citas c
+                 LEFT JOIN event_types et ON c.event_type_id = et.id
+                 WHERE c.cliente_id = :clienteId
+                 ORDER BY c.fecha_hora_inicio DESC"
+            );
+            $stmt->execute([':clienteId' => $clienteId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            ApiResponse::error('Error al buscar citas del cliente.', 500);
+            return [];
+        }
+    }
+
+    public function hasTimeConflict(int $clienteId, string $inicio, string $fin, ?int $excludeId = null): bool
+    {
+        try {
+            $sql = "SELECT COUNT(*) FROM citas
+                    WHERE cliente_id = :clienteId
+                      AND estado != 'Cancelado'
+                      AND fecha_hora_inicio < :fin
+                      AND fecha_hora_fin > :inicio";
             $params = [
-                ':customerId' => $customerId,
-                ':date'       => $date,
-                ':startTime'  => $startTime,
-                ':endTime'    => $endTime
+                ':clienteId' => $clienteId,
+                ':inicio'    => $inicio,
+                ':fin'       => $fin
             ];
             if ($excludeId) {
-                $sql .= " AND appointment_id != :excludeId";
+                $sql .= " AND id != :excludeId";
                 $params[':excludeId'] = $excludeId;
             }
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchColumn() > 0;
         } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
             return false;
         }
     }
 
-    // Devuelve todas las citas de un cliente específico
-    public function findByCustomerId(int $customerId): array
+    public function save(array $data): ?int
     {
         try {
-            $stmt = $this->db->prepare(
-                "SELECT appointment_id AS id, customer_id AS customerId,
-                        date, start_time AS startTime, end_time AS endTime,
-                        event_type AS eventType, location, status, notes,
-                        is_active AS isActive
-                 FROM appointments WHERE customer_id = :customerId
-                 ORDER BY date DESC"
-            );
-            $stmt->execute([':customerId' => $customerId]);
-            $appointments = [];
-            while ($row = $stmt->fetch()) {
-                $appointments[] = new AppointmentModel($row);
-            }
-            return $appointments;
-        } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
-            return [];
-        }
-    }
-
-    // Inserta una nueva cita y devuelve true si tuvo éxito
-    public function save(AppointmentModel $appointment): bool
-    {
-        try {
-            $sql = "INSERT INTO appointments (customer_id, date, start_time, end_time,
-                                              event_type, location, status, notes)
-                    VALUES (:customerId, :date, :startTime, :endTime,
-                            :eventType, :location, :status, :notes)";
+            $sql = "INSERT INTO citas (cliente_id, fecha_hora_inicio, fecha_hora_fin,
+                                       event_type_id, ubicacion, estado, notas)
+                    VALUES (:clienteId, :fechaHoraInicio, :fechaHoraFin,
+                            :eventTypeId, :ubicacion, :estado, :notas)";
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
-                ':customerId' => $appointment->getCustomerId(),
-                ':date'       => $appointment->getDate(),
-                ':startTime'  => $appointment->getStartTime(),
-                ':endTime'    => $appointment->getEndTime(),
-                ':eventType'  => $appointment->getEventType(),
-                ':location'   => $appointment->getLocation(),
-                ':status'     => $appointment->getStatus(),
-                ':notes'      => $appointment->getNotes()
+            $stmt->execute([
+                ':clienteId'        => $data['clienteId'],
+                ':fechaHoraInicio'  => $data['fechaHoraInicio'],
+                ':fechaHoraFin'     => $data['fechaHoraFin'],
+                ':eventTypeId'      => $data['eventTypeId'] ?? null,
+                ':ubicacion'        => $data['ubicacion'] ?? null,
+                ':estado'           => $data['estado'] ?? 'En Proceso',
+                ':notas'            => $data['notas'] ?? null
             ]);
+            return (int)$this->db->lastInsertId();
         } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
-            return false;
+            ApiResponse::error('Error al guardar cita: ' . $e->getMessage(), 500);
+            return null;
         }
     }
 
-    // Actualiza una cita existente identificada por su ID
-    public function update(AppointmentModel $appointment): bool
+    public function update(int $id, array $data): bool
     {
         try {
-            $sql = "UPDATE appointments SET
-                        customer_id = :customerId, date = :date,
-                        start_time = :startTime, end_time = :endTime,
-                        event_type = :eventType, location = :location,
-                        status = :status, notes = :notes
-                    WHERE appointment_id = :id";
-            $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
-                ':id'         => $appointment->getId(),
-                ':customerId' => $appointment->getCustomerId(),
-                ':date'       => $appointment->getDate(),
-                ':startTime'  => $appointment->getStartTime(),
-                ':endTime'    => $appointment->getEndTime(),
-                ':eventType'  => $appointment->getEventType(),
-                ':location'   => $appointment->getLocation(),
-                ':status'     => $appointment->getStatus(),
-                ':notes'      => $appointment->getNotes()
-            ]);
-        } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
-            return false;
-        }
-    }
+            $fields = [];
+            $params = [':id' => $id];
 
-    // Devuelve todas las citas canceladas ordenadas por fecha descendente
-    public function findCancelled(): array
-    {
-        try {
-            $stmt = $this->db->query(
-                "SELECT appointment_id AS id, customer_id AS customerId,
-                        date, start_time AS startTime, end_time AS endTime,
-                        event_type AS eventType, location, status, notes,
-                        is_active AS isActive
-                 FROM appointments
-                 WHERE status = 'cancelled'
-                 ORDER BY date DESC, start_time DESC"
-            );
-            $appointments = [];
-            while ($row = $stmt->fetch()) {
-                $appointments[] = new AppointmentModel($row);
+            $map = [
+                'clienteId'       => 'cliente_id',
+                'fechaHoraInicio' => 'fecha_hora_inicio',
+                'fechaHoraFin'    => 'fecha_hora_fin',
+                'eventTypeId'     => 'event_type_id',
+                'ubicacion'       => 'ubicacion',
+                'estado'          => 'estado',
+                'estadoPrevioCancelacion' => 'estado_previo_cancelacion',
+                'fechaHoraCancelacion'    => 'fecha_hora_cancelacion',
+                'motivoCancelacion'       => 'motivo_cancelacion',
+                'notas'           => 'notas'
+            ];
+
+            foreach ($map as $key => $column) {
+                if (array_key_exists($key, $data)) {
+                    $fields[] = "$column = :$key";
+                    $params[":$key"] = $data[$key];
+                }
             }
-            return $appointments;
+
+            if (empty($fields)) return false;
+
+            $sql = "UPDATE citas SET " . implode(', ', $fields) . " WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($params);
         } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
-            return [];
+            ApiResponse::error('Error al actualizar cita: ' . $e->getMessage(), 500);
+            return false;
         }
     }
 
-    // Elimina una cita de la BD por su ID
-    public function delete(int $id): bool
+    public function actualizarEstado(int $id, string $estado): bool
     {
-        try {
-            $stmt = $this->db->prepare("DELETE FROM appointments WHERE appointment_id = :id");
-            return $stmt->execute([':id' => $id]);
-        } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
-            return false;
-        }
+        return $this->update($id, ['estado' => $estado]);
     }
 }

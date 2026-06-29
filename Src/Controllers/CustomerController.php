@@ -4,6 +4,7 @@ namespace BetelCreativa\Controllers;
 
 use BetelCreativa\Domain\CustomerModel;
 use BetelCreativa\Infrastructure\CustomerRepository;
+use BetelCreativa\Infrastructure\UserRepository;
 use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
@@ -52,6 +53,7 @@ class CustomerController
                 $customer = new CustomerModel([
                     'firstName' => trim($input['firstName'] ?? ''),
                     'lastName'  => trim($input['lastName'] ?? ''),
+                    'idNumber'  => trim($input['idNumber'] ?? ''),
                     'email'     => trim($input['email'] ?? ''),
                     'phone'     => trim($input['phone'] ?? ''),
                     'address'   => trim($input['address'] ?? ''),
@@ -66,16 +68,58 @@ class CustomerController
                     ApiResponse::error('El nombre y apellido son obligatorios.');
                 }
 
-                // Validación: email duplicado
-                $email = $customer->getEmail();
-                if ($email && $repo->existsByEmail($email)) {
-                    ApiResponse::error('Ya existe un cliente con ese correo electrónico.');
+                // Validación: cédula de identidad obligatoria
+                $idNumber = $customer->getIdNumber();
+                if (empty($idNumber)) {
+                    ApiResponse::error('La cédula de identidad es obligatoria.');
+                }
+                if (!preg_match('/^[VEJ]-\d{6,8}$/', $idNumber)) {
+                    ApiResponse::error('La cédula debe tener formato V/E/J-XXXXXX (6-8 dígitos).');
                 }
 
-                // Validación: teléfono duplicado
+                // Validación: email obligatorio
+                $email = $customer->getEmail();
+                if (empty($email)) {
+                    ApiResponse::error('El correo electrónico es obligatorio.');
+                }
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    ApiResponse::error('El formato del email no es válido.');
+                }
+                if ($repo->existsByEmail($email)) {
+                    ApiResponse::error('Ya existe un cliente con ese correo electrónico.');
+                }
+                // Validación: email no debe pertenecer a un usuario activo del sistema
+                $userRepo = new UserRepository();
+                if ($userRepo->existsByEmail($email)) {
+                    ApiResponse::error('Este correo electrónico pertenece a un usuario activo del sistema.');
+                }
+
+                // Validación: teléfono obligatorio
                 $phone = $customer->getPhone();
-                if ($phone && $repo->existsByPhone($phone)) {
+                if (empty($phone)) {
+                    ApiResponse::error('El número de teléfono es obligatorio.');
+                }
+                if (!preg_match('/^0[24]\d{9}$/', $phone)) {
+                    ApiResponse::error('El teléfono debe tener 11 dígitos, formato: 0XX-XXX-XXXX.');
+                }
+                if ($repo->existsByPhone($phone)) {
                     ApiResponse::error('Ya existe un cliente con ese número de teléfono.');
+                }
+                // Validación: teléfono no debe pertenecer a un usuario activo del sistema
+                if ($userRepo->existsByPhone($phone)) {
+                    ApiResponse::error('Este número de teléfono pertenece a un usuario activo del sistema.');
+                }
+
+                // Validación: formato de preferencias (cada línea debe ser Título: Valor)
+                $prefs = $customer->getPreferences();
+                if ($prefs) {
+                    $lines = explode("\n", $prefs);
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if ($line !== '' && !preg_match('/^[^:]+:.+$/', $line)) {
+                            ApiResponse::error('Cada preferencia debe tener el formato: Título: Valor.');
+                        }
+                    }
                 }
 
                 if ($repo->save($customer)) {
@@ -100,10 +144,42 @@ class CustomerController
                     ApiResponse::error('Cliente no encontrado.', 404);
                 }
 
+                // Si solo se envía is_active, es una operación de toggle
+                if (count($input) === 1 && array_key_exists('is_active', $input)) {
+                    $customer = new CustomerModel([
+                        'id'          => $id,
+                        'firstName'   => $existing->getFirstName(),
+                        'lastName'    => $existing->getLastName(),
+                        'idNumber'    => $existing->getIdNumber(),
+                        'email'       => $existing->getEmail(),
+                        'phone'       => $existing->getPhone(),
+                        'address'     => $existing->getAddress(),
+                        'clientType'  => $existing->getClientType(),
+                        'source'      => $existing->getSource(),
+                        'notes'       => $existing->getNotes(),
+                        'preferences' => $existing->getPreferences(),
+                        'isActive'    => filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN)
+                    ]);
+                    if ($repo->update($customer)) {
+                        ApiResponse::success(null, 'Estado del cliente actualizado.');
+                    } else {
+                        ApiResponse::error('Error al cambiar estado.', 500);
+                    }
+                    break;
+                }
+
                 // Validación: email duplicado (excluyendo este cliente)
                 $email = trim($input['email'] ?? '');
                 if ($email && $email !== $existing->getEmail() && $repo->existsByEmail($email, $id)) {
                     ApiResponse::error('Ya existe un cliente con ese correo electrónico.');
+                }
+
+                // Validación: email no debe pertenecer a un usuario activo del sistema
+                if ($email && $email !== $existing->getEmail()) {
+                    $userRepo = new UserRepository();
+                    if ($userRepo->existsByEmail($email)) {
+                        ApiResponse::error('Este correo electrónico pertenece a un usuario activo del sistema.');
+                    }
                 }
 
                 // Validación: teléfono duplicado (excluyendo este cliente)
@@ -112,19 +188,54 @@ class CustomerController
                     ApiResponse::error('Ya existe un cliente con ese número de teléfono.');
                 }
 
+                // Validación: formato del teléfono (Venezuela: 0 + 4XX/2XX + 7 dígitos)
+                if ($phone && !preg_match('/^0[24]\d{9}$/', $phone)) {
+                    ApiResponse::error('El teléfono debe tener 11 dígitos, formato: 0XX-XXX-XXXX.');
+                }
+
+                // Validación: teléfono no debe pertenecer a un usuario activo del sistema
+                if ($phone && $phone !== $existing->getPhone()) {
+                    $userRepo = new UserRepository();
+                    if ($userRepo->existsByPhone($phone)) {
+                        ApiResponse::error('Este número de teléfono pertenece a un usuario activo del sistema.');
+                    }
+                }
+
+                // Validación: cédula de identidad
+                $idNumber = trim($input['idNumber'] ?? '');
+                if (empty($idNumber)) {
+                    ApiResponse::error('La cédula de identidad es obligatoria.');
+                }
+                if (!preg_match('/^[VEJ]-\d{6,8}$/', $idNumber)) {
+                    ApiResponse::error('La cédula debe tener formato V/E/J-XXXXXX (6-8 dígitos).');
+                }
+
+                // Validación: formato de preferencias (cada línea debe ser Título: Valor)
+                $prefs = trim($input['preferences'] ?? '');
+                if ($prefs) {
+                    $lines = explode("\n", $prefs);
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if ($line !== '' && !preg_match('/^[^:]+:.+$/', $line)) {
+                            ApiResponse::error('Cada preferencia debe tener el formato: Título: Valor.');
+                        }
+                    }
+                }
+
                 // Crea el modelo con los datos nuevos, manteniendo los existentes como fallback
                 $customer = new CustomerModel([
-                    'id'         => $id,
-                    'firstName'  => trim($input['firstName'] ?? $existing->getFirstName()),
-                    'lastName'   => trim($input['lastName'] ?? $existing->getLastName()),
-                    'email'      => trim($input['email'] ?? $existing->getEmail()),
-                    'phone'      => trim($input['phone'] ?? $existing->getPhone()),
-                    'address'    => trim($input['address'] ?? $existing->getAddress()),
-                    'clientType' => trim($input['clientType'] ?? $existing->getClientType()),
-                    'source'     => trim($input['source'] ?? $existing->getSource()),
-                    'notes'      => trim($input['notes'] ?? $existing->getNotes()),
-                    'preferences'=> trim($input['preferences'] ?? $existing->getPreferences()),
-                    'isActive'   => array_key_exists('is_active', $input) ? filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN) : $existing->isActive()
+                    'id'          => $id,
+                    'firstName'   => trim($input['firstName'] ?? $existing->getFirstName()),
+                    'lastName'    => trim($input['lastName'] ?? $existing->getLastName()),
+                    'idNumber'    => $idNumber,
+                    'email'       => trim($input['email'] ?? $existing->getEmail()),
+                    'phone'       => $phone,
+                    'address'     => trim($input['address'] ?? $existing->getAddress()),
+                    'clientType'  => trim($input['clientType'] ?? $existing->getClientType()),
+                    'source'      => trim($input['source'] ?? $existing->getSource()),
+                    'notes'       => trim($input['notes'] ?? $existing->getNotes()),
+                    'preferences' => trim($input['preferences'] ?? $existing->getPreferences()),
+                    'isActive'    => array_key_exists('is_active', $input) ? filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN) : $existing->isActive()
                 ]);
 
                 if ($repo->update($customer)) {
@@ -148,6 +259,7 @@ class CustomerController
                     'id'         => $id,
                     'firstName'  => $existing->getFirstName(),
                     'lastName'   => $existing->getLastName(),
+                    'idNumber'   => $existing->getIdNumber(),
                     'email'      => $existing->getEmail(),
                     'phone'      => $existing->getPhone(),
                     'address'    => $existing->getAddress(),
@@ -176,6 +288,7 @@ class CustomerController
             'id'          => $c->getId(),
             'firstName'   => $c->getFirstName(),
             'lastName'    => $c->getLastName(),
+            'idNumber'    => $c->getIdNumber(),
             'email'       => $c->getEmail(),
             'phone'       => $c->getPhone(),
             'address'     => $c->getAddress(),

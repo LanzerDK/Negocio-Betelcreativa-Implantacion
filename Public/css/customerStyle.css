@@ -646,3 +646,34 @@
     gap: 10px;
   }
 }
+
+/* Paginación de preferencias */
+.pref-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 20px;
+  grid-column: 1 / -1;
+}
+.pref-pagination button {
+  background: linear-gradient(135deg, #D4AF37, #F5D76E);
+  border: none;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+.pref-pagination button:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.pref-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pref-page-info {
+  font-weight: 600;
+  color: var(--dark);
+}

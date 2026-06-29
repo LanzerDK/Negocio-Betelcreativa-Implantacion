@@ -27,6 +27,7 @@ class DashboardController
                 'pending'     => $repo->findPendingAppointments(),
             ],
             'upcomingEvents' => $repo->findUpcomingEvents(),
+            'eventTypeDistribution' => $repo->countEventsByType(),
         ]);
     }
 }

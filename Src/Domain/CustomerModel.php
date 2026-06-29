@@ -12,6 +12,7 @@ class CustomerModel
     private ?int $id;
     private string $firstName;
     private string $lastName;
+    private string $idNumber;
     private ?string $email;
     private ?string $phone;
     private ?string $address;
@@ -29,6 +30,7 @@ class CustomerModel
         $this->id = isset($data['id']) ? (int)$data['id'] : null;
         $this->firstName = $data['firstName'] ?? '';
         $this->lastName = $data['lastName'] ?? '';
+        $this->idNumber = $data['idNumber'] ?? '';
         $this->email = $data['email'] ?? null;
         $this->phone = $data['phone'] ?? null;
         $this->address = $data['address'] ?? null;
@@ -44,6 +46,7 @@ class CustomerModel
     public function getId(): ?int { return $this->id; }
     public function getFirstName(): string { return $this->firstName; }
     public function getLastName(): string { return $this->lastName; }
+    public function getIdNumber(): string { return $this->idNumber; }
     public function getEmail(): ?string { return $this->email; }
     public function getPhone(): ?string { return $this->phone; }
     public function getAddress(): ?string { return $this->address; }
@@ -57,6 +60,7 @@ class CustomerModel
     // Setters: permiten modificar los datos del cliente
     public function setFirstName(string $name): void { $this->firstName = $name; }
     public function setLastName(string $name): void { $this->lastName = $name; }
+    public function setIdNumber(string $id): void { $this->idNumber = $id; }
     public function setEmail(?string $email): void { $this->email = $email; }
     public function setPhone(?string $phone): void { $this->phone = $phone; }
     public function setAddress(?string $address): void { $this->address = $address; }

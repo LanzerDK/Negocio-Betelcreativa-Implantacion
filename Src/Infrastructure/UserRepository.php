@@ -38,6 +38,18 @@ class UserRepository
         }
     }
 
+    public function existsByPhone(string $phone): bool
+    {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE phone = :p");
+            $stmt->execute([':p' => $phone]);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
+            return false;
+        }
+    }
+
     public function existsByEmail(string $email): bool
     {
         try {

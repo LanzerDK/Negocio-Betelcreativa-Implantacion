@@ -30,8 +30,8 @@ class CustomerRepository
         try {
             $stmt = $this->db->query(
                 "SELECT customer_id AS id, first_name AS firstName, last_name AS lastName,
-                        email, phone, address, client_type AS clientType, source,
-                        notes, preferences, avatar, is_active AS isActive
+                        id_number AS idNumber, email, phone, address, client_type AS clientType,
+                        source, notes, preferences, avatar, is_active AS isActive
                  FROM customers
                  ORDER BY customer_id DESC"
             );
@@ -52,8 +52,8 @@ class CustomerRepository
         try {
             $stmt = $this->db->prepare(
                 "SELECT customer_id AS id, first_name AS firstName, last_name AS lastName,
-                        email, phone, address, client_type AS clientType, source,
-                        notes, preferences, avatar, is_active AS isActive
+                        id_number AS idNumber, email, phone, address, client_type AS clientType,
+                        source, notes, preferences, avatar, is_active AS isActive
                  FROM customers WHERE customer_id = :id"
             );
             $stmt->execute([':id' => $id]);
@@ -69,16 +69,17 @@ class CustomerRepository
     public function save(CustomerModel $customer): bool
     {
         try {
-            $sql = "INSERT INTO customers (first_name, last_name, email, phone, address,
-                                           client_type, source, notes, preferences,
+            $sql = "INSERT INTO customers (first_name, last_name, id_number, email, phone,
+                                           address, client_type, source, notes, preferences,
                                            avatar, is_active)
-                    VALUES (:firstName, :lastName, :email, :phone, :address,
-                            :clientType, :source, :notes, :preferences,
+                    VALUES (:firstName, :lastName, :idNumber, :email, :phone,
+                            :address, :clientType, :source, :notes, :preferences,
                             :avatar, :isActive)";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':firstName'    => $customer->getFirstName(),
                 ':lastName'     => $customer->getLastName(),
+                ':idNumber'     => $customer->getIdNumber(),
                 ':email'        => $customer->getEmail(),
                 ':phone'        => $customer->getPhone(),
                 ':address'      => $customer->getAddress(),
@@ -101,9 +102,9 @@ class CustomerRepository
         try {
             $sql = "UPDATE customers SET
                         first_name = :firstName, last_name = :lastName,
-                        email = :email, phone = :phone, address = :address,
-                        client_type = :clientType, source = :source,
-                        notes = :notes, preferences = :preferences,
+                        id_number = :idNumber, email = :email, phone = :phone,
+                        address = :address, client_type = :clientType,
+                        source = :source, notes = :notes, preferences = :preferences,
                         avatar = :avatar, is_active = :isActive
                     WHERE customer_id = :id";
             $stmt = $this->db->prepare($sql);
@@ -111,6 +112,7 @@ class CustomerRepository
                 ':id'           => $customer->getId(),
                 ':firstName'    => $customer->getFirstName(),
                 ':lastName'     => $customer->getLastName(),
+                ':idNumber'     => $customer->getIdNumber(),
                 ':email'        => $customer->getEmail(),
                 ':phone'        => $customer->getPhone(),
                 ':address'      => $customer->getAddress(),

@@ -59,7 +59,7 @@ class DashboardRepository
     public function countPendingAppointments(): int
     {
         try {
-            return (int)$this->db->query("SELECT COUNT(*) FROM appointments WHERE status = 'Pending'")->fetchColumn();
+            return (int)$this->db->query("SELECT COUNT(*) FROM citas WHERE estado = 'Pendiente'")->fetchColumn();
         } catch (PDOException $e) {
             return 0;
         }
@@ -112,22 +112,24 @@ class DashboardRepository
     {
         try {
             $stmt = $this->db->query(
-                "SELECT a.appointment_id, a.date, a.start_time, a.event_type, a.location,
-                        c.first_name, c.last_name
-                 FROM appointments a
-                 JOIN customers c ON a.customer_id = c.customer_id
-                 WHERE a.status = 'Pending'
-                 ORDER BY a.date ASC, a.start_time ASC
+                "SELECT a.id, a.fecha_hora_inicio, a.event_type_id, a.ubicacion,
+                        c.first_name, c.last_name,
+                        COALESCE(et.name, '') AS event_type
+                 FROM citas a
+                 JOIN customers c ON a.cliente_id = c.customer_id
+                 LEFT JOIN event_types et ON a.event_type_id = et.id
+                 WHERE a.estado = 'Pendiente'
+                 ORDER BY a.fecha_hora_inicio ASC
                  LIMIT 10"
             );
             $items = [];
             while ($r = $stmt->fetch()) {
                 $items[] = [
-                    'id'       => (int)$r['appointment_id'],
-                    'date'     => $r['date'],
-                    'startTime'=> $r['start_time'],
+                    'id'       => (int)$r['id'],
+                    'date'     => $r['fecha_hora_inicio'],
+                    'startTime'=> '',
                     'eventType'=> $r['event_type'],
-                    'location' => $r['location'],
+                    'location' => $r['ubicacion'],
                     'customer' => trim($r['first_name'] . ' ' . $r['last_name']),
                 ];
             }
@@ -141,27 +143,47 @@ class DashboardRepository
     {
         try {
             $stmt = $this->db->query(
-                "SELECT a.date, a.start_time, a.event_type, a.location, a.status,
-                        c.first_name, c.last_name
-                 FROM appointments a
-                 JOIN customers c ON a.customer_id = c.customer_id
-                 WHERE a.date >= CURDATE() AND a.date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                   AND a.status != 'cancelled'
-                 ORDER BY a.date ASC, a.start_time ASC
+                "SELECT a.fecha_hora_inicio, a.ubicacion, a.estado,
+                        c.first_name, c.last_name,
+                        COALESCE(et.name, '') AS event_type
+                 FROM citas a
+                 JOIN customers c ON a.cliente_id = c.customer_id
+                 LEFT JOIN event_types et ON a.event_type_id = et.id
+                 WHERE DATE(a.fecha_hora_inicio) >= CURDATE()
+                   AND DATE(a.fecha_hora_inicio) <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                   AND a.estado != 'Cancelado'
+                 ORDER BY a.fecha_hora_inicio ASC
                  LIMIT 5"
             );
             $items = [];
             while ($r = $stmt->fetch()) {
                 $items[] = [
-                    'date'      => $r['date'],
-                    'startTime' => $r['start_time'],
+                    'date'      => $r['fecha_hora_inicio'],
+                    'startTime' => '',
                     'eventType' => $r['event_type'],
-                    'location'  => $r['location'],
-                    'status'    => $r['status'],
+                    'location'  => $r['ubicacion'],
+                    'status'    => $r['estado'],
                     'customer'  => trim($r['first_name'] . ' ' . $r['last_name']),
                 ];
             }
             return $items;
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function countEventsByType(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT et.name, COUNT(c.id) AS count
+                 FROM event_types et
+                 LEFT JOIN citas c ON c.event_type_id = et.id
+                 WHERE et.is_active = 1
+                 GROUP BY et.id, et.name
+                 ORDER BY count DESC"
+            );
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return [];
         }

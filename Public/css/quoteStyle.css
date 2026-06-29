@@ -283,7 +283,15 @@
   overflow: hidden;
   box-shadow: var(--shadow);
   margin-bottom: 25px;
+  margin-top: 5px;
   display: block;
+}
+
+.appointments-table .col-4,
+.appointments-table .col-5 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .table-header {
@@ -335,31 +343,32 @@
   font-size: 0.85rem;
   font-weight: 600;
   text-align: center;
+  display: inline-block;
 }
 
-.status.pending {
-  background-color: rgba(255, 152, 0, 0.15);
-  color: var(--warning);
+.status.pendiente {
+  background-color: #e9ecef;
+  color: #495057;
 }
 
-.status.confirmed {
-  background-color: rgba(76, 175, 80, 0.15);
-  color: var(--success);
+.status.en-proceso {
+  background-color: #cce5ff;
+  color: #004085;
 }
 
-.status.in-progress {
-  background-color: rgba(33, 150, 243, 0.15);
-  color: var(--info);
+.status.en-progreso {
+  background-color: #d4edda;
+  color: #155724;
 }
 
-.status.completed {
-  background-color: rgba(13, 71, 161, 0.15);
-  color: #0D47A1;
+.status.terminado {
+  background-color: #c3e6cb;
+  color: #0b5e2e;
 }
 
-.status.cancelled {
-  background-color: rgba(244, 67, 54, 0.15);
-  color: var(--danger);
+.status.cancelado {
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
 /* Botón de acción circular */
@@ -453,34 +462,34 @@
   padding: 3px 5px;
 }
 
-.fc-event-pending {
-  background-color: rgba(255, 201, 39, 0.15);
-  color: hsl(24, 100%, 49%);
-  border-left: 3px solid #ffc106;
+.fc-event-pendiente {
+  background-color: #e9ecef;
+  color: #495057;
+  border-left: 3px solid #6c757d;
 }
 
-.fc-event-confirmed {
-  background-color: rgba(33, 150, 243, 0.15);
-  color: #2196f3;
-  border-left: 3px solid #2196f3;
+.fc-event-en-proceso {
+  background-color: #cce5ff;
+  color: #004085;
+  border-left: 3px solid #004085;
 }
 
-.fc-event-in-progress {
-  background-color: rgba(13, 71, 161, 0.15);
-  color: var(--primary);
-  border-left: 3px solid var(--primary);
+.fc-event-en-progreso {
+  background-color: #d4edda;
+  color: #155724;
+  border-left: 3px solid #155724;
 }
 
-.fc-event-completed {
-  background-color: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
-  border-left: 3px solid #4caf50;
+.fc-event-terminado {
+  background-color: #c3e6cb;
+  color: #0b5e2e;
+  border-left: 3px solid #0b5e2e;
 }
 
-.fc-event-cancelled {
-  background-color: rgba(244, 67, 54, 0.15);
-  color: #f44336;
-  border-left: 3px solid #f44336;
+.fc-event-cancelado {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-left: 3px solid #721c24;
 }
 
 .fc-daygrid-event-dot {
@@ -499,6 +508,208 @@
   justify-content: center;
   z-index: 1000;
   display: none;
+}
+
+/* Wrapper flex para modal + panel lateral */
+.modal-wrapper {
+  display: flex;
+  gap: 24px;
+  background: transparent;
+  max-height: 90vh;
+}
+
+.modal-wrapper > .modal-content {
+  flex: 0 0 auto;
+  width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+/* Panel lateral de materiales */
+.material-panel {
+  display: none;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  width: 420px;
+  max-height: 90vh;
+}
+
+.material-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--light-gray);
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  color: var(--gold-text);
+  border-radius: 12px 12px 0 0;
+}
+
+.material-panel-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.material-panel-header .close-sidebar {
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--gold-text);
+  line-height: 1;
+}
+
+.material-panel-body {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.material-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--light-gray);
+}
+
+/* Fila de agregar material (select + botón +) */
+.add-material-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.add-material-row .form-select {
+  flex: 1;
+}
+
+.btn-add-material {
+  flex: 0 0 auto;
+  padding: 8px 20px;
+  border-radius: 8px;
+  background: var(--secondary);
+  color: white;
+  border: 1px solid var(--gold-button);
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: var(--transition);
+}
+
+.btn-add-material:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+}
+
+/* Input de búsqueda dentro del panel */
+.material-search-input {
+  margin-bottom: 8px;
+}
+
+/* Lista de materiales agregados */
+.material-list {
+  max-height: 366px; /* ~6 items */
+  overflow-y: auto;
+}
+
+/* Total de materiales debajo de la lista */
+.material-total {
+  padding: 8px 4px;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--primary);
+  text-align: right;
+  border-top: 1px solid var(--light-gray);
+}
+
+.material-empty {
+  text-align: center;
+  color: var(--gray);
+  padding: 30px 0;
+}
+
+.material-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--light-gray);
+  transition: background 0.2s;
+}
+
+.material-item:hover {
+  background: rgba(13, 71, 161, 0.03);
+}
+
+.material-item.excede {
+  background: #fff0f0;
+}
+
+.material-remove {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+
+.material-remove:hover {
+  transform: scale(1.3);
+}
+
+.material-info {
+  flex: 2;
+  min-width: 0;
+}
+
+.material-info strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.material-info small {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.material-stock {
+  flex: 0 0 80px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gray);
+}
+
+.material-qty {
+  flex: 0 0 90px;
+}
+
+.material-qty .material-cantidad {
+  width: 80px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--light-gray);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.stock-warning {
+  flex: 1;
+  font-size: 0.75rem;
+  color: red;
+  font-weight: 600;
 }
 
 /* Estilos modales - heredan la base de _base.css */
