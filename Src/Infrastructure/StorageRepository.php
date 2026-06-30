@@ -18,7 +18,7 @@ class StorageRepository
         $this->db = Database::getConnection();
     }
 
-    public function recordAdjustment(int $materialId, int $userId, string $type, int $quantity, string $reason, ?string $notes, ?int $locationId = null): bool
+    public function recordAdjustment(int $materialId, int $userId, string $type, int $quantity, string $reason, ?string $notes, ?int $locationId = null, ?string $tipoReferencia = null, ?int $referenciaId = null): bool
     {
         try {
             $this->db->beginTransaction();
@@ -41,7 +41,11 @@ class StorageRepository
                 $locStmt = $this->db->prepare("SELECT current_location_id FROM materials WHERE material_id = :id");
                 $locStmt->execute([':id' => $materialId]);
                 $loc = $locStmt->fetch();
-                $locationId = $loc ? (int)$loc['current_location_id'] : 1; // default to "Almacén General"
+                $locationId = $loc ? (int)$loc['current_location_id'] : null;
+            }
+
+            if (!$locationId) {
+                $locationId = $this->getOrCreateDefaultLocation();
             }
 
             $this->upsertStockLocation($materialId, $locationId, $change);
@@ -50,8 +54,8 @@ class StorageRepository
 
             $actionType = $type === 'entry' ? 'Entry' : 'Exit';
             $stmt = $this->db->prepare(
-                "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, extra_note, movement_date)
-                 VALUES (:material_id, :user_id, :action_type, :quantity, :reason, :extra_note, NOW())"
+                "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, extra_note, tipo_referencia, referencia_id, movement_date)
+                 VALUES (:material_id, :user_id, :action_type, :quantity, :reason, :extra_note, :tipo_referencia, :referencia_id, NOW())"
             );
             $stmt->execute([
                 ':material_id' => $materialId,
@@ -114,13 +118,15 @@ class StorageRepository
                  VALUES (:material_id, :user_id, 'Transfer', :quantity, :reason, :extra_note, :origin, :destination, NOW())"
             );
             $stmt->execute([
-                ':material_id' => $materialId,
-                ':user_id' => $userId,
-                ':quantity' => $quantity,
-                ':reason' => $reason,
-                ':extra_note' => $notes,
-                ':origin' => $fromLocationId,
-                ':destination' => $toLocationId
+                ':material_id'     => $materialId,
+                ':user_id'         => $userId,
+                ':quantity'        => $quantity,
+                ':reason'          => $reason,
+                ':extra_note'      => $notes,
+                ':origin'          => $fromLocationId,
+                ':destination'     => $toLocationId,
+                ':tipo_referencia' => $tipoReferencia,
+                ':referencia_id'   => $referenciaId
             ]);
 
             $this->db->commit();
@@ -154,6 +160,8 @@ class StorageRepository
                     m.quantity,
                     m.reason,
                     m.extra_note AS extraNote,
+                    m.tipo_referencia AS tipoReferencia,
+                    m.referencia_id AS referenciaId,
                     m.origin_location_id AS originLocationId,
                     ol.location_name AS originName,
                     m.destination_location_id AS destinationLocationId,
@@ -224,6 +232,20 @@ class StorageRepository
         } catch (PDOException $e) {
             return [];
         }
+    }
+
+    private function getOrCreateDefaultLocation(): int
+    {
+        $stmt = $this->db->prepare("SELECT location_id FROM locations ORDER BY location_id ASC LIMIT 1");
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if ($row) {
+            return (int)$row['location_id'];
+        }
+        $this->db->prepare(
+            "INSERT INTO locations (location_name, description) VALUES ('Almacén General', 'Ubicación por defecto')"
+        )->execute();
+        return (int)$this->db->lastInsertId();
     }
 
     private function upsertStockLocation(int $materialId, int $locationId, int $quantityChange): void
