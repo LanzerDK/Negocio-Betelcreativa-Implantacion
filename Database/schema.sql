@@ -113,15 +113,16 @@ CREATE TABLE IF NOT EXISTS citas (
     fecha_hora_fin DATETIME NOT NULL,
     event_type_id INT DEFAULT NULL,
     ubicacion VARCHAR(255),
-    estado ENUM('En Proceso','Pendiente','En Progreso','Terminado','Cancelado') NOT NULL DEFAULT 'En Proceso',
+    estado ENUM('Pendiente','En Proceso','En Progreso','Finalizada','Cancelado') NOT NULL DEFAULT 'Pendiente',
     estado_previo_cancelacion VARCHAR(20) DEFAULT NULL,
     fecha_hora_cancelacion DATETIME DEFAULT NULL,
     motivo_cancelacion TEXT DEFAULT NULL,
     notas TEXT,
+    motivo_sin_materiales TEXT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES customers(customer_id) ON DELETE RESTRICT,
-    FOREIGN KEY (event_type_id) REFERENCES event_types(id) ON DELETE SET NULL
+    CONSTRAINT fk_citas_customer FOREIGN KEY (cliente_id) REFERENCES customers(customer_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_citas_event_type FOREIGN KEY (event_type_id) REFERENCES event_types(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -135,8 +136,8 @@ CREATE TABLE IF NOT EXISTS cita_materiales (
     material_id INT NOT NULL,
     cantidad_utilizada INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT,
-    FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT
+    CONSTRAINT fk_cita_materiales_cita FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_cita_materiales_material FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -147,6 +148,8 @@ CREATE TABLE IF NOT EXISTS locations (
     location_name VARCHAR(200) NOT NULL,
     description VARCHAR(255) DEFAULT NULL
 ) ENGINE=InnoDB;
+
+INSERT INTO locations (location_name, description) VALUES ('Almacén General', 'Ubicación por defecto');
 
 -- =============================================
 -- Tabla: material_stock_locations (stock por ubicación)
@@ -173,9 +176,12 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     extra_note TEXT DEFAULT NULL,
     origin_location_id INT DEFAULT NULL,
     destination_location_id INT DEFAULT NULL,
+    tipo_referencia VARCHAR(30) DEFAULT NULL COMMENT 'cita, compra, venta, transferencia, ajuste',
+    referencia_id INT DEFAULT NULL,
     movement_date DATETIME NOT NULL,
     FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL,
+    INDEX idx_referencia_logistica (tipo_referencia, referencia_id)
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -192,7 +198,7 @@ CREATE TABLE IF NOT EXISTS quotes (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT
+    CONSTRAINT fk_quotes_customer FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -220,6 +226,18 @@ CREATE TABLE IF NOT EXISTS password_resets (
     is_used TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabla: login_attempts
+-- Control de intentos fallidos de inicio de sesión
+-- =============================================
+CREATE TABLE IF NOT EXISTS login_attempts (
+    attempt_id INT AUTO_INCREMENT PRIMARY KEY,
+    ip_address VARCHAR(45) NOT NULL,
+    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ip (ip_address),
+    INDEX idx_time (attempted_at)
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -307,25 +325,58 @@ CREATE TABLE IF NOT EXISTS cita_materiales_historial (
     estado_cita_momento VARCHAR(50) NOT NULL,
     usuario_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT,
-    FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT,
-    FOREIGN KEY (usuario_id) REFERENCES users(user_id) ON DELETE RESTRICT
+    CONSTRAINT fk_historial_cita FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_historial_material FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT,
+    CONSTRAINT fk_historial_usuario FOREIGN KEY (usuario_id) REFERENCES users(user_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 -- =============================================
--- Migration 2026-06-29: Remover ON DELETE CASCADE
--- Las FKs críticas ahora usan ON DELETE RESTRICT.
--- Ejecutar si la tabla ya existe:
---   ALTER TABLE citas DROP FOREIGN KEY citas_ibfk_1;
---   ALTER TABLE citas ADD CONSTRAINT fk_citas_cliente
---     FOREIGN KEY (cliente_id) REFERENCES customers(customer_id) ON DELETE RESTRICT;
---   ALTER TABLE cita_materiales DROP FOREIGN KEY cita_materiales_ibfk_1;
---   ALTER TABLE cita_materiales ADD CONSTRAINT fk_citamat_cita
---     FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT;
---   ALTER TABLE cita_materiales DROP FOREIGN KEY cita_materiales_ibfk_2;
---   ALTER TABLE cita_materiales ADD CONSTRAINT fk_citamat_material
---     FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT;
---   ALTER TABLE quotes DROP FOREIGN KEY quotes_ibfk_1;
---   ALTER TABLE quotes ADD CONSTRAINT fk_quotes_cliente
---     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT;
--- Luego eliminar CustomerRepository::delete()
+-- Tabla: facturas
+-- Vinculada 1:1 a citas; almacena costo de
+-- servicio, total y notas de cuota
+-- =============================================
+CREATE TABLE IF NOT EXISTS facturas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cita_id INT NOT NULL,
+    costo_servicio DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Mano de obra / Honorarios',
+    total_factura DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT 'costo_servicio + suma total de materiales',
+    notas_cuota VARCHAR(255) DEFAULT NULL,
+    estado ENUM('activa','cerrada','anulada') NOT NULL DEFAULT 'activa',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_facturas_cita FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabla: pagos_factura
+-- Abonos/cuotas aplicados a una factura;
+-- almacena monto (siempre en USD), método,
+-- y tasa BCV usada para auditoría financiera
+-- =============================================
+CREATE TABLE IF NOT EXISTS pagos_factura (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    factura_id INT NOT NULL,
+    monto DECIMAL(12,2) NOT NULL COMMENT 'Siempre en USD (base contable)',
+    metodo_pago ENUM('divisas', 'efectivo', 'pagomovil') NOT NULL,
+    tasa_usada DECIMAL(12,2) NOT NULL COMMENT 'Tasa BCV del momento del pago',
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =============================================
+-- Migración: precio_unitario en cita_materiales
+-- =============================================
+ALTER TABLE cita_materiales
+  ADD COLUMN IF NOT EXISTS precio_unitario DECIMAL(12,2) DEFAULT NULL AFTER cantidad_utilizada;
+
+-- =============================================
+-- Configuración inicial: tasa BCV
+-- =============================================
+INSERT IGNORE INTO settings (setting_key, setting_value, description)
+VALUES ('bcv_rate', '36.50', 'Tasa de cambio BCV (USD a VES)');
+
+-- Nota: Las FKs críticas (citas.cliente_id, cita_materiales.cita_id,
+-- cita_materiales.material_id, quotes.customer_id) ya fueron renombradas
+-- con nombres explícitos (fk_citas_customer, fk_cita_materiales_cita,
+-- fk_cita_materiales_material, fk_quotes_customer) y usan ON DELETE RESTRICT.
+-- Para migrar una DB existente con nombres auto-generados, ejecutar los
+-- ALTER TABLE correspondientes (ver Database/roles_migration.sql para referencia).

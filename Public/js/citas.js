@@ -249,7 +249,7 @@ function renderizarTabla(pagina)
         fila.dataset.estado = cita.estado;
 
         const esCancelado = cita.estado === 'Cancelado';
-        const esTerminado = cita.estado === 'Terminado';
+        const esFinalizada = cita.estado === 'Finalizada';
 
         fila.innerHTML = `
             <div class="col-1">#${cita.id}</div>
@@ -267,8 +267,8 @@ function renderizarTabla(pagina)
             <div class="col-5">${cita.ubicacion || '—'}</div>
             <div class="col-6"><span class="status ${classNameEstado(cita.estado)}">${textoEstado(cita.estado)}</span></div>
             <div class="col-7" style="display:flex;gap:10px;">
-                ${!esCancelado && !esTerminado ? `<button class="action-btn edit" data-id="${cita.id}"><i class="fas fa-edit"></i></button>` : ''}
-                ${!esCancelado && !esTerminado ? `<button class="action-btn cancel-btn" data-id="${cita.id}" title="Cancelar cita"><i class="fas fa-ban"></i></button>` : ''}
+                ${!esCancelado && !esFinalizada ? `<button class="action-btn edit" data-id="${cita.id}"><i class="fas fa-edit"></i></button>` : ''}
+                ${!esCancelado && !esFinalizada ? `<button class="action-btn cancel-btn" data-id="${cita.id}" title="Cancelar cita"><i class="fas fa-ban"></i></button>` : ''}
                 ${esCancelado && esRestaurable(cita.fechaHoraCancelacion, cita.fechaHoraInicio) ? `<button class="action-btn restore-btn" data-id="${cita.id}" title="Restaurar cita"><i class="fas fa-undo"></i></button>` : ''}
             </div>
         `;
@@ -436,6 +436,15 @@ async function abrirModalEdicion(cita)
     asignar('editEventType', cita.eventTypeId);
     asignar('editUbicacion', cita.ubicacion);
     asignar('editNotas', cita.notas);
+
+    // Motivo sin materiales
+    const sinMatCheck = document.getElementById('editSinMateriales');
+    const sinMatTextarea = document.getElementById('editMotivoSinMateriales');
+    if (cita.motivoSinMateriales) {
+        if (sinMatCheck) sinMatCheck.checked = true;
+        if (sinMatTextarea) sinMatTextarea.value = cita.motivoSinMateriales;
+        toggleSinMateriales('editar');
+    }
 
     const clientSelect = document.getElementById('editClient');
     if (clientSelect) {
@@ -1055,6 +1064,32 @@ function hora12a24(h, m, ap)
 
 // ==================== VALIDACIÓN ====================
 
+function toggleSinMateriales(mode)
+{
+    const prefix = mode === 'nuevo' ? 'new' : 'edit';
+    const checkbox = document.getElementById(prefix + 'SinMateriales');
+    const group = document.getElementById(prefix + 'MotivoMaterialesGroup');
+    const textarea = document.getElementById(prefix + 'MotivoSinMateriales');
+    const btn = document.getElementById(prefix + 'AsignarMateriales');
+    const panel = document.getElementById(prefix + 'MaterialPanel');
+    if (!checkbox) return;
+    if (checkbox.checked) {
+        group.style.display = 'block';
+        textarea.setAttribute('required', 'false');
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+        if (panel) panel.style.display = 'none';
+        materialesAsignados = [];
+        actualizarContadorMateriales(prefix);
+    } else {
+        group.style.display = 'none';
+        textarea.removeAttribute('required');
+        textarea.value = '';
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = '';
+    }
+}
+
 function validarDatosCita(datos)
 {
     if (!datos.clienteId) { toast('Debe seleccionar un cliente.', 'warning'); return false; }
@@ -1065,8 +1100,10 @@ function validarDatosCita(datos)
         return false;
     }
     if (!datos.materiales || datos.materiales.length === 0) {
-        toast('Debe asignar al menos un material.', 'warning');
-        return false;
+        if (!datos.motivoSinMateriales) {
+            toast('Debe asignar al menos un material o indicar el motivo.', 'warning');
+            return false;
+        }
     }
     return true;
 }
@@ -1087,6 +1124,10 @@ function initApp()
         fetchTodasLasCitas();
         fetchCanceladas();
     });
+
+    // Toggle sin materiales
+    document.getElementById('newSinMateriales')?.addEventListener('change', () => toggleSinMateriales('nuevo'));
+    document.getElementById('editSinMateriales')?.addEventListener('change', () => toggleSinMateriales('editar'));
 
     // Botón agregar
     document.getElementById('addAppointmentBtn')?.addEventListener('click', abrirModalNueva);
@@ -1117,7 +1158,8 @@ function initApp()
             eventTypeId: parseInt(document.getElementById('newEventType')?.value || 0),
             ubicacion: document.getElementById('newUbicacion')?.value || '',
             notas: document.getElementById('newNotas')?.value || '',
-            materiales: materialesAsignados
+            materiales: materialesAsignados,
+            motivoSinMateriales: document.getElementById('newMotivoSinMateriales')?.value?.trim() || ''
         };
         if (!validarDatosCita(datos)) return;
         crearCita(datos);
@@ -1155,7 +1197,8 @@ function initApp()
             eventTypeId: parseInt(document.getElementById('editEventType')?.value || 0),
             ubicacion: document.getElementById('editUbicacion')?.value || '',
             notas: document.getElementById('editNotas')?.value || '',
-            materiales: materialesAsignados
+            materiales: materialesAsignados,
+            motivoSinMateriales: document.getElementById('editMotivoSinMateriales')?.value?.trim() || ''
         };
         if (!validarDatosCita(datos)) return;
         actualizarCita(id, datos);

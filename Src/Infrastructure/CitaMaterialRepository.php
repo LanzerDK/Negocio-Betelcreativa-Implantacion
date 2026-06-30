@@ -22,7 +22,9 @@ class CitaMaterialRepository
             $stmt = $this->db->prepare(
                 "SELECT cm.id, cm.cita_id AS citaId, cm.material_id AS materialId,
                         cm.cantidad_utilizada AS cantidadUtilizada,
+                        cm.precio_unitario AS precioUnitario,
                         m.name AS materialName, m.material_code AS materialCode,
+                        m.price AS materialPrice,
                         COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = m.material_id), 0) AS stockDisponible, m.reserved_stock AS reservedStock
                  FROM cita_materiales cm
                  JOIN materials m ON cm.material_id = m.material_id
@@ -50,10 +52,13 @@ class CitaMaterialRepository
         array $newMaterials,
         string $estadoCita,
         int $usuarioId,
-        string $accion
+        string $accion,
+        bool $manageTransaction = true
     ): bool {
         try {
-            $this->db->beginTransaction();
+            if ($manageTransaction) {
+                $this->db->beginTransaction();
+            }
 
             // 1. Cargar materiales actuales desde DB
             $oldRows = $this->findByCitaId($citaId);
@@ -93,14 +98,18 @@ class CitaMaterialRepository
                     $stmt->execute([':id' => $mid]);
                     $mat = $stmt->fetch();
                     if (!$mat) {
-                        $this->db->rollBack();
-                        ApiResponse::error('Material no encontrado (ID: ' . $mid . ').', 500);
+                        if ($manageTransaction) {
+                            $this->db->rollBack();
+                            ApiResponse::error('Material no encontrado (ID: ' . $mid . ').', 500);
+                        }
                         return false;
                     }
                     $disponible = (int)$mat['current_stock'] - (int)$mat['reserved_stock'];
                     if ($extra > $disponible) {
-                        $this->db->rollBack();
-                        ApiResponse::error('Stock insuficiente para el material seleccionado.', 500);
+                        if ($manageTransaction) {
+                            $this->db->rollBack();
+                            ApiResponse::error('Stock insuficiente para el material seleccionado.', 500);
+                        }
                         return false;
                     }
                 }
@@ -120,12 +129,21 @@ class CitaMaterialRepository
             $delStmt = $this->db->prepare("DELETE FROM cita_materiales WHERE cita_id = :cid");
             $delStmt->execute([':cid' => $citaId]);
 
+            $priceStmt = $this->db->prepare("SELECT price FROM materials WHERE material_id = :mid");
             $insStmt = $this->db->prepare(
-                "INSERT INTO cita_materiales (cita_id, material_id, cantidad_utilizada) VALUES (:cid, :mid, :cant)"
+                "INSERT INTO cita_materiales (cita_id, material_id, cantidad_utilizada, precio_unitario)
+                 VALUES (:cid, :mid, :cant, :precio)"
             );
             foreach ($newByMat as $mid => $cant) {
                 if ($cant > 0) {
-                    $insStmt->execute([':cid' => $citaId, ':mid' => $mid, ':cant' => $cant]);
+                    $priceStmt->execute([':mid' => $mid]);
+                    $precio = (float)($priceStmt->fetchColumn() ?: 0);
+                    $insStmt->execute([
+                        ':cid'   => $citaId,
+                        ':mid'   => $mid,
+                        ':cant'  => $cant,
+                        ':precio' => $precio
+                    ]);
                 }
             }
 
@@ -139,11 +157,15 @@ class CitaMaterialRepository
                 }
             }
 
-            $this->db->commit();
+            if ($manageTransaction) {
+                $this->db->commit();
+            }
             return true;
         } catch (PDOException $e) {
-            $this->db->rollBack();
-            ApiResponse::error('Error al sincronizar materiales: ' . $e->getMessage(), 500);
+            if ($manageTransaction) {
+                $this->db->rollBack();
+                ApiResponse::error('Error al sincronizar materiales: ' . $e->getMessage(), 500);
+            }
             return false;
         }
     }
@@ -222,7 +244,7 @@ class CitaMaterialRepository
     }
 
     /**
-     * Ejecuta la deducción real de stock cuando una cita pasa a Terminado.
+     * Ejecuta la deducción real de stock cuando una cita pasa a Finalizada.
      * Descuenta stock de material_stock_locations, libera reserved_stock y registra en inventory_movements.
      */
     public function executeDeductionOnCompleted(int $citaId, int $usuarioId): bool
@@ -245,8 +267,8 @@ class CitaMaterialRepository
             );
 
             $movStmt = $this->db->prepare(
-                "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, movement_date)
-                 VALUES (:mid, :uid, 'Exit', :qty, :reason, :date)"
+                "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, tipo_referencia, referencia_id, movement_date)
+                 VALUES (:mid, :uid, 'Exit', :qty, :reason, :tipo_ref, :ref_id, :date)"
             );
 
             foreach ($materiales as $mat) {
@@ -271,14 +293,16 @@ class CitaMaterialRepository
                 ]);
 
                 $movStmt->execute([
-                    ':mid'    => $mat['materialId'],
-                    ':uid'    => $usuarioId,
-                    ':qty'    => $cant,
-                    ':reason' => 'Salida por Cita #' . $citaId,
-                    ':date'   => $now
+                    ':mid'     => $mat['materialId'],
+                    ':uid'     => $usuarioId,
+                    ':qty'     => $cant,
+                    ':reason'  => 'Salida por Cita #' . $citaId,
+                    ':tipo_ref' => 'cita',
+                    ':ref_id'  => $citaId,
+                    ':date'    => $now
                 ]);
 
-                $this->logHistorial($citaId, (int)$mat['materialId'], $cant, 0, 'Ejecutado', 'Terminado', $usuarioId);
+                $this->logHistorial($citaId, (int)$mat['materialId'], $cant, 0, 'Ejecutado', 'Finalizada', $usuarioId);
             }
 
             $this->db->commit();

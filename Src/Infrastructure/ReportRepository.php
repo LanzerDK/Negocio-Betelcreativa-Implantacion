@@ -224,26 +224,35 @@ class ReportRepository
     public function income(string $from, string $to): array
     {
         try {
-            // Count completed appointments as a proxy
             $stmt = $this->db->prepare(
-                "SELECT DATE_FORMAT(fecha_hora_inicio, '%Y-%m') AS month, COUNT(*) AS count
-                 FROM citas
-                 WHERE estado = 'Terminado'
-                   AND DATE(fecha_hora_inicio) BETWEEN :from AND :to
+                "SELECT DATE_FORMAT(c.fecha_hora_inicio, '%Y-%m') AS month,
+                        COUNT(DISTINCT c.id) AS eventos,
+                        COALESCE(SUM(f.total_factura), 0) AS total_usd,
+                        COUNT(DISTINCT f.id) AS facturas
+                 FROM citas c
+                 LEFT JOIN facturas f ON c.id = f.cita_id
+                  WHERE c.estado = 'Finalizada'
+                   AND DATE(c.fecha_hora_inicio) BETWEEN :from AND :to
                  GROUP BY month
                  ORDER BY month ASC"
             );
             $stmt->execute([':from' => $from, ':to' => $to]);
-            $appts = $stmt->fetchAll();
+            $rows = $stmt->fetchAll();
 
             $labels = [];
-            $values = [];
-            $totalAppts = 0;
+            $eventos = [];
+            $ingresos = [];
+            $totalEventos = 0;
+            $totalIngresos = 0.0;
+            $totalFacturados = 0;
 
-            foreach ($appts as $a) {
-                $labels[] = $a['month'];
-                $values[] = (int)$a['count'];
-                $totalAppts += (int)$a['count'];
+            foreach ($rows as $r) {
+                $labels[] = $r['month'];
+                $eventos[] = (int)$r['eventos'];
+                $ingresos[] = (float)$r['total_usd'];
+                $totalEventos += (int)$r['eventos'];
+                $totalIngresos += (float)$r['total_usd'];
+                $totalFacturados += (int)$r['facturas'];
             }
 
             return [
@@ -251,23 +260,35 @@ class ReportRepository
                     'type' => 'line',
                     'data' => [
                         'labels'   => $labels,
-                        'datasets' => [[
-                            'label' => 'Eventos Completados',
-                            'data'  => $values,
-                        ]],
+                        'datasets' => [
+                            [
+                                'label' => 'Eventos Completados',
+                                'data'  => $eventos,
+                                'yAxisID' => 'y',
+                            ],
+                            [
+                                'label' => 'Ingresos ($)',
+                                'data'  => $ingresos,
+                                'yAxisID' => 'y1',
+                                'borderColor' => '#28a745',
+                                'backgroundColor' => 'rgba(40,167,69,0.1)',
+                            ],
+                        ],
                     ],
                 ],
                 'stats' => [
-                    ['label' => 'Eventos Completados', 'value' => $totalAppts],
+                    ['label' => 'Eventos Completados', 'value' => $totalEventos],
+                    ['label' => 'Ingresos Facturados', 'value' => '$' . number_format($totalIngresos, 2)],
+                    ['label' => 'Facturas Emitidas',   'value' => $totalFacturados],
                     ['label' => 'Período',              'value' => "$from — $to"],
                 ],
                 'table' => [
-                    'headers' => ['Mes', 'Eventos Completados'],
-                    'rows'    => array_map(function ($a) {
-                        return [$a['month'], (int)$a['count']];
-                    }, $appts),
+                    'headers' => ['Mes', 'Eventos', 'Ingresos ($)', 'Facturas'],
+                    'rows'    => array_map(function ($r) {
+                        return [$r['month'], (int)$r['eventos'], '$' . number_format((float)$r['total_usd'], 2), (int)$r['facturas']];
+                    }, $rows),
                 ],
-                'note' => 'Los datos de ingresos monetarios estarán disponibles cuando se implemente el módulo de facturación.',
+                'note' => 'Los ingresos monetarios provienen del módulo de facturación.',
             ];
         } catch (PDOException $e) {
             return ['chart' => null, 'stats' => [], 'table' => ['headers' => [], 'rows' => []], 'note' => ''];

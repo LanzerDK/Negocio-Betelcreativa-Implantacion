@@ -39,6 +39,14 @@ class MaterialController
                 CsrfHelper::validateRequestOrFail();
                 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
+                $locationId = !empty($input['location_id']) ? (int)$input['location_id'] : null;
+                if (!$locationId) {
+                    $locDb = \BetelCreativa\Config\Database::getConnection();
+                    $locStmt = $locDb->prepare("SELECT location_id FROM locations ORDER BY location_id ASC LIMIT 1");
+                    $locStmt->execute();
+                    $locationId = (int)$locStmt->fetchColumn() ?: null;
+                }
+
                 $material = new MaterialModel([
                     'code' => trim($input['code'] ?? ''),
                     'name' => trim($input['name'] ?? ''),
@@ -49,7 +57,7 @@ class MaterialController
                     'categoryId' => !empty($input['category_id']) ? (int)$input['category_id'] : null,
                     'materialType' => $input['material_type'] ?? 'consumible',
                     'supplierId' => null,
-                    'locationId' => null,
+                    'locationId' => $locationId,
                     'unidadCompra' => $input['unidad_compra'] ?? 'Unidad',
                     'unidadConsumo' => $input['unidad_consumo'] ?? 'Unidad',
                     'factorConversion' => max(1, (int)($input['factor_conversion'] ?? 1))

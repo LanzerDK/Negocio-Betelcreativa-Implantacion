@@ -368,7 +368,7 @@
   color: #155724;
 }
 
-.status.terminado {
+.status.finalizada {
   background-color: #c3e6cb;
   color: #0b5e2e;
 }
@@ -487,7 +487,7 @@
   border-left: 3px solid #155724;
 }
 
-.fc-event-terminado {
+.fc-event-finalizada {
   background-color: #c3e6cb;
   color: #0b5e2e;
   border-left: 3px solid #0b5e2e;

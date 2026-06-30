@@ -5,11 +5,11 @@ namespace BetelCreativa\Domain;
 class AppointmentModel
 {
     public const TRANSICIONES_PERMITIDAS = [
-        'En Proceso'  => ['Pendiente', 'En Progreso', 'Cancelado'],
-        'Pendiente'   => ['En Progreso', 'Cancelado'],
-        'En Progreso' => ['Terminado', 'Cancelado'],
-        'Terminado'   => [],
-        'Cancelado'   => ['En Proceso', 'Pendiente', 'En Progreso', 'Terminado'],
+        'Pendiente'   => ['En Proceso', 'En Progreso', 'Cancelado'],
+        'En Proceso'  => ['En Progreso', 'Cancelado'],
+        'En Progreso' => ['Finalizada', 'Cancelado'],
+        'Finalizada'  => [],
+        'Cancelado'   => ['Pendiente', 'En Proceso', 'En Progreso'],
     ];
 
     private ?int $id;
@@ -24,6 +24,7 @@ class AppointmentModel
     private ?string $fechaHoraCancelacion;
     private ?string $motivoCancelacion;
     private ?string $notas;
+    private ?string $motivoSinMateriales;
 
     public function __construct(array $data = [])
     {
@@ -34,11 +35,12 @@ class AppointmentModel
         $this->eventType = $data['eventType'] ?? null;
         $this->eventTypeId = isset($data['eventTypeId']) ? (int)$data['eventTypeId'] : null;
         $this->ubicacion = $data['ubicacion'] ?? null;
-        $this->estado = $data['estado'] ?? 'En Proceso';
+        $this->estado = $data['estado'] ?? 'Pendiente';
         $this->estadoPrevioCancelacion = $data['estadoPrevioCancelacion'] ?? null;
         $this->fechaHoraCancelacion = $data['fechaHoraCancelacion'] ?? null;
         $this->motivoCancelacion = $data['motivoCancelacion'] ?? null;
         $this->notas = $data['notas'] ?? null;
+        $this->motivoSinMateriales = $data['motivoSinMateriales'] ?? null;
     }
 
     public function getId(): ?int { return $this->id; }
@@ -53,6 +55,7 @@ class AppointmentModel
     public function getFechaHoraCancelacion(): ?string { return $this->fechaHoraCancelacion; }
     public function getMotivoCancelacion(): ?string { return $this->motivoCancelacion; }
     public function getNotas(): ?string { return $this->notas; }
+    public function getMotivoSinMateriales(): ?string { return $this->motivoSinMateriales; }
     public function isCancelado(): bool { return $this->estado === 'Cancelado'; }
 
     public function canTransitionTo(string $newEstado): bool
@@ -102,4 +105,5 @@ class AppointmentModel
     public function setFechaHoraCancelacion(?string $fecha): void { $this->fechaHoraCancelacion = $fecha; }
     public function setMotivoCancelacion(?string $motivo): void { $this->motivoCancelacion = $motivo; }
     public function setNotas(?string $notas): void { $this->notas = $notas; }
+    public function setMotivoSinMateriales(?string $motivo): void { $this->motivoSinMateriales = $motivo; }
 }

@@ -26,7 +26,7 @@ class AppointmentRepository
             c.estado_previo_cancelacion AS estadoPrevioCancelacion,
             c.fecha_hora_cancelacion AS fechaHoraCancelacion,
             c.motivo_cancelacion AS motivoCancelacion,
-            c.notas, c.created_at AS createdAt";
+            c.notas, c.motivo_sin_materiales AS motivoSinMateriales, c.created_at AS createdAt";
 
     public function findAll(): array
     {
@@ -143,18 +143,19 @@ class AppointmentRepository
     {
         try {
             $sql = "INSERT INTO citas (cliente_id, fecha_hora_inicio, fecha_hora_fin,
-                                       event_type_id, ubicacion, estado, notas)
+                                       event_type_id, ubicacion, estado, notas, motivo_sin_materiales)
                     VALUES (:clienteId, :fechaHoraInicio, :fechaHoraFin,
-                            :eventTypeId, :ubicacion, :estado, :notas)";
+                            :eventTypeId, :ubicacion, :estado, :notas, :motivoSinMateriales)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                ':clienteId'        => $data['clienteId'],
-                ':fechaHoraInicio'  => $data['fechaHoraInicio'],
-                ':fechaHoraFin'     => $data['fechaHoraFin'],
-                ':eventTypeId'      => $data['eventTypeId'] ?? null,
-                ':ubicacion'        => $data['ubicacion'] ?? null,
-                ':estado'           => $data['estado'] ?? 'En Proceso',
-                ':notas'            => $data['notas'] ?? null
+                ':clienteId'          => $data['clienteId'],
+                ':fechaHoraInicio'    => $data['fechaHoraInicio'],
+                ':fechaHoraFin'       => $data['fechaHoraFin'],
+                ':eventTypeId'        => $data['eventTypeId'] ?? null,
+                ':ubicacion'          => $data['ubicacion'] ?? null,
+                ':estado'             => $data['estado'] ?? 'Pendiente',
+                ':notas'              => $data['notas'] ?? null,
+                ':motivoSinMateriales' => $data['motivoSinMateriales'] ?? null
             ]);
             return (int)$this->db->lastInsertId();
         } catch (PDOException $e) {
@@ -179,7 +180,8 @@ class AppointmentRepository
                 'estadoPrevioCancelacion' => 'estado_previo_cancelacion',
                 'fechaHoraCancelacion'    => 'fecha_hora_cancelacion',
                 'motivoCancelacion'       => 'motivo_cancelacion',
-                'notas'           => 'notas'
+                'notas'                   => 'notas',
+                'motivoSinMateriales'     => 'motivo_sin_materiales'
             ];
 
             foreach ($map as $key => $column) {

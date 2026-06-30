@@ -17,6 +17,11 @@ class AppointmentController
         return new AppointmentModel($row);
     }
 
+    private static function getDb(): \PDO
+    {
+        return \BetelCreativa\Config\Database::getConnection();
+    }
+
     private static function toArray(AppointmentModel $c): array
     {
         return [
@@ -31,7 +36,8 @@ class AppointmentController
             'estadoPrevioCancelacion'=> $c->getEstadoPrevioCancelacion(),
             'fechaHoraCancelacion'   => $c->getFechaHoraCancelacion(),
             'motivoCancelacion'      => $c->getMotivoCancelacion(),
-            'notas'                  => $c->getNotas()
+            'notas'                  => $c->getNotas(),
+            'motivoSinMateriales'    => $c->getMotivoSinMateriales()
         ];
     }
 
@@ -39,15 +45,20 @@ class AppointmentController
     {
         $ahora = date('Y-m-d H:i:s');
         $modelo = new AppointmentModel($row);
+        $estado = $modelo->getEstado();
 
-        if ($modelo->getEstado() === 'Pendiente' && $row['fechaHoraInicio'] && $ahora >= $row['fechaHoraInicio']) {
+        if ($estado === 'En Proceso' && $row['fechaHoraInicio'] && $ahora >= $row['fechaHoraInicio']) {
             if ($modelo->canTransitionTo('En Progreso')) {
                 $row['estado'] = 'En Progreso';
             }
-        } elseif ($modelo->getEstado() === 'En Progreso' && $row['fechaHoraFin'] && $ahora >= $row['fechaHoraFin']) {
-            if ($modelo->canTransitionTo('Terminado')) {
-                $row['estado'] = 'Terminado';
+        } elseif ($estado === 'En Progreso' && $row['fechaHoraFin'] && $ahora >= $row['fechaHoraFin']) {
+            if ($modelo->canTransitionTo('Finalizada')) {
+                $row['estado'] = 'Finalizada';
             }
+        } elseif ($estado === 'Pendiente' && $row['fechaHoraInicio'] && $ahora >= $row['fechaHoraInicio']) {
+            $row['estado'] = 'Cancelado';
+            $row['fechaHoraCancelacion'] = $ahora;
+            $row['motivoCancelacion'] = 'No se realizó el pago a tiempo';
         }
     }
 
@@ -56,8 +67,18 @@ class AppointmentController
         $estadoOriginal = $row['estado'];
         self::evaluarEstado($row);
         if ($row['estado'] !== $estadoOriginal) {
-            $repo->actualizarEstado((int)$row['id'], $row['estado']);
-            if ($row['estado'] === 'Terminado') {
+            if ($row['estado'] === 'Cancelado' && $estadoOriginal === 'Pendiente') {
+                $repo->update((int)$row['id'], [
+                    'estado'               => 'Cancelado',
+                    'fechaHoraCancelacion' => $row['fechaHoraCancelacion'] ?? date('Y-m-d H:i:s'),
+                    'motivoCancelacion'    => $row['motivoCancelacion'] ?? 'No se realizó el pago a tiempo'
+                ]);
+                $matRepo = new CitaMaterialRepository();
+                $matRepo->cancelReservations((int)$row['id'], 'Cancelado', (int)$_SESSION['user_id']);
+            } else {
+                $repo->actualizarEstado((int)$row['id'], $row['estado']);
+            }
+            if ($row['estado'] === 'Finalizada') {
                 $matRepo = new CitaMaterialRepository();
                 $matRepo->executeDeductionOnCompleted((int)$row['id'], (int)$_SESSION['user_id']);
             }
@@ -137,28 +158,35 @@ class AppointmentController
                     'fechaHoraFin'    => $input['fechaHoraFin'],
                     'eventTypeId'     => !empty($input['eventTypeId']) ? (int)$input['eventTypeId'] : null,
                     'ubicacion'       => trim($input['ubicacion'] ?? ''),
-                    'estado'          => 'En Proceso',
-                    'notas'           => trim($input['notas'] ?? '')
+                    'estado'                => 'Pendiente',
+                    'notas'                 => trim($input['notas'] ?? ''),
+                    'motivoSinMateriales'   => trim($input['motivoSinMateriales'] ?? '') ?: null
                 ];
 
                 if ($repo->hasTimeConflict($datos['clienteId'], $datos['fechaHoraInicio'], $datos['fechaHoraFin'])) {
                     ApiResponse::error('El cliente ya tiene una cita en ese horario.'); return;
                 }
 
+                $db = self::getDb();
+                $db->beginTransaction();
+
                 $id = $repo->save($datos);
                 if (!$id) {
-                    ApiResponse::error('Error al crear la cita.', 500); return;
+                    $db->rollBack();
+                    ApiResponse::error('Error al crear la cita.', 500);
                 }
 
-                // Asignar materiales con reserva de stock
                 $materiales = $input['materiales'] ?? [];
                 if (!empty($materiales)) {
                     $matRepo = new CitaMaterialRepository();
-                    if (!$matRepo->syncMaterialsWithReservation($id, $materiales, 'En Proceso', (int)$_SESSION['user_id'], 'Asignado')) {
-                        return; // ApiResponse::error ya fue llamada
+                    if (!$matRepo->syncMaterialsWithReservation($id, $materiales, 'Pendiente', (int)$_SESSION['user_id'], 'Asignado', false)) {
+                        $db->rollBack();
+                        // ApiResponse::error ya fue llamada internamente con exit
+                        // El rollBack no se ejecutará por el exit, pero MySQL lo hará al cerrar conexión
                     }
                 }
 
+                $db->commit();
                 ApiResponse::success(['id' => $id], 'Cita creada exitosamente.');
                 break;
 
@@ -198,7 +226,7 @@ class AppointmentController
                     if (!AppointmentModel::esRestaurable($modelo->getFechaHoraCancelacion(), $modelo->getFechaHoraInicio())) {
                         ApiResponse::error('El plazo de 3 días hábiles para restaurar ha expirado o la fecha de la cita ya pasó.'); return;
                     }
-                    $estadoRestaurado = $modelo->getEstadoPrevioCancelacion() ?: 'En Proceso';
+                    $estadoRestaurado = $modelo->getEstadoPrevioCancelacion() ?: 'Pendiente';
                     try {
                         $modelo->validarTransicion($estadoRestaurado);
                     } catch (\DomainException $e) {
@@ -212,7 +240,7 @@ class AppointmentController
                         $estadoRestaurado = 'En Progreso';
                     }
                     if ($estadoRestaurado === 'En Progreso' && $fin && $ahora >= $fin) {
-                        $estadoRestaurado = 'Terminado';
+                        $estadoRestaurado = 'Finalizada';
                     }
                     $matRepo = new CitaMaterialRepository();
                     $stockOk = $matRepo->restoreReservations($id, $estadoRestaurado, (int)$_SESSION['user_id']);
@@ -240,6 +268,7 @@ class AppointmentController
                 if (isset($input['eventTypeId'])) $datosUpdate['eventTypeId'] = !empty($input['eventTypeId']) ? (int)$input['eventTypeId'] : null;
                 if (isset($input['ubicacion'])) $datosUpdate['ubicacion'] = trim($input['ubicacion']);
                 if (isset($input['notas'])) $datosUpdate['notas'] = trim($input['notas']);
+                if (isset($input['motivoSinMateriales'])) $datosUpdate['motivoSinMateriales'] = trim($input['motivoSinMateriales']) ?: null;
 
                 if (array_key_exists('estado', $datosUpdate)) {
                     try {

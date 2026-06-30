@@ -63,6 +63,10 @@
                 <i class="fas fa-calendar-check"></i>
                 <span>Citas</span>
             </a>
+            <a href="<?php echo APP_URL; ?>facturas" class="menu-item">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Facturación</span>
+            </a>
             <a href="<?php echo APP_URL; ?>category" class="menu-item">
                 <i class="fas fa-layer-group"></i>
                 <span>Categoría</span>
@@ -127,7 +131,7 @@
                                     <option value="En Proceso">En Proceso</option>
                                     <option value="Pendiente">Pendiente</option>
                                     <option value="En Progreso">En Progreso</option>
-                                    <option value="Terminado">Terminado</option>
+                                    <option value="Finalizada">Finalizada</option>
                                     <option value="Cancelado">Cancelado</option>
                                 </select>
                             </div>
@@ -274,6 +278,14 @@
                             </button>
                         </div>
                         <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="newSinMateriales"> Sin materiales
+                            </label>
+                        </div>
+                        <div class="form-group" id="newMotivoMaterialesGroup" style="display:none;">
+                            <textarea class="form-textarea" id="newMotivoSinMateriales" rows="2" placeholder="Indique por qué no se requieren materiales..."></textarea>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Notas</label>
                             <textarea class="form-textarea" id="newNotas" rows="3" placeholder="Detalles adicionales del evento"></textarea>
                         </div>
@@ -371,6 +383,14 @@
                             <button type="button" class="btn btn-outline" id="editVerHistorial" style="flex:0 0 auto;">
                                 <i class="fas fa-history"></i> Historial
                             </button>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="editSinMateriales"> Sin materiales
+                            </label>
+                        </div>
+                        <div class="form-group" id="editMotivoMaterialesGroup" style="display:none;">
+                            <textarea class="form-textarea" id="editMotivoSinMateriales" rows="2" placeholder="Indique por qué no se requieren materiales..."></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Notas</label>

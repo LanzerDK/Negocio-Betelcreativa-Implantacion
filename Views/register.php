@@ -101,7 +101,7 @@
                 <label for="codigo_seguridad">Codigo de seguridad</label>
                 <div class="input-group">
                     <div style="flex: 3; position: relative;">
-                        <input type="text" id="codigo_seguridad" name="codigo_seguridad" placeholder="XBX-89X-XsA" pattern="[A-Za-z0-9]{3}-[A-Za-z0-9]{3}-[A-Za-z0-9]{3}" required>
+                        <input type="text" id="codigo_seguridad" name="codigo_seguridad" placeholder="Código de seguridad" pattern="[A-Za-z0-9]{3}-[A-Za-z0-9]{3}-[A-Za-z0-9]{3}" required>
                     </div>
                 </div>
                 <div class="password-hint">para mayor seguridad ingrese el codigo autorizado</div>

@@ -83,12 +83,18 @@ class StorageController
                         ? $cantidadIngresada * $factorConversion
                         : $cantidadIngresada;
 
+                    $tipoReferencia = match ($reason) {
+                        'compra'      => 'compra',
+                        'venta', 'devolucion' => 'venta',
+                        default       => 'ajuste'
+                    };
+
                     $extraMeta = [];
                     if ($supplier) $extraMeta['supplier'] = $supplier;
                     if ($purchasePrice !== null) $extraMeta['purchase_price'] = $purchasePrice;
                     $extraNote = !empty($extraMeta) ? json_encode(['notes' => $notes, 'meta' => $extraMeta]) : $notes;
 
-                    if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $extraNote, $locationId)) {
+                    if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $extraNote, $locationId, $tipoReferencia)) {
                         ApiResponse::success(null, 'Ajuste registrado exitosamente.');
                     } else {
                         ApiResponse::error('Error al registrar el ajuste.', 500);
@@ -115,7 +121,7 @@ class StorageController
                         ApiResponse::error('Motivo no válido.');
                     }
 
-                    if ($repo->recordMove($materialId, $userId, $fromLocationId, $toLocationId, $quantity, $reason, $notes)) {
+                    if ($repo->recordMove($materialId, $userId, $fromLocationId, $toLocationId, $quantity, $reason, $notes, 'transferencia')) {
                         ApiResponse::success(null, 'Material movido exitosamente.');
                     } else {
                         ApiResponse::error('Error al mover el material.', 500);

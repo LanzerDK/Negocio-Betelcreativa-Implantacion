@@ -66,6 +66,10 @@
                 <i class="fas fa-calendar-check"></i>
                 <span>Citas</span>
             </a>
+            <a href="<?php echo APP_URL; ?>facturas" class="menu-item">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Facturación</span>
+            </a>
             <a href="<?php echo APP_URL; ?>category" class="menu-item">
                 <i class="fas fa-layer-group"></i>
                 <span>Categoría</span>
@@ -400,7 +404,7 @@
                             <canvas id="incomeChart"></canvas>
                         </div>
                         <div class="income-note" style="text-align:center;padding:15px;color:var(--gray);font-style:italic;">
-                            Los datos de ingresos monetarios estarán disponibles cuando se implemente el módulo de facturación.
+                            Los datos de ingresos monetarios provienen del módulo de facturación (ver <a href="facturas" style="color:var(--primary);text-decoration:underline;">Facturación</a>).
                         </div>
                         <div class="table-container">
                             <table class="report-table">
