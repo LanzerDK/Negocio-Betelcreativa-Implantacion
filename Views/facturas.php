@@ -198,7 +198,7 @@
                 </table>
 
                 <div class="factura-actions" style="margin-top:15px;">
-                    <button type="button" class="btn btn-primary" id="btnRegistrarAbono" disabled style="flex:1;">
+                    <button type="button" class="btn btn-primary" id="btnRegistrarAbonoPagos" disabled style="flex:1;">
                         <i class="fas fa-plus-circle"></i> Registrar Abono / Cuota
                     </button>
                     <button type="button" class="btn btn-outline" id="btnCerrarFactura" disabled style="flex:1;display:none;">
@@ -336,6 +336,11 @@
 .estado-anulada { background:#f8d7da; color:#721c24; }
 @media (max-width:900px) { .factura-grid { grid-template-columns:1fr; } .factura-grid .factura-card:last-child { grid-column:1; } .pago-resumen { grid-template-columns:1fr 1fr; } }
 </style>
+
+<script>
+    const APP_URL = '<?php echo APP_URL; ?>';
+    const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
+</script>
 
 <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
 <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>

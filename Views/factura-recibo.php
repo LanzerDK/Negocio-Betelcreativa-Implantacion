@@ -9,7 +9,6 @@ if (!$facturaId): ?>
 <?php exit; endif;
 
 use BetelCreativa\Config\Database;
-use PDO;
 
 $db = Database::getConnection();
 

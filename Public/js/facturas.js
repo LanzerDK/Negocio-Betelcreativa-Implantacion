@@ -1,5 +1,6 @@
 let TASA_BCV = 36.50;
 let facturaId = null;
+let facturaEstado = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     cargarCitas();
@@ -53,13 +54,9 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    document.getElementById('btnRegistrarAbono')?.addEventListener('click', function () {
-        if (!facturaId) return toast('Debe generar la factura primero.', 'warning');
-        document.getElementById('pagoFacturaId').value = facturaId;
-        document.getElementById('pagoMontoUsd').value = '';
-        document.getElementById('pagoMontoVes').value = '';
-        document.getElementById('pagoTasa').value = TASA_BCV.toFixed(2);
-        document.getElementById('pagoModal').style.display = 'flex';
+    // Listener estático del botón de abono en Tarjeta 3
+    document.getElementById('btnRegistrarAbonoPagos')?.addEventListener('click', function () {
+        abrirModalPago();
     });
 
     // Conversor bilateral USD ↔ VES
@@ -110,6 +107,66 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Cerrar factura: abrir modal de confirmación
+    document.getElementById('btnCerrarFactura')?.addEventListener('click', function () {
+        if (!facturaId) return;
+        document.getElementById('cerrarFacturaModal').style.display = 'flex';
+    });
+
+    // Confirmar cierre de factura
+    document.getElementById('btnConfirmarCerrar')?.addEventListener('click', async function () {
+        if (!facturaId) return;
+        setLoading('btnConfirmarCerrar', true);
+        try {
+            const res = await callApi(APP_URL + 'Public/api/facturas.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+                body: JSON.stringify({ action: 'cerrar', factura_id: facturaId })
+            });
+            if (res.success) {
+                toast('Factura cerrada exitosamente.', 'success');
+                document.getElementById('cerrarFacturaModal').style.display = 'none';
+                const citaId = document.getElementById('selectorCitas').value;
+                if (citaId) cargarDetalleCita(citaId);
+            } else {
+                toast('Error: ' + res.message, 'error');
+            }
+        } catch (err) {
+            toast(err.message || 'Error de conexión.', 'error');
+        } finally {
+            setLoading('btnConfirmarCerrar', false);
+        }
+    });
+
+    document.getElementById('cancelCerrarFactura')?.addEventListener('click', function () {
+        document.getElementById('cerrarFacturaModal').style.display = 'none';
+    });
+
+    // Anular factura (confirmación directa)
+    document.getElementById('btnAnularFactura')?.addEventListener('click', async function () {
+        if (!facturaId) return;
+        if (!confirm('¿Está seguro de anular esta factura? Esta acción no se puede deshacer.')) return;
+        setLoading('btnAnularFactura', true);
+        try {
+            const res = await callApi(APP_URL + 'Public/api/facturas.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+                body: JSON.stringify({ action: 'anular', factura_id: facturaId })
+            });
+            if (res.success) {
+                toast('Factura anulada exitosamente.', 'success');
+                const citaId = document.getElementById('selectorCitas').value;
+                if (citaId) cargarDetalleCita(citaId);
+            } else {
+                toast('Error: ' + res.message, 'error');
+            }
+        } catch (err) {
+            toast(err.message || 'Error de conexión.', 'error');
+        } finally {
+            setLoading('btnAnularFactura', false);
+        }
+    });
+
     // Cerrar modales con X
     document.querySelectorAll('.close-modal').forEach(el => {
         el.addEventListener('click', function () {
@@ -117,6 +174,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+function abrirModalPago() {
+    if (!facturaId) return toast('Debe generar la factura primero.', 'warning');
+    document.getElementById('pagoFacturaId').value = facturaId;
+    document.getElementById('pagoMontoUsd').value = '';
+    document.getElementById('pagoMontoVes').value = '';
+    document.getElementById('pagoTasa').value = TASA_BCV.toFixed(2);
+    document.getElementById('pagoModal').style.display = 'flex';
+}
 
 async function cargarCitas() {
     try {
@@ -147,8 +213,19 @@ async function cargarDetalleCita(citaId) {
         const d = res.data;
         TASA_BCV = d.tasaBcv || 36.50;
         facturaId = d.general?.facturaId || null;
+        facturaEstado = d.general?.facturaEstado || null;
 
         document.getElementById('facturaPanel').style.display = 'block';
+
+        // Badge de estado de la factura
+        const badge = document.getElementById('facturaEstadoBadge');
+        if (facturaId && facturaEstado && badge) {
+            badge.style.display = 'inline-block';
+            badge.textContent = facturaEstado.charAt(0).toUpperCase() + facturaEstado.slice(1);
+            badge.className = 'estado-badge estado-' + facturaEstado;
+        } else if (badge) {
+            badge.style.display = 'none';
+        }
 
         // Tarjeta 1: Info cita
         const g = d.general || {};
@@ -188,19 +265,18 @@ async function cargarDetalleCita(citaId) {
         // Botones Tarjeta 2
         const actionsDiv = document.getElementById('facturaActions');
         if (facturaId) {
-            actionsDiv.innerHTML = '' +
-                '<button type="button" class="btn btn-primary" id="btnRegistrarAbono" style="flex:1;"><i class="fas fa-plus-circle"></i> Registrar Abono / Cuota</button>' +
-                '<button type="button" class="btn btn-outline" id="btnImprimir" style="flex:1;"><i class="fas fa-print"></i> Imprimir Recibo</button>';
-            document.getElementById('btnRegistrarAbono').addEventListener('click', function () {
-                document.getElementById('pagoFacturaId').value = facturaId;
-                document.getElementById('pagoMontoUsd').value = '';
-                document.getElementById('pagoMontoVes').value = '';
-                document.getElementById('pagoTasa').value = TASA_BCV.toFixed(2);
-                document.getElementById('pagoModal').style.display = 'flex';
+            let actionsHtml = '';
+            if (facturaEstado === 'activa') {
+                actionsHtml += '<button type="button" class="btn btn-primary" id="btnRegistrarAbonoCard2" style="flex:1;"><i class="fas fa-plus-circle"></i> Registrar Abono</button>';
+            }
+            actionsHtml += '<button type="button" class="btn btn-outline" id="btnImprimir" style="flex:1;"><i class="fas fa-print"></i> Imprimir Recibo</button>';
+            actionsDiv.innerHTML = actionsHtml;
+
+            document.getElementById('btnRegistrarAbonoCard2')?.addEventListener('click', function () {
+                abrirModalPago();
             });
-            document.getElementById('btnRegistrarAbono').disabled = false;
             document.getElementById('btnImprimir')?.addEventListener('click', function () {
-                window.print();
+                window.open(APP_URL + 'factura-recibo?id=' + facturaId, '_blank');
             });
         } else {
             actionsDiv.innerHTML = '<button type="button" class="btn btn-primary" id="btnGenerarFactura" style="flex:1;"><i class="fas fa-file-invoice"></i> Generar Factura</button>';
@@ -240,7 +316,7 @@ async function cargarDetalleCita(citaId) {
         document.getElementById('card3-pendiente-ves').textContent = pendienteVes.toFixed(2) + ' Bs';
 
         const statusEl = document.getElementById('status-pago');
-        if (totalFactura <= 0) {
+        if (!facturaId || totalFactura <= 0) {
             statusEl.textContent = 'FACTURA POR GENERAR';
             statusEl.className = 'pago-status';
         } else if (saldoPendiente <= 0.01) {
@@ -251,7 +327,20 @@ async function cargarDetalleCita(citaId) {
             statusEl.className = 'pago-status pendiente-pago';
         }
 
-        document.getElementById('btnRegistrarAbono').disabled = !facturaId;
+        // Tarjeta 3: Botones de abono, cerrar, anular
+        const btnAbono = document.getElementById('btnRegistrarAbonoPagos');
+        const btnCerrar = document.getElementById('btnCerrarFactura');
+        const btnAnular = document.getElementById('btnAnularFactura');
+
+        if (facturaId && facturaEstado === 'activa') {
+            if (btnAbono) { btnAbono.disabled = false; btnAbono.style.display = ''; }
+            if (btnCerrar) { btnCerrar.disabled = false; btnCerrar.style.display = ''; }
+            if (btnAnular) { btnAnular.disabled = false; btnAnular.style.display = ''; }
+        } else {
+            if (btnAbono) { btnAbono.disabled = true; btnAbono.style.display = facturaId ? '' : 'none'; }
+            if (btnCerrar) { btnCerrar.disabled = true; btnCerrar.style.display = 'none'; }
+            if (btnAnular) { btnAnular.disabled = true; btnAnular.style.display = 'none'; }
+        }
 
     } catch (err) {
         console.error('Error al cargar detalle:', err);

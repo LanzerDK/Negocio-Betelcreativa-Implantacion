@@ -193,7 +193,7 @@ class FacturaRepository
         try {
             $stmt = $this->db->prepare(
                 "SELECT id, cita_id AS citaId, costo_servicio AS costoServicio,
-                        total_factura AS totalFactura, notas_cuota AS notasCuota, created_at AS createdAt
+                        total_factura AS totalFactura, notas_cuota AS notasCuota, estado, created_at AS createdAt
                  FROM facturas WHERE cita_id = :cita_id"
             );
             $stmt->execute([':cita_id' => $citaId]);

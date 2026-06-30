@@ -87,6 +87,33 @@ class CitaMaterialRepository
                 }
             }
 
+            // Filter both arrays to ignore zero/empty values and check for differences
+            $oldActive = array_filter($oldByMat);
+            $newActive = array_filter($newByMat);
+            ksort($oldActive);
+            ksort($newActive);
+            $materialsChanged = ($oldActive !== $newActive);
+
+            if (!$materialsChanged) {
+                // If materials did not change, bypass all validations/updates and return true
+                return true;
+            }
+
+            // Check if there is an existing invoice for this appointment and verify its status
+            $checkFact = $this->db->prepare("SELECT id, estado, costo_servicio FROM facturas WHERE cita_id = :cid LIMIT 1");
+            $checkFact->execute([':cid' => $citaId]);
+            $factura = $checkFact->fetch(PDO::FETCH_ASSOC);
+
+            if ($factura) {
+                if ($factura['estado'] === 'cerrada') {
+                    if ($manageTransaction) {
+                        $this->db->rollBack();
+                    }
+                    ApiResponse::error('No se pueden modificar los materiales de una cita con factura cerrada.', 400);
+                    return false;
+                }
+            }
+
             // 4. Verificar stock disponible para cantidades adicionales
             foreach ($newByMat as $mid => $newCant) {
                 $oldCant = $oldByMat[$mid] ?? 0;
@@ -145,6 +172,21 @@ class CitaMaterialRepository
                         ':precio' => $precio
                     ]);
                 }
+            }
+
+            // 6.5 Sincronizar total de factura si existe y está activa
+            if ($factura && $factura['estado'] === 'activa') {
+                $costoServicio = (float)$factura['costo_servicio'];
+                $totalMateriales = 0;
+                foreach ($newByMat as $mid => $cant) {
+                    $priceStmt->execute([':mid' => $mid]);
+                    $precio = (float)($priceStmt->fetchColumn() ?: 0);
+                    $totalMateriales += $cant * $precio;
+                }
+                $totalFactura = $costoServicio + $totalMateriales;
+
+                $upd = $this->db->prepare("UPDATE facturas SET total_factura = :total WHERE id = :fid");
+                $upd->execute([':total' => $totalFactura, ':fid' => $factura['id']]);
             }
 
             // 7. Registrar historial (solo materiales cuyo valor cambió)

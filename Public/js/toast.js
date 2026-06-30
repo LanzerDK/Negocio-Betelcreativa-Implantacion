@@ -28,7 +28,16 @@
   window.callApi = async function (url, options) {
     options = options || {};
     var res = await fetch(url, options);
-    var data = await res.json();
+    var text = await res.text();
+    var data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (!res.ok) {
+        throw new Error('Error del servidor (HTTP ' + res.status + ')');
+      }
+      throw new Error('Respuesta no válida del servidor.');
+    }
     if (!res.ok) {
       var err = new Error(data.message || 'HTTP ' + res.status);
       err.errors = data.errors || null;

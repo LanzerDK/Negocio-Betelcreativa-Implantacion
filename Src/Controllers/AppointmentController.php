@@ -117,6 +117,11 @@ class AppointmentController
                     $data['customerAvatar'] = $cliente ? $cliente->getAvatar() : null;
                     $matRepo = new CitaMaterialRepository();
                     $data['materiales'] = $matRepo->findByCitaId($modelo->getId());
+                    
+                    $facturaRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
+                    $fact = $facturaRepo->getFacturaByCitaId($modelo->getId());
+                    $data['facturaEstado'] = $fact ? $fact['estado'] : null;
+                    
                     ApiResponse::success($data);
                     return;
                 } elseif (isset($_GET['cliente_id'])) {

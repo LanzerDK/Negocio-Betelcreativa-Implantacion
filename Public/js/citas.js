@@ -10,6 +10,7 @@ const itemsPorPagina = 10;
 let calendario = null;
 let modoMaterial = 'nuevo'; // 'nuevo' | 'editar'
 let citaEditandoId = null;
+let facturaEstadoCita = null;
 let citaMaterialesOriginales = []; // snapshot al abrir edición (para cálculo de stock disponible)
 
 // ==================== HELPERS TIMEZONE VET ====================
@@ -465,6 +466,18 @@ async function abrirModalEdicion(cita)
         renderizarListaMateriales('editar');
     }
     if (asignarBtn) asignarBtn.disabled = false;
+
+    // Bloquear edición de materiales si la factura está cerrada
+    if (facturaEstadoCita === 'cerrada') {
+        if (asignarBtn) {
+            asignarBtn.disabled = true;
+            asignarBtn.title = 'Factura cerrada — no se pueden modificar materiales';
+        }
+        const sinMatCheck = document.getElementById('editSinMateriales');
+        if (sinMatCheck) sinMatCheck.disabled = true;
+        const sinMatTextarea = document.getElementById('editMotivoSinMateriales');
+        if (sinMatTextarea) sinMatTextarea.disabled = true;
+    }
 }
 
 async function cargarMaterialesCita(citaId)
@@ -472,6 +485,7 @@ async function cargarMaterialesCita(citaId)
     try {
         const res = await callApi(APP_URL + 'Public/api/appointments.php?id=' + citaId + '&_=' + Date.now());
         if (res.success && res.data) {
+            facturaEstadoCita = res.data.facturaEstado || null;
             const mats = res.data.materiales || [];
             return mats.map(m => ({
                 materialId: m.materialId || m.materialid,
@@ -479,6 +493,7 @@ async function cargarMaterialesCita(citaId)
             }));
         }
     } catch (e) { /* silencio */ }
+    facturaEstadoCita = null;
     return [];
 }
 
