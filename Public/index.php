@@ -6,6 +6,9 @@ require_once __DIR__ . '/../Config/app.php';
 use BetelCreativa\Helpers\SessionHelpers;
 use BetelCreativa\Controllers\ViewsController;
 use BetelCreativa\Infrastructure\UserRepository;
+use BetelCreativa\Infrastructure\DatabaseInitializer;
+
+DatabaseInitializer::runIfNeeded();
 
 SessionHelpers::start();
 
@@ -25,9 +28,17 @@ if ($viewsRequested === "logout") {
     exit;
 }
 
+$userCount = (new UserRepository())->countAll();
+
 // Primer inicio: si no hay usuarios, forzar registro
-if ((new UserRepository())->countAll() === 0 && $viewsRequested !== 'register') {
+if ($userCount === 0 && $viewsRequested !== 'register') {
     header('Location: ' . APP_URL . 'register');
+    exit;
+}
+
+// Si ya hay usuarios, bloquear registro público
+if ($userCount > 0 && $viewsRequested === 'register') {
+    header('Location: ' . APP_URL . 'login');
     exit;
 }
 

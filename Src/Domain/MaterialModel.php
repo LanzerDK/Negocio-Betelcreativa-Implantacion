@@ -17,6 +17,10 @@ class MaterialModel
     private ?int $supplierId;
     private ?int $locationId;
     private bool $isActive;
+    private int $reservedStock;
+    private string $unidadCompra;
+    private string $unidadConsumo;
+    private int $factorConversion;
 
     public function __construct(array $data = [])
     {
@@ -33,6 +37,10 @@ class MaterialModel
         $this->supplierId = $data['supplierId'] ?? null;
         $this->locationId = $data['locationId'] ?? null;
         $this->isActive = (bool)($data['isActive'] ?? true);
+        $this->reservedStock = (int)($data['reservedStock'] ?? 0);
+        $this->unidadCompra = $data['unidadCompra'] ?? 'Unidad';
+        $this->unidadConsumo = $data['unidadConsumo'] ?? 'Unidad';
+        $this->factorConversion = (int)($data['factorConversion'] ?? 1);
     }
 
     public function getId(): ?int { return $this->id; }
@@ -48,6 +56,10 @@ class MaterialModel
     public function getSupplierId(): ?int { return $this->supplierId; }
     public function getLocationId(): ?int { return $this->locationId; }
     public function getIsActive(): bool { return $this->isActive; }
+    public function getReservedStock(): int { return $this->reservedStock; }
+    public function getUnidadCompra(): string { return $this->unidadCompra; }
+    public function getUnidadConsumo(): string { return $this->unidadConsumo; }
+    public function getFactorConversion(): int { return $this->factorConversion; }
 
     public function setCode(string $code): void { $this->code = $code; }
     public function setName(string $name): void { $this->name = $name; }
@@ -60,4 +72,5 @@ class MaterialModel
     public function setSupplierId(?int $supplierId): void { $this->supplierId = $supplierId; }
     public function setLocationId(?int $locationId): void { $this->locationId = $locationId; }
     public function setIsActive(bool $isActive): void { $this->isActive = $isActive; }
+    public function setReservedStock(int $reservedStock): void { $this->reservedStock = $reservedStock; }
 }

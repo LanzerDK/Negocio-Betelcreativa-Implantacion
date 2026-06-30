@@ -32,16 +32,16 @@
                 </div>
                 <div class="user-details">
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
-                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
+                    <p><?php echo htmlspecialchars(roleLabel($_SESSION['user_role'] ?? null)); ?></p>
                 </div>
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settingsDropdown">
-                        <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
-                            <i class="fas fa-user"></i> Cuenta
-                        </a>
+                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
+                        <i class="fas fa-user"></i> Cuenta
+                    </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </a>
@@ -233,12 +233,30 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Fecha y Hora de Inicio</label>
-                            <input type="datetime-local" class="form-input" id="newFechaHoraInicio" required>
+                            <label class="form-label">Fecha de Inicio</label>
+                            <input type="date" class="form-input" id="newFechaInicio" required>
+                            <div class="time-picker" style="margin-top:6px;">
+                                <select class="form-input time-sel" id="newHoraInicio_h"></select>
+                                <span class="time-sep">:</span>
+                                <select class="form-input time-sel" id="newHoraInicio_m"></select>
+                                <select class="form-input time-ap" id="newHoraInicio_a">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Fecha y Hora de Fin</label>
-                            <input type="datetime-local" class="form-input" id="newFechaHoraFin" required>
+                            <label class="form-label">Fecha de Fin</label>
+                            <input type="date" class="form-input" id="newFechaFin" required>
+                            <div class="time-picker" style="margin-top:6px;">
+                                <select class="form-input time-sel" id="newHoraFin_h"></select>
+                                <span class="time-sep">:</span>
+                                <select class="form-input time-sel" id="newHoraFin_m"></select>
+                                <select class="form-input time-ap" id="newHoraFin_a">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Tipo de Evento</label>
@@ -311,12 +329,30 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Fecha y Hora de Inicio</label>
-                            <input type="datetime-local" class="form-input" id="editFechaHoraInicio" required>
+                            <label class="form-label">Fecha de Inicio</label>
+                            <input type="date" class="form-input" id="editFechaInicio" required>
+                            <div class="time-picker" style="margin-top:6px;">
+                                <select class="form-input time-sel" id="editHoraInicio_h"></select>
+                                <span class="time-sep">:</span>
+                                <select class="form-input time-sel" id="editHoraInicio_m"></select>
+                                <select class="form-input time-ap" id="editHoraInicio_a">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Fecha y Hora de Fin</label>
-                            <input type="datetime-local" class="form-input" id="editFechaHoraFin" required>
+                            <label class="form-label">Fecha de Fin</label>
+                            <input type="date" class="form-input" id="editFechaFin" required>
+                            <div class="time-picker" style="margin-top:6px;">
+                                <select class="form-input time-sel" id="editHoraFin_h"></select>
+                                <span class="time-sep">:</span>
+                                <select class="form-input time-sel" id="editHoraFin_m"></select>
+                                <select class="form-input time-ap" id="editHoraFin_a">
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Tipo de Evento</label>
@@ -328,9 +364,12 @@
                             <label class="form-label">Ubicación</label>
                             <input type="text" class="form-input" id="editUbicacion" required>
                         </div>
-                        <div class="form-group">
-                            <button type="button" class="btn btn-outline" id="editAsignarMateriales" style="width:100%;">
+                        <div class="form-group" style="display:flex;gap:8px;">
+                            <button type="button" class="btn btn-outline" id="editAsignarMateriales" style="flex:1;">
                                 <i class="fas fa-boxes"></i> Asignar Materiales <span id="editMaterialCount" style="margin-left:8px;font-size:0.85rem;color:var(--gray);"></span>
+                            </button>
+                            <button type="button" class="btn btn-outline" id="editVerHistorial" style="flex:0 0 auto;">
+                                <i class="fas fa-history"></i> Historial
                             </button>
                         </div>
                         <div class="form-group">
@@ -385,6 +424,19 @@
                     <button type="button" class="btn btn-outline" id="cancelCancelBtn">Volver</button>
                     <button type="button" class="btn btn-danger" id="confirmCancelBtn">Cancelar Cita</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Historial de Materiales por Cita -->
+    <div class="modal" id="citaHistorialModal">
+        <div class="modal-content" style="max-width:600px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Historial de Materiales</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body" id="citaHistorialContent">
+                <p style="text-align:center;padding:20px;">Cargando...</p>
             </div>
         </div>
     </div>

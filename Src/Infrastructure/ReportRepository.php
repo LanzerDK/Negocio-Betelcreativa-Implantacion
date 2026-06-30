@@ -26,24 +26,26 @@ class ReportRepository
                 $params[':category'] = $category;
             }
 
+            $stockSubquery = "(SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id)";
+
             if ($stockStatus === 'in-stock') {
-                $where .= ' AND m.current_stock > 0';
+                $where .= " AND $stockSubquery > 0";
             } elseif ($stockStatus === 'low-stock') {
                 $threshold = 10;
-                $where .= ' AND m.current_stock > 0 AND m.current_stock <= :threshold';
+                $where .= " AND $stockSubquery > 0 AND $stockSubquery <= :threshold";
                 $params[':threshold'] = $threshold;
             } elseif ($stockStatus === 'out-of-stock') {
-                $where .= ' AND (m.current_stock <= 0 OR m.current_stock IS NULL)';
+                $where .= " AND $stockSubquery <= 0";
             }
 
             $order = match ($orderBy) {
-                'stock' => 'm.current_stock DESC',
+                'stock' => 'stock DESC',
                 'category' => 'c.name ASC, m.name ASC',
                 default => 'm.name ASC',
             };
 
             $stmt = $this->db->prepare(
-                "SELECT m.material_id, m.name, m.current_stock, m.price,
+                "SELECT m.material_id, m.name, $stockSubquery AS current_stock, m.price,
                         c.name AS category, c.category_id
                  FROM materials m
                  LEFT JOIN categories c ON m.category_id = c.category_id

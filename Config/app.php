@@ -21,13 +21,15 @@ if (!empty($envUrl)) {
                || !empty($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME'] === 'https')
               ? 'https' : 'http';
     $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] );
+    $script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
     // Detecta si la petición es a Public/index.php o a Public/api/...
     $inApi  = strpos($script, '/Public/api/') !== false;
     $base   = $inApi
               ? dirname(dirname(dirname($script)))
               : dirname(dirname($script));
-    define('APP_URL', $scheme . '://' . $host . rtrim($base, '/') . '/');
+    // Normalizar separadores (dirname en Windows devuelve '\')
+    $base = str_replace('\\', '/', $base);
+    define('APP_URL', $scheme . '://' . $host . ($base === '/' ? '' : $base) . '/');
 }
 
 define('APP_NAME', EnvLoader::get('APP_NAME', 'BETEL CREATIVA'));
@@ -46,4 +48,14 @@ if (session_status() === PHP_SESSION_NONE) {
 
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+if (!function_exists('roleLabel')) {
+    function roleLabel(?string $role): string {
+        return match ($role) {
+            'super_admin' => 'Super Admin',
+            'admin'       => 'Administrador',
+            default       => ucfirst($role ?? 'user'),
+        };
+    }
 }

@@ -42,6 +42,7 @@ class ControllerUser
             'phone'      => $user->getPhone(),
             'role'       => $user->getRole(),
             'avatar_url' => $user->getAvatarUrl(),
+            'ci'         => $user->getCi(),
             'member_since' => $user->getCheckinTime(),
         ]);
     }
@@ -62,6 +63,7 @@ class ControllerUser
         $lastName = trim($input['last_name'] ?? '');
         $email    = trim($input['email'] ?? '');
         $phone    = trim($input['phone'] ?? '');
+        $ci       = trim($input['ci'] ?? '');
 
         if (empty($name) || empty($lastName) || empty($email)) {
             ApiResponse::error('Nombre, apellido y correo son obligatorios.');
@@ -85,11 +87,12 @@ class ControllerUser
         }
 
         $user = new UserModel([
-            'id'    => $userId,
-            'name'  => $name,
+            'id'       => $userId,
+            'name'     => $name,
             'lastName' => $lastName,
-            'email' => $email,
-            'phone' => $phone,
+            'email'    => $email,
+            'phone'    => $phone,
+            'ci'       => $ci,
         ]);
 
         if ($repo->update($user)) {

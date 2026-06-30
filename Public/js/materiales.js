@@ -324,6 +324,9 @@ function llenarFormularioEdicion(mat) {
   }
   const wq = document.getElementById('wholesaleQty');
   if (wq) wq.value = (mat.cost_type === 'wholesale' && mat.wholesale_qty) ? mat.wholesale_qty : '';
+  document.getElementById('editUnidadCompra').value = mat.unidad_compra || 'Paquete';
+  document.getElementById('editUnidadConsumo').value = mat.unidad_consumo || 'Unidad';
+  document.getElementById('editFactorConversion').value = mat.factor_conversion || 1;
 }
 
 function ocultarModalYRefrescar(modalId) {
@@ -371,7 +374,10 @@ async function agregarNuevoMaterial() {
       body: JSON.stringify({
         code: codigo, name: nombre, category_id: categoryId,
         stock: 0, price: price, cost_type: costType,
-        wholesale_qty: dataWholesaleQty, material_type: tipoMaterial
+        wholesale_qty: dataWholesaleQty, material_type: tipoMaterial,
+        unidad_compra: document.getElementById('nuevaUnidadCompra').value.trim() || 'Paquete',
+        unidad_consumo: document.getElementById('nuevaUnidadConsumo').value.trim() || 'Unidad',
+        factor_conversion: parseInt(document.getElementById('nuevoFactorConversion').value) || 1
       })
     });
     const data = await res.json();
@@ -428,7 +434,10 @@ async function guardarEdicionMaterial() {
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
       body: JSON.stringify({
         name, category_id: categoryId,
-        price, cost_type: costType, wholesale_qty: dataWholesaleQty
+        price, cost_type: costType, wholesale_qty: dataWholesaleQty,
+        unidad_compra: document.getElementById('editUnidadCompra').value.trim(),
+        unidad_consumo: document.getElementById('editUnidadConsumo').value.trim(),
+        factor_conversion: parseInt(document.getElementById('editFactorConversion').value) || 1
       })
     });
     const data = await res.json();

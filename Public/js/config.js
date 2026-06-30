@@ -238,6 +238,7 @@ function renderUsers(data) {
                 <select class="role-select" data-user-id="${u.id}" ${u.id === USER_ID ? 'disabled' : ''}>
                     <option value="user" ${u.role === 'user' ? 'selected' : ''}>Usuario</option>
                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                    <option value="super_admin" ${u.role === 'super_admin' ? 'selected' : ''}>Super Admin</option>
                 </select>
             </td>
             <td>
@@ -324,6 +325,103 @@ function escapeHtml(str) {
 document.getElementById('userSearch')?.addEventListener('input', function () {
     clearTimeout(this._timer);
     this._timer = setTimeout(() => loadUsers(1), 400);
+});
+
+// ── Crear Usuario (modal) ────────────────────────────────
+function abrirModalCrearUsuario() {
+    document.getElementById('modalCrearUsuario').style.display = 'flex';
+    document.getElementById('formCrearUsuario').reset();
+    document.querySelectorAll('#formCrearUsuario .feedback').forEach(el => {
+        el.style.display = 'none';
+        el.textContent = '';
+    });
+    document.querySelectorAll('#formCrearUsuario input').forEach(el => {
+        el.classList.remove('valid', 'invalid');
+    });
+}
+
+function cerrarModalCrearUsuario() {
+    document.getElementById('modalCrearUsuario').style.display = 'none';
+}
+
+document.getElementById('btnCrearUsuario')?.addEventListener('click', abrirModalCrearUsuario);
+document.getElementById('cerrarModalUsuario')?.addEventListener('click', cerrarModalCrearUsuario);
+document.getElementById('cancelarCrearUsuario')?.addEventListener('click', cerrarModalCrearUsuario);
+
+document.getElementById('modalCrearUsuario')?.addEventListener('click', function (e) {
+    if (e.target === this) cerrarModalCrearUsuario();
+});
+
+document.getElementById('guardarCrearUsuario')?.addEventListener('click', async function () {
+    const fields = {
+        name: document.getElementById('cu_name'),
+        last_name: document.getElementById('cu_lastName'),
+        username: document.getElementById('cu_username'),
+        email: document.getElementById('cu_email'),
+        ci: document.getElementById('cu_ci'),
+        phone: document.getElementById('cu_phone'),
+        password: document.getElementById('cu_password'),
+    };
+
+    // Validación básica
+    let valid = true;
+    Object.entries(fields).forEach(([key, el]) => {
+        const fb = document.getElementById('cu_' + key + '-feedback');
+        if (!el.value.trim() || (key === 'password' && el.value.length < 6)) {
+            el.classList.add('invalid'); el.classList.remove('valid');
+            if (fb) { fb.textContent = key === 'password' ? 'Mínimo 6 caracteres' : 'Campo obligatorio'; fb.className = 'feedback invalid-feedback'; }
+            valid = false;
+        } else {
+            el.classList.remove('invalid'); el.classList.add('valid');
+            if (fb) { fb.textContent = '✓'; fb.className = 'feedback valid-feedback'; }
+        }
+    });
+
+    if (!valid) {
+        toast('Corrige los campos marcados', 'error');
+        return;
+    }
+
+    const tipoCi = document.getElementById('cu_tipoCi').value;
+    const ciCompleta = tipoCi + '-' + fields.ci.value.trim();
+
+    const body = JSON.stringify({
+        name: fields.name.value.trim(),
+        last_name: fields.last_name.value.trim(),
+        username: fields.username.value.trim(),
+        email: fields.email.value.trim(),
+        ci: ciCompleta,
+        phone: fields.phone.value.trim(),
+        password: fields.password.value,
+    });
+
+    try {
+        const json = await callApi(API + 'admin/users.php?action=create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body,
+        });
+        if (json.success) {
+            toast('Usuario creado correctamente', 'success');
+            cerrarModalCrearUsuario();
+            loadUsers(usersPage);
+        } else {
+            toast(json.message, 'error');
+            if (json.errors) {
+                Object.entries(json.errors).forEach(([field, msg]) => {
+                    const fb = document.getElementById('cu_' + field + '-feedback');
+                    const input = document.getElementById('cu_' + field);
+                    if (fb && input) {
+                        input.classList.add('invalid');
+                        fb.textContent = msg;
+                        fb.className = 'feedback invalid-feedback';
+                    }
+                });
+            }
+        }
+    } catch (_) {
+        toast('Error de conexión', 'error');
+    }
 });
 
 // ── Init ─────────────────────────────────────────────────

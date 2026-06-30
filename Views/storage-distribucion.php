@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Almacenes - Bet-El Creativa</title>
+    <title>Distribución - Bet-El Creativa</title>
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/storageStyle.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/storageDistribucionStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
@@ -15,8 +15,8 @@
         <div class="logo-container">
             <i class="fas fa-warehouse logo-icon"></i>
             <div class="app-info">
-                <h1>Almacenes</h1>
-                <p>Gestiona las ubicaciones y estantes del almacén</p>
+                <h1>Distribución de Materiales</h1>
+                <p>Ubicación y empaque de cada material en el almacén</p>
             </div>
         </div>
         <div class="user-container">
@@ -60,7 +60,7 @@
             <i class="fas fa-users"></i><span>Clientes</span>
         </a>
         <div class="menu-item-wrapper">
-            <a href="<?php echo APP_URL; ?>storage" class="menu-item active">
+            <a href="<?php echo APP_URL; ?>storage" class="menu-item">
                 <i class="fas fa-warehouse"></i>
                 <span>Almacén</span>
             </a>
@@ -68,7 +68,7 @@
                 <i class="fas fa-chevron-down"></i>
             </button>
             <div class="submenu-dropdown" id="almacenSubmenu">
-                <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item"><i class="fas fa-truck-loading"></i> Distribución</a>
+                <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item submenu-active"><i class="fas fa-truck-loading"></i> Distribución</a>
                 <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
             </div>
         </div>
@@ -80,77 +80,42 @@
     <div class="main-content">
         <div class="content">
             <div class="page-header">
-                <h2 class="page-title">Ubicaciones del Almacén</h2>
+                <h2 class="page-title">Distribución de Materiales</h2>
             </div>
 
-            <div class="warehouse-layout">
-                <div class="section-header">
-                    <h3 class="section-title">Distribución por Zonas</h3>
-                    <button class="btn" id="addShelfBtn">
-                        <i class="fas fa-plus"></i> Agregar Estante
-                    </button>
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label class="filter-label">Buscar Material</label>
+                    <input type="text" class="filter-input" id="searchInput" placeholder="Nombre o código">
                 </div>
-                <div class="layout-grid" id="layoutGrid"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Agregar Estante -->
-    <div class="modal" id="shelfModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Agregar Estante</h5>
-                    <button type="button" class="btn-close" data-modal-dismiss="shelfModal"></button>
+                <div class="filter-group">
+                    <label class="filter-label">Categoría</label>
+                    <select class="filter-select" id="categoryFilter">
+                        <option value="">Todas</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <form id="shelfForm">
-                        <div class="mb-3">
-                            <label class="form-label">Nombre del Estante</label>
-                            <input type="text" class="form-control" id="shelfName" placeholder="Ej: F1" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Tipo de Zona</label>
-                            <select class="form-select" id="shelfZoneType" required>
-                                <option value="new">Crear nueva zona</option>
-                                <option value="existing">Usar zona existente</option>
-                            </select>
-                        </div>
-                        <div class="mb-3" id="shelfNewZoneGroup">
-                            <label class="form-label">Nombre de la Nueva Zona</label>
-                            <input type="text" class="form-control" id="shelfNewZone" placeholder="Ej: Zona Flores">
-                        </div>
-                        <div class="mb-3" id="shelfExistingZoneGroup" style="display:none;">
-                            <label class="form-label">Zona Existente</label>
-                            <select class="form-select" id="shelfZoneSelect"></select>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-modal-dismiss="shelfModal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="guardarEstanteBtn">Guardar Estante</button>
+                <div class="filter-group">
+                    <label class="filter-label">Zona / Ubicación</label>
+                    <select class="filter-select" id="zoneFilter">
+                        <option value="">Todas las zonas</option>
+                    </select>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Modal Confirmar Eliminar Estante -->
-    <div class="modal" id="deleteShelfModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Eliminar Estante</h5>
-                    <button type="button" class="btn-close" data-modal-dismiss="deleteShelfModal"></button>
+            <div class="distribucion-table">
+                <div class="table-header">
+                    <div class="d-col-1">Material</div>
+                    <div class="d-col-2">Stock</div>
+                    <div class="d-col-3">Empaque</div>
+                    <div class="d-col-4">Ubicación</div>
+                    <div class="d-col-5">Zona</div>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="deleteShelfId">
-                    <p>¿Está seguro de eliminar el estante <strong id="deleteShelfName"></strong>?</p>
-                    <p class="text-muted">Esta acción no se puede deshacer. Los materiales no se eliminarán, solo se desasociarán.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-modal-dismiss="deleteShelfModal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="confirmDeleteShelfModalBtn">Eliminar</button>
-                </div>
+                <div id="tableBody"></div>
+            </div>
+
+            <div class="pagination">
+                <div class="page-info" id="pageInfo">Cargando...</div>
+                <div class="page-controls" id="pageControls"></div>
             </div>
         </div>
     </div>
@@ -159,8 +124,6 @@
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
-    <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>
-    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script>
         document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -175,6 +138,7 @@
             document.getElementById('almacenSubmenu')?.classList.remove('show');
         });
     </script>
-    <script src="<?php echo APP_URL; ?>Public/js/almacen.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
+    <script src="<?php echo APP_URL; ?>Public/js/storage-distribucion.js"></script>
 </body>
 </html>

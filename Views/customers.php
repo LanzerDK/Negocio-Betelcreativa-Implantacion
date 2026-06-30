@@ -32,16 +32,16 @@
                 </div>
                 <div class="user-details">
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
-                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
+                    <p><?php echo htmlspecialchars(roleLabel($_SESSION['user_role'] ?? null)); ?></p>
                 </div>
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settingsDropdown">
-                        <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
-                            <i class="fas fa-user"></i> Cuenta
-                        </a>
+                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
+                        <i class="fas fa-user"></i> Cuenta
+                    </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </a>
@@ -158,9 +158,9 @@
                     <div class="form-group" style="flex: 1;">
                         <label for="newIdType">Tipo de Cédula</label>
                         <select id="newIdType" class="form-control">
-                            <option value="V">V- Venezolano</option>
-                            <option value="E">E- Extranjero</option>
-                            <option value="J">J- Jurídico</option>
+                            <option value="V">Venezolano</option>
+                            <option value="E">Extranjero</option>
+                            <option value="J">Jurídico</option>
                         </select>
                     </div>
                     <div class="form-group" style="flex: 2;">
@@ -177,7 +177,7 @@
 
                     <div class="form-group">
                         <label for="phone">Teléfono</label>
-                        <input type="tel" id="phone" class="form-control" placeholder="+58 123 456 7890">
+                        <input type="tel" id="phone" class="form-control" placeholder="+58 412 456 7890">
                     </div>
                 </div>
 

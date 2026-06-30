@@ -1,4 +1,4 @@
 RewriteEngine On
-# Redirige todo a Public/ excepto si ya está en Public/
+# Redirige todo a Public/index.php con el parámetro views
 RewriteCond %{REQUEST_URI} !/Public/
-RewriteRule ^(.*)$ Public/$1 [L]
+RewriteRule ^(.*)$ Public/index.php?views=$1 [QSA,L]

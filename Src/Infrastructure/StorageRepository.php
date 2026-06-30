@@ -26,7 +26,7 @@ class StorageRepository
             $change = $type === 'entry' ? $quantity : -$quantity;
 
             if ($type === 'exit') {
-                $stmtCheck = $this->db->prepare("SELECT current_stock FROM materials WHERE material_id = :id");
+                $stmtCheck = $this->db->prepare("SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS stock");
                 $stmtCheck->execute([':id' => $materialId]);
                 $available = (int)$stmtCheck->fetchColumn();
                 if ($available < $quantity) {
@@ -36,22 +36,17 @@ class StorageRepository
                 }
             }
 
-            $stmt = $this->db->prepare("UPDATE materials SET current_stock = GREATEST(current_stock + :change, 0) WHERE material_id = :id");
-            $stmt->execute([':change' => $change, ':id' => $materialId]);
-
             // Si no se especificó ubicación, usar la ubicación principal del material
             if (!$locationId) {
                 $locStmt = $this->db->prepare("SELECT current_location_id FROM materials WHERE material_id = :id");
                 $locStmt->execute([':id' => $materialId]);
                 $loc = $locStmt->fetch();
-                $locationId = $loc ? (int)$loc['current_location_id'] : null;
+                $locationId = $loc ? (int)$loc['current_location_id'] : 1; // default to "Almacén General"
             }
 
-            if ($locationId) {
-                $this->upsertStockLocation($materialId, $locationId, $change);
-                $delStmt = $this->db->prepare("DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0");
-                $delStmt->execute([':id' => $materialId]);
-            }
+            $this->upsertStockLocation($materialId, $locationId, $change);
+            $delStmt = $this->db->prepare("DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0");
+            $delStmt->execute([':id' => $materialId]);
 
             $actionType = $type === 'entry' ? 'Entry' : 'Exit';
             $stmt = $this->db->prepare(
@@ -196,10 +191,10 @@ class StorageRepository
 
             $totalMaterials = (int)$this->db->query("SELECT COUNT(*) FROM materials WHERE is_active = 1")->fetchColumn();
             $totalLocations = (int)$this->db->query("SELECT COUNT(*) FROM locations")->fetchColumn();
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM materials WHERE is_active = 1 AND current_stock > 0 AND current_stock <= :threshold");
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM materials m WHERE m.is_active = 1 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) > 0 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) <= :threshold");
             $stmt->execute([':threshold' => $threshold]);
             $lowStock = (int)$stmt->fetchColumn();
-            $outOfStock = (int)$this->db->query("SELECT COUNT(*) FROM materials WHERE is_active = 1 AND (current_stock IS NULL OR current_stock <= 0)")->fetchColumn();
+            $outOfStock = (int)$this->db->query("SELECT COUNT(*) FROM materials m WHERE m.is_active = 1 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) <= 0")->fetchColumn();
 
             return [
                 'totalMaterials' => $totalMaterials,

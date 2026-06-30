@@ -18,7 +18,7 @@ class ControllerAdminUsers
     private static function requireAdmin(): void
     {
         SessionHelpers::requireAuth();
-        if (SessionHelpers::get('user_role') !== 'admin') {
+        if (!in_array(SessionHelpers::get('user_role'), ['super_admin', 'admin'])) {
             ApiResponse::error('Acceso denegado. Se requieren permisos de administrador.', 403);
         }
     }
@@ -83,8 +83,8 @@ class ControllerAdminUsers
         $userId = (int)($input['user_id'] ?? 0);
         $role   = trim($input['role'] ?? '');
 
-        if ($userId <= 0 || !in_array($role, ['admin', 'user'])) {
-            ApiResponse::error('Datos inválidos. Role debe ser "admin" o "user".');
+        if ($userId <= 0 || !in_array($role, ['super_admin', 'admin', 'user'])) {
+            ApiResponse::error('Datos inválidos. Role debe ser "super_admin", "admin" o "user".');
         }
 
         // No permitir auto-desescalarse
@@ -97,6 +97,72 @@ class ControllerAdminUsers
             ApiResponse::success(null, 'Rol actualizado correctamente.');
         } else {
             ApiResponse::error('Error al actualizar el rol.', 500);
+        }
+    }
+
+    /**
+     * POST /api/admin/users.php?action=create
+     * Crea un nuevo usuario desde el panel de administración
+     */
+    public static function create(): void
+    {
+        self::requireAdmin();
+        CsrfHelper::validateRequestOrFail();
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $name       = trim($input['name'] ?? '');
+        $lastName   = trim($input['last_name'] ?? '');
+        $username   = trim($input['username'] ?? '');
+        $email      = trim($input['email'] ?? '');
+        $ci         = trim($input['ci'] ?? '');
+        $phone      = trim($input['phone'] ?? '');
+        $password   = $input['password'] ?? '';
+
+        if (empty($name) || empty($lastName) || empty($username) || empty($email) || empty($ci) || empty($phone) || empty($password)) {
+            ApiResponse::error('Todos los campos son obligatorios.');
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            ApiResponse::error('Correo electrónico inválido.');
+        }
+
+        if (strlen($password) < 6) {
+            ApiResponse::error('La contraseña debe tener al menos 6 caracteres.');
+        }
+
+        $repo = new UserRepository();
+
+        $errors = [];
+        if ($repo->existsByUsername($username)) {
+            $errors['username'] = 'El nombre de usuario ya está registrado.';
+        }
+        if ($repo->existsByEmail($email)) {
+            $errors['email'] = 'El correo electrónico ya está registrado.';
+        }
+        if ($repo->existsByIdNumber($ci)) {
+            $errors['ci'] = 'La cédula ya está registrada.';
+        }
+        if (!empty($errors)) {
+            ApiResponse::error('Corrige los siguientes campos', 400, $errors);
+        }
+
+        $user = new UserModel([
+            'name'         => $name,
+            'lastName'     => $lastName,
+            'user'         => $username,
+            'email'        => $email,
+            'ci'           => $ci,
+            'phone'        => $phone,
+            'passwordHash' => password_hash($password, PASSWORD_BCRYPT),
+            'role'         => 'user',
+            'idRol'        => 3,
+        ]);
+
+        if ($repo->save($user)) {
+            ApiResponse::success(null, 'Usuario creado correctamente.');
+        } else {
+            ApiResponse::error('Error al crear el usuario.', 500);
         }
     }
 

@@ -68,6 +68,8 @@ class ControllerRegister
             ApiResponse::error('Corrige los siguientes campos', 400, $errors);
         }
 
+        $isFirstUser = $userRepository->countAll() === 0;
+
         $nuevoUsuario = new UserModel([
             'name'         => $nombre,
             'lastName'     => $apellido,
@@ -75,7 +77,9 @@ class ControllerRegister
             'email'        => $correo,
             'ci'           => $cedulaCompleta,
             'passwordHash' => $passwordHash,
-            'phone'        => $telefono
+            'phone'        => $telefono,
+            'role'         => $isFirstUser ? 'super_admin' : 'user',
+            'idRol'        => $isFirstUser ? 1 : 3,
         ]);
 
         if ($userRepository->save($nuevoUsuario)) {

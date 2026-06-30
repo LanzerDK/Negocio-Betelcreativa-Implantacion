@@ -22,6 +22,13 @@ switch ($method) {
         };
         break;
 
+    case 'POST':
+        match ($action) {
+            'create' => ControllerAdminUsers::create(),
+            default  => ApiResponse::error('Acción no válida.', 400),
+        };
+        break;
+
     case 'PUT':
         match ($action) {
             'role'          => ControllerAdminUsers::updateRole(),

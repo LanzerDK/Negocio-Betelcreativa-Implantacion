@@ -49,7 +49,10 @@ class MaterialController
                     'categoryId' => !empty($input['category_id']) ? (int)$input['category_id'] : null,
                     'materialType' => $input['material_type'] ?? 'consumible',
                     'supplierId' => null,
-                    'locationId' => null
+                    'locationId' => null,
+                    'unidadCompra' => $input['unidad_compra'] ?? 'Unidad',
+                    'unidadConsumo' => $input['unidad_consumo'] ?? 'Unidad',
+                    'factorConversion' => max(1, (int)($input['factor_conversion'] ?? 1))
                 ]);
 
                 if (empty($material->getName()) || empty($material->getCode())) {
@@ -109,7 +112,10 @@ class MaterialController
                     'categoryId' => array_key_exists('category_id', $input) ? (!empty($input['category_id']) ? (int)$input['category_id'] : null) : $existing->getCategoryId(),
                     'materialType' => $existing->getMaterialType(),
                     'supplierId' => $existing->getSupplierId(),
-                    'locationId' => $existing->getLocationId()
+                    'locationId' => $existing->getLocationId(),
+                    'unidadCompra' => $input['unidad_compra'] ?? $existing->getUnidadCompra(),
+                    'unidadConsumo' => $input['unidad_consumo'] ?? $existing->getUnidadConsumo(),
+                    'factorConversion' => array_key_exists('factor_conversion', $input) ? max(1, (int)$input['factor_conversion']) : $existing->getFactorConversion()
                 ]);
 
                 if ($material->getPrice() < 0) {
@@ -169,12 +175,16 @@ class MaterialController
             'cost_type' => $m->getCostType(),
             'wholesale_qty' => $m->getWholesaleQty(),
             'stock' => $m->getStock(),
+            'reservedStock' => $m->getReservedStock(),
             'imageUrl' => $m->getImageUrl(),
             'category_id' => $m->getCategoryId(),
             'material_type' => $m->getMaterialType(),
             'supplier_id' => $m->getSupplierId(),
             'location_id' => $m->getLocationId(),
-            'is_active' => $m->getIsActive()
+            'is_active' => $m->getIsActive(),
+            'unidad_compra' => $m->getUnidadCompra(),
+            'unidad_consumo' => $m->getUnidadConsumo(),
+            'factor_conversion' => $m->getFactorConversion()
         ];
     }
 }

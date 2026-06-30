@@ -21,12 +21,26 @@ CREATE TABLE IF NOT EXISTS users (
     security_code VARCHAR(20) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     avatar VARCHAR(500) DEFAULT NULL,
-    role VARCHAR(10) DEFAULT 'user',
+    id_rol INT NOT NULL,
     is_active TINYINT(1) DEFAULT 1,
     checkin_time DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabla: roles
+-- =============================================
+CREATE TABLE IF NOT EXISTS roles (
+    id_rol INT AUTO_INCREMENT PRIMARY KEY,
+    role_name VARCHAR(20) NOT NULL UNIQUE,
+    display_name VARCHAR(50) NOT NULL
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO roles (role_name, display_name) VALUES
+    ('super_admin', 'Super Administrador'),
+    ('admin', 'Administrador'),
+    ('user', 'Usuario');
 
 -- =============================================
 -- Tabla: categories
@@ -50,14 +64,17 @@ CREATE TABLE IF NOT EXISTS materials (
     name VARCHAR(200) NOT NULL,
     price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     cost_type ENUM('unit','wholesale') NOT NULL DEFAULT 'unit',
+    unidad_compra VARCHAR(50) NOT NULL DEFAULT 'Unidad',
+    unidad_consumo VARCHAR(50) NOT NULL DEFAULT 'Unidad',
+    factor_conversion INT NOT NULL DEFAULT 1,
     wholesale_qty INT DEFAULT NULL,
-    current_stock INT NOT NULL DEFAULT 0,
     image_url VARCHAR(500) DEFAULT NULL,
     category_id INT,
     material_type ENUM('activo_retornable','consumible') NOT NULL DEFAULT 'consumible',
     supplier_id INT,
     current_location_id INT,
     is_active TINYINT(1) DEFAULT 1,
+    reserved_stock INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL
@@ -103,7 +120,7 @@ CREATE TABLE IF NOT EXISTS citas (
     notas TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (cliente_id) REFERENCES customers(customer_id) ON DELETE CASCADE,
+    FOREIGN KEY (cliente_id) REFERENCES customers(customer_id) ON DELETE RESTRICT,
     FOREIGN KEY (event_type_id) REFERENCES event_types(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
@@ -118,8 +135,8 @@ CREATE TABLE IF NOT EXISTS cita_materiales (
     material_id INT NOT NULL,
     cantidad_utilizada INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE CASCADE,
-    FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE CASCADE
+    FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT,
+    FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -175,7 +192,7 @@ CREATE TABLE IF NOT EXISTS quotes (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE CASCADE
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -199,7 +216,7 @@ CREATE TABLE IF NOT EXISTS password_resets (
     token VARCHAR(255) NOT NULL,
     contact VARCHAR(100) NOT NULL DEFAULT '',
     contact_type VARCHAR(10) NOT NULL DEFAULT '',
-    expires_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     is_used TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
@@ -271,26 +288,44 @@ INSERT IGNORE INTO event_types (name) VALUES
 ('Aniversario'),
 ('Otro');
 
--- =============================================
--- Migration 2026-06-28: Agregar id_number a customers
--- Ejecutar si la tabla ya existe:
--- ALTER TABLE customers
---   ADD COLUMN id_number VARCHAR(20) NOT NULL AFTER last_name;
--- Luego: ALTER TABLE customers MODIFY email VARCHAR(100) NOT NULL;
--- Luego: ALTER TABLE customers MODIFY phone VARCHAR(20) NOT NULL;
+-- Nota: Las columnas id_number, material_type, unidad_compra, unidad_consumo,
+-- factor_conversion y reserved_stock ya están incluidas en las definiciones
+-- CREATE TABLE de customers y materials respectivamente (migraciones del
+-- 2026-06-28/29 integradas directamente en el schema).
 
 -- =============================================
--- Migration 2026-06-28: Agregar material_type a materials
--- Ejecutar si la tabla ya existe:
--- ALTER TABLE materials
---   ADD COLUMN material_type ENUM('activo_retornable','consumible') NOT NULL DEFAULT 'consumible'
---   AFTER category_id;
+-- Tabla: cita_materiales_historial
+-- Auditoría de asignación/reserva/ejecución de materiales en citas
+-- =============================================
+CREATE TABLE IF NOT EXISTS cita_materiales_historial (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cita_id INT NOT NULL,
+    material_id INT NOT NULL,
+    cantidad_anterior INT DEFAULT 0,
+    cantidad_nueva INT DEFAULT 0,
+    accion VARCHAR(20) NOT NULL COMMENT 'Asignado|Modificado|Cancelado|Ejecutado',
+    estado_cita_momento VARCHAR(50) NOT NULL,
+    usuario_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT,
+    FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT,
+    FOREIGN KEY (usuario_id) REFERENCES users(user_id) ON DELETE RESTRICT
+) ENGINE=InnoDB;
 
 -- =============================================
--- Migration 2026-06-28: Renombrar appointments → citas
--- (ya ejecutada; solo referencia para entornos nuevos)
--- Las columnas event_type_id se migran con:
---   UPDATE citas c
---     JOIN event_types et ON LOWER(et.name) = LOWER(c.event_type)
---     SET c.event_type_id = et.id
---     WHERE c.event_type_id IS NULL;
+-- Migration 2026-06-29: Remover ON DELETE CASCADE
+-- Las FKs críticas ahora usan ON DELETE RESTRICT.
+-- Ejecutar si la tabla ya existe:
+--   ALTER TABLE citas DROP FOREIGN KEY citas_ibfk_1;
+--   ALTER TABLE citas ADD CONSTRAINT fk_citas_cliente
+--     FOREIGN KEY (cliente_id) REFERENCES customers(customer_id) ON DELETE RESTRICT;
+--   ALTER TABLE cita_materiales DROP FOREIGN KEY cita_materiales_ibfk_1;
+--   ALTER TABLE cita_materiales ADD CONSTRAINT fk_citamat_cita
+--     FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT;
+--   ALTER TABLE cita_materiales DROP FOREIGN KEY cita_materiales_ibfk_2;
+--   ALTER TABLE cita_materiales ADD CONSTRAINT fk_citamat_material
+--     FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT;
+--   ALTER TABLE quotes DROP FOREIGN KEY quotes_ibfk_1;
+--   ALTER TABLE quotes ADD CONSTRAINT fk_quotes_cliente
+--     FOREIGN KEY (customer_id) REFERENCES customers(customer_id) ON DELETE RESTRICT;
+-- Luego eliminar CustomerRepository::delete()

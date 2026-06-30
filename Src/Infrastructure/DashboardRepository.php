@@ -39,7 +39,7 @@ class DashboardRepository
     {
         try {
             $threshold = $this->getLowStockThreshold();
-            $stmt = $this->db->prepare("SELECT COUNT(*) FROM materials WHERE is_active = 1 AND current_stock > 0 AND current_stock <= :threshold");
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM materials m WHERE m.is_active = 1 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) > 0 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) <= :threshold");
             $stmt->execute([':threshold' => $threshold]);
             return (int)$stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -50,7 +50,7 @@ class DashboardRepository
     public function countOutOfStock(): int
     {
         try {
-            return (int)$this->db->query("SELECT COUNT(*) FROM materials WHERE is_active = 1 AND (current_stock <= 0 OR current_stock IS NULL)")->fetchColumn();
+            return (int)$this->db->query("SELECT COUNT(*) FROM materials m WHERE m.is_active = 1 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) <= 0")->fetchColumn();
         } catch (PDOException $e) {
             return 0;
         }
@@ -79,12 +79,12 @@ class DashboardRepository
         try {
             $threshold = $this->getLowStockThreshold();
             $stmt = $this->db->prepare(
-                "SELECT name, current_stock FROM materials WHERE is_active = 1 AND current_stock > 0 AND current_stock <= :threshold ORDER BY current_stock ASC"
+                "SELECT m.name, COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = m.material_id), 0) AS stock FROM materials m WHERE m.is_active = 1 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) > 0 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) <= :threshold ORDER BY stock ASC"
             );
             $stmt->execute([':threshold' => $threshold]);
             $items = [];
             while ($r = $stmt->fetch()) {
-                $items[] = ['name' => $r['name'], 'stock' => (int)$r['current_stock']];
+                $items[] = ['name' => $r['name'], 'stock' => (int)$r['stock']];
             }
             return $items;
         } catch (PDOException $e) {
@@ -96,7 +96,7 @@ class DashboardRepository
     {
         try {
             $stmt = $this->db->query(
-                "SELECT name FROM materials WHERE is_active = 1 AND (current_stock <= 0 OR current_stock IS NULL)"
+                "SELECT m.name FROM materials m WHERE m.is_active = 1 AND (SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id) <= 0"
             );
             $items = [];
             while ($r = $stmt->fetch()) {

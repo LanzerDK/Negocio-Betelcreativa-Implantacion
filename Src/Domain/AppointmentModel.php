@@ -4,6 +4,14 @@ namespace BetelCreativa\Domain;
 
 class AppointmentModel
 {
+    public const TRANSICIONES_PERMITIDAS = [
+        'En Proceso'  => ['Pendiente', 'En Progreso', 'Cancelado'],
+        'Pendiente'   => ['En Progreso', 'Cancelado'],
+        'En Progreso' => ['Terminado', 'Cancelado'],
+        'Terminado'   => [],
+        'Cancelado'   => ['En Proceso', 'Pendiente', 'En Progreso', 'Terminado'],
+    ];
+
     private ?int $id;
     private int $clienteId;
     private string $fechaHoraInicio;
@@ -46,6 +54,42 @@ class AppointmentModel
     public function getMotivoCancelacion(): ?string { return $this->motivoCancelacion; }
     public function getNotas(): ?string { return $this->notas; }
     public function isCancelado(): bool { return $this->estado === 'Cancelado'; }
+
+    public function canTransitionTo(string $newEstado): bool
+    {
+        return in_array($newEstado, self::TRANSICIONES_PERMITIDAS[$this->estado] ?? [], true);
+    }
+
+    public function validarTransicion(string $newEstado): void
+    {
+        if (!$this->canTransitionTo($newEstado)) {
+            throw new \DomainException(
+                "No se puede cambiar de '{$this->estado}' a '$newEstado'."
+            );
+        }
+    }
+
+    public static function esRestaurable(?string $fechaCancelacion, string $fechaHoraInicio): bool
+    {
+        if (!$fechaCancelacion) return false;
+
+        $ahora = new \DateTime('now');
+
+        $inicioCita = new \DateTime($fechaHoraInicio);
+        if ($ahora >= $inicioCita) return false;
+
+        $fechaLimite = new \DateTime($fechaCancelacion);
+        $diasContados = 0;
+        while ($diasContados < 3) {
+            $fechaLimite->modify('+1 day');
+            if ((int)$fechaLimite->format('N') <= 5) {
+                $diasContados++;
+            }
+        }
+        $fechaLimite->setTime(23, 59, 59);
+
+        return $ahora <= $fechaLimite;
+    }
 
     public function setClienteId(int $id): void { $this->clienteId = $id; }
     public function setFechaHoraInicio(string $fecha): void { $this->fechaHoraInicio = $fecha; }

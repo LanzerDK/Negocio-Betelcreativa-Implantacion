@@ -165,15 +165,4 @@ class CustomerRepository
         }
     }
 
-    // Elimina un cliente de la BD por su ID
-    public function delete(int $id): bool
-    {
-        try {
-            $stmt = $this->db->prepare("DELETE FROM customers WHERE customer_id = :id");
-            return $stmt->execute([':id' => $id]);
-        } catch (PDOException $e) {
-            ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
-            return false;
-        }
-    }
 }

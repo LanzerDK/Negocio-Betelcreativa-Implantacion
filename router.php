@@ -21,5 +21,10 @@ if (strpos($relativePath, '/api/') === 0) {
     return false;
 }
 
-// For all other requests, use index.php as router
+// Pass the path as the views parameter to index.php
+$views = trim($relativePath, '/');
+if ($views === '') {
+    $views = 'login';
+}
+$_GET['views'] = $views;
 require __DIR__ . '/Public/index.php';

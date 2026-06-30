@@ -2,6 +2,7 @@
 
 namespace BetelCreativa\Controllers;
 
+use BetelCreativa\Infrastructure\MaterialRepository;
 use BetelCreativa\Infrastructure\StorageRepository;
 use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
@@ -50,9 +51,12 @@ class StorageController
                 if ($action === 'adjust') {
                     $materialId = (int)($input['material_id'] ?? 0);
                     $type = $input['type'] ?? '';
-                    $quantity = (int)($input['quantity'] ?? 0);
+                    $tipoIngreso = $input['tipo_ingreso'] ?? 'Unitario';
+                    $cantidadIngresada = (int)($input['cantidad_ingresada'] ?? 0);
                     $reason = trim($input['reason'] ?? '');
                     $notes = trim($input['notes'] ?? '');
+                    $supplier = trim($input['supplier'] ?? '');
+                    $purchasePrice = !empty($input['purchase_price']) ? (float)$input['purchase_price'] : null;
                     $locationId = !empty($input['location_id']) ? (int)$input['location_id'] : null;
 
                     if (!$materialId) {
@@ -61,14 +65,30 @@ class StorageController
                     if (!in_array($type, ['entry', 'exit'])) {
                         ApiResponse::error('Tipo debe ser entry o exit.');
                     }
-                    if ($quantity <= 0) {
+                    if ($cantidadIngresada <= 0) {
                         ApiResponse::error('La cantidad debe ser mayor a 0.');
                     }
                     if (!in_array($reason, $allowedReasons, true)) {
                         ApiResponse::error('Motivo no válido.');
                     }
 
-                    if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $notes, $locationId)) {
+                    // Backend Conversion Engine
+                    $matRepo = new MaterialRepository();
+                    $material = $matRepo->findById($materialId);
+                    if (!$material) {
+                        ApiResponse::error('Material no encontrado.', 404);
+                    }
+                    $factorConversion = $material->getFactorConversion();
+                    $quantity = $tipoIngreso === 'Paquete'
+                        ? $cantidadIngresada * $factorConversion
+                        : $cantidadIngresada;
+
+                    $extraMeta = [];
+                    if ($supplier) $extraMeta['supplier'] = $supplier;
+                    if ($purchasePrice !== null) $extraMeta['purchase_price'] = $purchasePrice;
+                    $extraNote = !empty($extraMeta) ? json_encode(['notes' => $notes, 'meta' => $extraMeta]) : $notes;
+
+                    if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $extraNote, $locationId)) {
                         ApiResponse::success(null, 'Ajuste registrado exitosamente.');
                     } else {
                         ApiResponse::error('Error al registrar el ajuste.', 500);

@@ -13,6 +13,7 @@ class UserModel
     private string $phone; 
     private string $passwordHash;
     private string $role = 'user';
+    private ?int $idRol = null;
     private ?string $avatarUrl = null;
     private ?string $checkinTime;
 
@@ -28,6 +29,7 @@ class UserModel
         $this->phone = $data['phone'] ?? ''; 
         $this->passwordHash = $data['passwordHash'] ?? '';
         $this->role = $data['role'] ?? 'user';
+        $this->idRol = $data['idRol'] ?? null;
         $this->avatarUrl = $data['avatarUrl'] ?? null;
         $this->checkinTime = $data['checkinTime'] ?? null;
     }
@@ -42,6 +44,7 @@ class UserModel
     public function getPhone(): string { return $this->phone; } 
     public function getPasswordHash(): string { return $this->passwordHash; }
     public function getRole(): string { return $this->role; }
+    public function getIdRol(): ?int { return $this->idRol; }
     public function getAvatarUrl(): ?string { return $this->avatarUrl; }
     public function getCheckinTime(): ?string { return $this->checkinTime; }
 
@@ -54,6 +57,7 @@ class UserModel
     public function setPhone(string $phone): void { $this->phone = $phone; }
     public function setPasswordHash(string $hash): void { $this->passwordHash = $hash; }
     public function setAvatarUrl(?string $url): void { $this->avatarUrl = $url; }
+    public function setIdRol(?int $idRol): void { $this->idRol = $idRol; }
     public function setCheckinTime(?string $time): void { $this->checkinTime = $time; }
 
     public function verificarPassword(string $passwordPlana): bool

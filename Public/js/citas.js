@@ -10,6 +10,33 @@ const itemsPorPagina = 10;
 let calendario = null;
 let modoMaterial = 'nuevo'; // 'nuevo' | 'editar'
 let citaEditandoId = null;
+let citaMaterialesOriginales = []; // snapshot al abrir edición (para cálculo de stock disponible)
+
+// ==================== HELPERS TIMEZONE VET ====================
+
+function ahoraEnCaracas() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Caracas' }));
+}
+
+function sumarDiasHabiles(desde, dias) {
+    const result = new Date(desde);
+    let contados = 0;
+    while (contados < dias) {
+        result.setDate(result.getDate() + 1);
+        const diaSem = result.getDay();
+        if (diaSem !== 0 && diaSem !== 6) contados++;
+    }
+    result.setHours(23, 59, 59, 999);
+    return result;
+}
+
+function esRestaurable(fechaCancelacion, fechaHoraInicio) {
+    if (!fechaCancelacion) return false;
+    const ahora = ahoraEnCaracas();
+    if (ahora >= new Date(fechaHoraInicio)) return false;
+    const fechaLimite = sumarDiasHabiles(new Date(fechaCancelacion), 3);
+    return ahora <= fechaLimite;
+}
 
 // ==================== CARGA INICIAL ====================
 
@@ -159,6 +186,11 @@ function classNameEstado(estado)
     return (estado || '').replace(/\s+/g, '-').toLowerCase();
 }
 
+function calcularMaxDisponible(material, yaAsignado)
+{
+    return Math.min(material.stock, material.stock - (material.reservedStock || 0) + (yaAsignado || 0));
+}
+
 function formatearFechaHora(datetime)
 {
     if (!datetime) return '—';
@@ -237,7 +269,7 @@ function renderizarTabla(pagina)
             <div class="col-7" style="display:flex;gap:10px;">
                 ${!esCancelado && !esTerminado ? `<button class="action-btn edit" data-id="${cita.id}"><i class="fas fa-edit"></i></button>` : ''}
                 ${!esCancelado && !esTerminado ? `<button class="action-btn cancel-btn" data-id="${cita.id}" title="Cancelar cita"><i class="fas fa-ban"></i></button>` : ''}
-                ${esCancelado ? `<button class="action-btn restore-btn" data-id="${cita.id}" title="Restaurar cita"><i class="fas fa-undo"></i></button>` : ''}
+                ${esCancelado && esRestaurable(cita.fechaHoraCancelacion, cita.fechaHoraInicio) ? `<button class="action-btn restore-btn" data-id="${cita.id}" title="Restaurar cita"><i class="fas fa-undo"></i></button>` : ''}
             </div>
         `;
 
@@ -353,29 +385,54 @@ function abrirModalNueva()
     const form = document.getElementById('newAppointmentForm');
     if (form) form.reset();
     // Bloquear fechas pasadas
-    const ahora = new Date();
-    ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
-    const localStr = ahora.toISOString().slice(0, 16);
-    const inicio = document.getElementById('newFechaHoraInicio');
-    if (inicio) inicio.min = localStr;
-    const fin = document.getElementById('newFechaHoraFin');
-    if (fin) fin.min = localStr;
+    const hoy = new Date().toISOString().slice(0, 10);
+    const fechaInicio = document.getElementById('newFechaInicio');
+    if (fechaInicio) fechaInicio.min = hoy;
+    const fechaFin = document.getElementById('newFechaFin');
+    if (fechaFin) fechaFin.min = hoy;
+    // Resetear hora a 8:00 AM por defecto
+    ['newHoraInicio_h','newHoraFin_h'].forEach(id => { const s=document.getElementById(id); if(s) s.value='8'; });
+    ['newHoraInicio_m','newHoraFin_m'].forEach(id => { const s=document.getElementById(id); if(s) s.value='00'; });
+    ['newHoraInicio_a','newHoraFin_a'].forEach(id => { const s=document.getElementById(id); if(s) s.value='AM'; });
 }
 
 // ==================== MODAL EDICIÓN ====================
 
-function abrirModalEdicion(cita)
+async function abrirModalEdicion(cita)
 {
     citaEditandoId = cita.id;
     document.getElementById('editModal').style.display = 'flex';
+
+    // Deshabilitar botón "Asignar Materiales" hasta que los datos estén listos
+    const asignarBtn = document.getElementById('editAsignarMateriales');
+    if (asignarBtn) asignarBtn.disabled = true;
+
     poblarSelectoresCliente();
     poblarSelectoresTipoEvento();
 
     const asignar = (id, valor) => { const el = document.getElementById(id); if (el) el.value = valor ?? ''; };
     asignar('editId', cita.id);
     asignar('editClient', cita.clienteId);
-    asignar('editFechaHoraInicio', cita.fechaHoraInicio ? cita.fechaHoraInicio.replace(' ', 'T') : '');
-    asignar('editFechaHoraFin', cita.fechaHoraFin ? cita.fechaHoraFin.replace(' ', 'T') : '');
+    if (cita.fechaHoraInicio) {
+        const p = cita.fechaHoraInicio.replace(' ', 'T').split('T');
+        asignar('editFechaInicio', p[0] || '');
+        if (p[1]) {
+            const t = hora24a12(p[1].slice(0, 5));
+            asignar('editHoraInicio_h', t.h);
+            asignar('editHoraInicio_m', t.m);
+            asignar('editHoraInicio_a', t.ap);
+        }
+    }
+    if (cita.fechaHoraFin) {
+        const p = cita.fechaHoraFin.replace(' ', 'T').split('T');
+        asignar('editFechaFin', p[0] || '');
+        if (p[1]) {
+            const t = hora24a12(p[1].slice(0, 5));
+            asignar('editHoraFin_h', t.h);
+            asignar('editHoraFin_m', t.m);
+            asignar('editHoraFin_a', t.ap);
+        }
+    }
     asignar('editEventType', cita.eventTypeId);
     asignar('editUbicacion', cita.ubicacion);
     asignar('editNotas', cita.notas);
@@ -387,18 +444,18 @@ function abrirModalEdicion(cita)
         clientSelect.style.cursor = 'not-allowed';
     }
 
-    // Cargar materiales asignados
-    materialesAsignados = [];
+    // Cargar materiales asignados (await para evitar race condition)
     document.getElementById('editMaterialCount').textContent = '';
-    cargarMaterialesCita(cita.id).then(mats => {
-        materialesAsignados = mats;
-        actualizarContadorMateriales('edit');
-        const panel = document.getElementById('editMaterialPanel');
-        if (panel && panel.style.display === 'flex') {
-            actualizarSelectMateriales('editar');
-            renderizarListaMateriales('editar');
-        }
-    });
+    const mats = await cargarMaterialesCita(cita.id);
+    materialesAsignados = mats;
+    citaMaterialesOriginales = JSON.parse(JSON.stringify(mats));
+    actualizarContadorMateriales('edit');
+    const panel = document.getElementById('editMaterialPanel');
+    if (panel && panel.style.display === 'flex') {
+        actualizarSelectMateriales('editar');
+        renderizarListaMateriales('editar');
+    }
+    if (asignarBtn) asignarBtn.disabled = false;
 }
 
 async function cargarMaterialesCita(citaId)
@@ -542,17 +599,31 @@ function renderizarListaMateriales(modo)
     cont.innerHTML = aRenderizar.map(asig => {
         const m = todosMateriales.find(mat => mat.id === asig.materialId);
         if (!m) return '';
-        const excede = asig.cantidad > m.stock;
+        const yaAsignado = modo === 'editar'
+            ? (citaMaterialesOriginales.find(o => o.materialId === asig.materialId)?.cantidad || 0)
+            : 0;
+        const maxDisponible = calcularMaxDisponible(m, yaAsignado);
+        const excede = asig.cantidad > maxDisponible;
+        // NEW: mostrar stock real de BD; EDIT: mostrar valores simulados (lo que quedará tras guardar)
+        let dispText, reservText;
+        if (modo === 'nuevo') {
+            dispText = m.stock - (m.reservedStock || 0);
+            reservText = m.reservedStock || 0;
+        } else {
+            const reservadoSimulado = (m.reservedStock || 0) - yaAsignado + asig.cantidad;
+            dispText = m.stock - reservadoSimulado;
+            reservText = reservadoSimulado;
+        }
         return `
-            <div class="material-item${excede ? ' excede' : ''}" data-id="${m.id}" data-stock="${m.stock}">
+            <div class="material-item${excede ? ' excede' : ''}" data-id="${m.id}" data-stock="${m.stock}" data-reserved="${m.reservedStock}" data-original-cant="${yaAsignado}">
                 <button type="button" class="material-remove" title="Quitar material">&times;</button>
                 <div class="material-info">
                     <strong>${m.code || '—'}</strong>
                     <small>${m.name}</small>
                 </div>
-                <div class="material-stock">Stock: <strong>${m.stock}</strong></div>
+                <div class="material-stock">Disponible: <strong>${dispText}</strong> | Reservado: ${reservText}</div>
                 <div class="material-qty">
-                    <input type="number" class="form-input material-cantidad" min="1" max="${m.stock}" value="${asig.cantidad}">
+                    <input type="number" class="form-input material-cantidad" min="1" max="${maxDisponible}" value="${asig.cantidad}">
                 </div>
                 <div class="stock-warning"${excede ? '' : ' style="display:none;"'}>¡Stock Insuficiente!</div>
             </div>
@@ -564,10 +635,20 @@ function renderizarListaMateriales(modo)
         input.addEventListener('input', function() {
             const item = this.closest('.material-item');
             const stock = parseInt(item.dataset.stock);
+            const reserved = parseInt(item.dataset.reserved) || 0;
+            const yaAsignado = parseInt(item.dataset.originalCant) || 0;
+            const maxDisponible = Math.min(stock, stock - reserved + yaAsignado);
             const cant = parseInt(this.value) || 0;
             const warning = item.querySelector('.stock-warning');
             const asig = materialesAsignados.find(a => a.materialId === parseInt(item.dataset.id));
             if (asig) asig.cantidad = cant;
+            // Actualizar display en tiempo real (solo en edición, en nuevo se muestra stock real)
+            if (modo === 'editar') {
+                const nuevoReservado = reserved - yaAsignado + cant;
+                const nuevoDisponible = stock - nuevoReservado;
+                const stockEl = item.querySelector('.material-stock');
+                if (stockEl) stockEl.innerHTML = 'Disponible: <strong>' + nuevoDisponible + '</strong> | Reservado: ' + nuevoReservado;
+            }
             if (cant < 1) {
                 this.style.background = '#ffcccc';
                 this.style.borderColor = 'red';
@@ -575,7 +656,7 @@ function renderizarListaMateriales(modo)
                 warning.style.display = '';
                 item.classList.add('excede');
                 deshabilitarSubmit(true);
-            } else if (cant > stock) {
+            } else if (cant > maxDisponible) {
                 this.style.background = '#ffcccc';
                 this.style.borderColor = 'red';
                 warning.textContent = '¡Stock Insuficiente!';
@@ -621,11 +702,15 @@ function confirmarMateriales(modo)
             toast('La cantidad mínima para "' + (m.code || m.name) + '" es 1.', 'warning');
             return;
         }
-        if (m.stock <= 0 && asig.cantidad > 0) {
+        // Para nueva cita, yaAsignado = 0; para editar, usar la cantidad original que tenía esta cita
+        const orig = citaMaterialesOriginales.find(o => o.materialId === asig.materialId);
+        const yaAsignado = orig ? orig.cantidad : 0;
+        const maxDisponible = calcularMaxDisponible(m, yaAsignado);
+        if (maxDisponible <= 0 && asig.cantidad > 0) {
             toast('El material "' + (m.code || m.name) + '" no tiene stock disponible.', 'warning');
             return;
         }
-        if (asig.cantidad > m.stock) {
+        if (asig.cantidad > maxDisponible) {
             toast('Stock insuficiente para "' + (m.code || m.name) + '".', 'warning');
             return;
         }
@@ -700,11 +785,12 @@ async function confirmarCancelacion()
             await fetchCitas();
             await fetchTodasLasCitas();
             await fetchCanceladas();
+            await cargarSelectMateriales();
         } else {
             toast('Error: ' + res.message, 'error');
         }
     } catch (e) {
-        toast('Error de conexión.', 'error');
+        toast(e.message || 'Error de conexión.', 'error');
     }
 }
 
@@ -724,11 +810,12 @@ async function restaurarCita(id)
             await fetchCitas();
             await fetchTodasLasCitas();
             await fetchCanceladas();
+            await cargarSelectMateriales();
         } else {
             toast('Error: ' + res.message, 'error');
         }
     } catch (e) {
-        toast('Error de conexión.', 'error');
+        toast(e.message || 'Error de conexión.', 'error');
     }
 }
 
@@ -745,11 +832,12 @@ async function crearCita(datos)
         if (res.success) {
             toast('Cita creada exitosamente.', 'success');
             await fetchCitas();
+            await cargarSelectMateriales();
         } else {
             toast('Error: ' + res.message, 'error');
         }
     } catch (e) {
-        toast('Error de conexión.', 'error');
+        toast(e.message || 'Error de conexión.', 'error');
     }
 }
 
@@ -765,11 +853,12 @@ async function actualizarCita(id, datos)
             toast('Cita actualizada exitosamente.', 'success');
             await fetchCitas();
             await fetchTodasLasCitas();
+            await cargarSelectMateriales();
         } else {
             toast('Error: ' + res.message, 'error');
         }
     } catch (e) {
-        toast('Error de conexión.', 'error');
+        toast(e.message || 'Error de conexión.', 'error');
     }
 }
 
@@ -785,11 +874,11 @@ function renderizarHistorial()
         return;
     }
 
-    tbody.innerHTML = canceladasList.map(c => {
+    tbody.innerHTML = canceladasList.filter(c => c.estado === 'Cancelado').map(c => {
         const nombre = obtenerNombreCliente(c.clienteId);
         const telefono = obtenerTelefonoCliente(c.clienteId);
         const fechaHora = formatearFechaHora(c.fechaHoraInicio);
-        const puedeRestaurar = puedeRestaurarse(c);
+        const puedeRestaurar = esRestaurable(c.fechaHoraCancelacion, c.fechaHoraInicio);
         return `<tr>
             <td>#${c.id}</td>
             <td><strong>${nombre}</strong><br><small style="color:var(--gray)">${telefono}</small></td>
@@ -807,14 +896,59 @@ function renderizarHistorial()
     });
 }
 
-function puedeRestaurarse(cita)
+// ==================== HISTORIAL DE MATERIALES POR CITA ====================
+
+async function fetchHistorialCita(citaId)
 {
-    if (!cita.fechaHoraCancelacion) return true;
-    const ahora = Date.now();
-    const fechaCanc = new Date(cita.fechaHoraCancelacion.replace(' ', 'T')).getTime();
-    const diffMs = ahora - fechaCanc;
-    const diffDias = diffMs / (1000 * 60 * 60 * 24);
-    return diffDias <= 3;
+    try {
+        const res = await callApi(APP_URL + 'Public/api/appointments.php?historial=1&id=' + citaId + '&_=' + Date.now());
+        if (res.success) return res.data || [];
+    } catch (e) { /* silencio */ }
+    return [];
+}
+
+function renderHistorialCitaModal(data)
+{
+    const cont = document.getElementById('citaHistorialContent');
+    if (!cont) return;
+    if (!data || data.length === 0) {
+        cont.innerHTML = '<p style="text-align:center;color:var(--gray);padding:20px;">Sin historial de materiales.</p>';
+        return;
+    }
+    cont.innerHTML = '<div class="historial-timeline">' + data.map(h => {
+        const fecha = h.created_at ? formatearFechaHora(h.created_at) : '—';
+        const usuario = (h.first_name || '') + ' ' + (h.last_name || '');
+        const matNombre = h.materialCode ? (h.materialCode + ' - ' + h.materialName) : (h.materialName || 'Material #' + h.material_id);
+        let detalle = '';
+        if (h.accion === 'Asignado') {
+            detalle = 'Asignado <strong>' + h.cantidad_nueva + '</strong> uds.';
+        } else if (h.accion === 'Modificado') {
+            detalle = 'Modificado: <strong>' + h.cantidad_anterior + '</strong> → <strong>' + h.cantidad_nueva + '</strong> uds.';
+        } else if (h.accion === 'Cancelado') {
+            detalle = 'Liberadas <strong>' + h.cantidad_anterior + '</strong> uds.';
+        } else if (h.accion === 'Ejecutado') {
+            detalle = 'Descontadas <strong>' + h.cantidad_anterior + '</strong> uds.';
+        } else {
+            detalle = h.cantidad_anterior + ' → ' + h.cantidad_nueva;
+        }
+        return `<div class="historial-item historial-${h.accion.toLowerCase()}">
+            <div class="historial-badge">${h.accion}</div>
+            <div class="historial-body">
+                <div class="historial-material">${matNombre}</div>
+                <div class="historial-detalle">${detalle}</div>
+                <div class="historial-meta">${usuario} · ${fecha} · Estado: ${h.estado_cita_momento}</div>
+            </div>
+        </div>`;
+    }).join('') + '</div>';
+}
+
+function abrirHistorialCita(citaId)
+{
+    const modal = document.getElementById('citaHistorialModal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    document.getElementById('citaHistorialContent').innerHTML = '<p style="text-align:center;padding:20px;">Cargando...</p>';
+    fetchHistorialCita(citaId).then(data => renderHistorialCitaModal(data));
 }
 
 // ==================== TIPOS DE EVENTO (gestión) ====================
@@ -855,12 +989,68 @@ async function renderizarListaTiposEvento()
                     } else {
                         toast('Error: ' + res.message, 'error');
                     }
-                } catch (e) { toast('Error de conexión.', 'error'); }
+                } catch (e) { toast(e.message || 'Error de conexión.', 'error'); }
             });
         });
     } catch (e) {
         cont.innerHTML = '<p class="text-danger">Error de conexión.</p>';
     }
+}
+
+// ==================== UTILIDADES DE HORA ====================
+
+function poblarSelectoresHora()
+{
+    const ids = [
+        'newHoraInicio_h', 'newHoraFin_h',
+        'editHoraInicio_h', 'editHoraFin_h'
+    ];
+    ids.forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = '';
+        for (let h = 1; h <= 12; h++) {
+            const opt = document.createElement('option');
+            opt.value = h;
+            opt.textContent = h;
+            sel.appendChild(opt);
+        }
+    });
+    const mids = [
+        'newHoraInicio_m', 'newHoraFin_m',
+        'editHoraInicio_m', 'editHoraFin_m'
+    ];
+    mids.forEach(id => {
+        const sel = document.getElementById(id);
+        if (!sel) return;
+        sel.innerHTML = '';
+        for (let m = 0; m < 60; m++) {
+            const v = String(m).padStart(2, '0');
+            const opt = document.createElement('option');
+            opt.value = v;
+            opt.textContent = v;
+            sel.appendChild(opt);
+        }
+    });
+}
+
+function hora24a12(hhmm)
+{
+    const p = hhmm.split(':');
+    let h = parseInt(p[0], 10);
+    const m = p[1] || '00';
+    const ap = h >= 12 ? 'PM' : 'AM';
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    return { h: h.toString(), m: m, ap: ap };
+}
+
+function hora12a24(h, m, ap)
+{
+    h = parseInt(h, 10);
+    if (ap === 'AM' && h === 12) h = 0;
+    if (ap === 'PM' && h !== 12) h += 12;
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
 }
 
 // ==================== VALIDACIÓN ====================
@@ -885,6 +1075,7 @@ function validarDatosCita(datos)
 
 function initApp()
 {
+    poblarSelectoresHora();
     fetchClientes().then(() => {
         if (clientesList.length === 0) {
             const addBtn = document.getElementById('addAppointmentBtn');
@@ -911,10 +1102,18 @@ function initApp()
             toast('Corrija las cantidades inválidas antes de guardar.', 'warning');
             return;
         }
+        const fechaInicio = document.getElementById('newFechaInicio')?.value || '';
+        const hi_h = document.getElementById('newHoraInicio_h')?.value || '8';
+        const hi_m = document.getElementById('newHoraInicio_m')?.value || '00';
+        const hi_a = document.getElementById('newHoraInicio_a')?.value || 'AM';
+        const fechaFin = document.getElementById('newFechaFin')?.value || '';
+        const hf_h = document.getElementById('newHoraFin_h')?.value || '8';
+        const hf_m = document.getElementById('newHoraFin_m')?.value || '00';
+        const hf_a = document.getElementById('newHoraFin_a')?.value || 'AM';
         const datos = {
             clienteId: parseInt(document.getElementById('newClient')?.value || 0),
-            fechaHoraInicio: document.getElementById('newFechaHoraInicio')?.value || '',
-            fechaHoraFin: document.getElementById('newFechaHoraFin')?.value || '',
+            fechaHoraInicio: fechaInicio ? fechaInicio + 'T' + hora12a24(hi_h, hi_m, hi_a) : '',
+            fechaHoraFin: fechaFin ? fechaFin + 'T' + hora12a24(hf_h, hf_m, hf_a) : '',
             eventTypeId: parseInt(document.getElementById('newEventType')?.value || 0),
             ubicacion: document.getElementById('newUbicacion')?.value || '',
             notas: document.getElementById('newNotas')?.value || '',
@@ -941,10 +1140,18 @@ function initApp()
         }
         const id = parseInt(document.getElementById('editId')?.value || 0);
         if (!id) return;
+        const fechaInicio = document.getElementById('editFechaInicio')?.value || '';
+        const hi_h = document.getElementById('editHoraInicio_h')?.value || '8';
+        const hi_m = document.getElementById('editHoraInicio_m')?.value || '00';
+        const hi_a = document.getElementById('editHoraInicio_a')?.value || 'AM';
+        const fechaFin = document.getElementById('editFechaFin')?.value || '';
+        const hf_h = document.getElementById('editHoraFin_h')?.value || '8';
+        const hf_m = document.getElementById('editHoraFin_m')?.value || '00';
+        const hf_a = document.getElementById('editHoraFin_a')?.value || 'AM';
         const datos = {
             clienteId: parseInt(document.getElementById('editClient')?.value || 0),
-            fechaHoraInicio: document.getElementById('editFechaHoraInicio')?.value || '',
-            fechaHoraFin: document.getElementById('editFechaHoraFin')?.value || '',
+            fechaHoraInicio: fechaInicio ? fechaInicio + 'T' + hora12a24(hi_h, hi_m, hi_a) : '',
+            fechaHoraFin: fechaFin ? fechaFin + 'T' + hora12a24(hf_h, hf_m, hf_a) : '',
             eventTypeId: parseInt(document.getElementById('editEventType')?.value || 0),
             ubicacion: document.getElementById('editUbicacion')?.value || '',
             notas: document.getElementById('editNotas')?.value || '',
@@ -957,6 +1164,11 @@ function initApp()
 
     // Asignar materiales (editar)
     document.getElementById('editAsignarMateriales')?.addEventListener('click', () => abrirModalMateriales('editar'));
+    // Ver historial de materiales (editar)
+    document.getElementById('editVerHistorial')?.addEventListener('click', function() {
+        const id = parseInt(document.getElementById('editId')?.value || 0);
+        if (id) abrirHistorialCita(id);
+    });
 
     // Panel materiales — nuevo
     document.getElementById('newMaterialFilter')?.addEventListener('input', () => renderizarListaMateriales('nuevo'));
@@ -996,6 +1208,11 @@ function initApp()
         }
     });
 
+    // Cerrar modal historial
+    document.querySelector('#citaHistorialModal .close-modal')?.addEventListener('click', () => {
+        document.getElementById('citaHistorialModal').style.display = 'none';
+    });
+
     // Cerrar modales
     document.querySelectorAll('.close-modal, #cancelNew, #cancelEdit').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -1022,6 +1239,8 @@ function initApp()
         document.querySelectorAll('.modal').forEach(m => {
             if (e.target === m) m.style.display = 'none';
         });
+        const histModal = document.getElementById('citaHistorialModal');
+        if (e.target === histModal) histModal.style.display = 'none';
     });
 
     // Navegación calendario
@@ -1082,7 +1301,7 @@ function initApp()
             } else {
                 toast('Error: ' + res.message, 'error');
             }
-        } catch (e) { toast('Error de conexión.', 'error'); }
+        } catch (e) { toast(e.message || 'Error de conexión.', 'error'); }
     });
 }
 

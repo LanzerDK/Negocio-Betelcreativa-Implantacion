@@ -30,16 +30,16 @@
                 </div>
                 <div class="user-details">
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
-                    <p><?php echo htmlspecialchars(ucfirst($_SESSION['user_role'] ?? 'Usuario')); ?></p>
+                    <p><?php echo htmlspecialchars(roleLabel($_SESSION['user_role'] ?? null)); ?></p>
                 </div>
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settingsDropdown">
-                        <a href="<?php echo APP_URL; ?>config" class="dropdown-item">
-                            <i class="fas fa-user"></i> Cuenta
-                        </a>
+                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
+                        <i class="fas fa-user"></i> Cuenta
+                    </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </a>
@@ -70,10 +70,19 @@
                 <i class="fas fa-users"></i>
                 <span>Clientes</span>
             </a>
-            <a href="<?php echo APP_URL; ?>storage" class="menu-item">
-                <i class="fas fa-warehouse"></i>
-                <span>Almacén</span>
-            </a>
+            <div class="menu-item-wrapper">
+                <a href="<?php echo APP_URL; ?>storage" class="menu-item">
+                    <i class="fas fa-warehouse"></i>
+                    <span>Almacén</span>
+                </a>
+                <button class="submenu-toggle" id="almacenSubmenuToggle" type="button">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="submenu-dropdown" id="almacenSubmenu">
+                    <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item"><i class="fas fa-truck-loading"></i> Distribución</a>
+                    <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
+                </div>
+            </div>
             <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Reportes</span>
@@ -180,7 +189,23 @@
                                 <input type="number" class="form-control" id="nuevoWholesaleQty" min="1" placeholder="Ej: 12">
                             </div>
 
-                           
+                            <hr>
+                            <h6 class="text-muted mb-3">Configuración de Empaque</h6>
+                            <div class="mb-3">
+                                <label for="nuevaUnidadCompra" class="form-label">Unidad de Compra</label>
+                                <input type="text" class="form-control" id="nuevaUnidadCompra" value="Paquete" placeholder="Ej: Paquete, Caja, Rollo">
+                            </div>
+                            <div class="mb-3">
+                                <label for="nuevaUnidadConsumo" class="form-label">Unidad de Consumo</label>
+                                <input type="text" class="form-control" id="nuevaUnidadConsumo" value="Unidad" placeholder="Ej: Unidad, Metro, Litro">
+                            </div>
+                            <div class="mb-3">
+                                <label for="nuevoFactorConversion" class="form-label">Factor de Conversión</label>
+                                <input type="number" class="form-control" id="nuevoFactorConversion" min="1" value="1" placeholder="Ej: 12 si 1 paquete = 12 unidades">
+                                <div class="form-text">¿Cuántas unidades de consumo hay en una unidad de compra?</div>
+                            </div>
+                            <hr>
+
                             <div class="mb-3">
                                 <label for="nuevaImagen" class="form-label">Imagen del Material</label>
                                 <input type="file" class="form-control" id="nuevaImagen" accept="image/*">
@@ -235,7 +260,24 @@
                                 <label for="wholesaleQty" class="form-label">Cantidad por Mayor</label>
                                 <input type="number" class="form-control" id="wholesaleQty" min="1" placeholder="Ej: 12">
                             </div>
-                           
+
+                            <hr>
+                            <h6 class="text-muted mb-3">Configuración de Empaque</h6>
+                            <div class="mb-3">
+                                <label for="editUnidadCompra" class="form-label">Unidad de Compra</label>
+                                <input type="text" class="form-control" id="editUnidadCompra" placeholder="Ej: Paquete, Caja, Rollo">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editUnidadConsumo" class="form-label">Unidad de Consumo</label>
+                                <input type="text" class="form-control" id="editUnidadConsumo" placeholder="Ej: Unidad, Metro, Litro">
+                            </div>
+                            <div class="mb-3">
+                                <label for="editFactorConversion" class="form-label">Factor de Conversión</label>
+                                <input type="number" class="form-control" id="editFactorConversion" min="1" value="1" placeholder="Ej: 12 si 1 paquete = 12 unidades">
+                                <div class="form-text">¿Cuántas unidades de consumo hay en una unidad de compra?</div>
+                            </div>
+                            <hr>
+
                         </form>
                     </div>
                     <div class="modal-footer">
@@ -259,8 +301,13 @@
             e.stopPropagation();
             document.getElementById('settingsDropdown')?.classList.toggle('show');
         });
+        document.getElementById('almacenSubmenuToggle')?.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('almacenSubmenu')?.classList.toggle('show');
+        });
         document.addEventListener('click', function() {
             document.getElementById('settingsDropdown')?.classList.remove('show');
+            document.getElementById('almacenSubmenu')?.classList.remove('show');
         });
     </script>
     <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>

@@ -1,5 +1,12 @@
 /* quoteStyle.css - Estilos específicos del módulo de Citas/Cotizaciones */
 
+.datetime-row { display: flex; gap: 10px; }
+.datetime-row input[type="date"] { flex: 2; min-width: 0; }
+.time-picker { display: flex; align-items: center; gap: 3px; flex: 1.6; }
+.time-sel { width: auto; min-width: 50px; padding: 10px 4px !important; text-align: center; }
+.time-ap { width: auto; min-width: 58px; padding: 10px 2px !important; text-align: center; }
+.time-sep { font-weight: 700; font-size: 1.1rem; color: var(--text); }
+
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
@@ -978,6 +985,98 @@
   .history-table td {
     padding: 8px 10px;
   }
+}
+
+/* ============================================
+   HISTORIAL DE MATERIALES — Timeline
+   ============================================ */
+
+.historial-timeline {
+  position: relative;
+  padding-left: 24px;
+}
+
+.historial-timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--light-gray);
+}
+
+.historial-item {
+  position: relative;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid var(--gray);
+}
+
+.historial-item.historial-asignado {
+  border-left-color: #28a745;
+}
+
+.historial-item.historial-modificado {
+  border-left-color: #ffc107;
+}
+
+.historial-item.historial-cancelado {
+  border-left-color: #dc3545;
+}
+
+.historial-item.historial-ejecutado {
+  border-left-color: #17a2b8;
+}
+
+.historial-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: var(--gray);
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.historial-asignado .historial-badge {
+  background: #28a745;
+}
+
+.historial-modificado .historial-badge {
+  background: #ffc107;
+  color: #333;
+}
+
+.historial-cancelado .historial-badge {
+  background: #dc3545;
+}
+
+.historial-ejecutado .historial-badge {
+  background: #17a2b8;
+}
+
+.historial-body {
+  font-size: 0.85rem;
+}
+
+.historial-material {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.historial-detalle {
+  color: var(--dark);
+  margin-bottom: 2px;
+}
+
+.historial-meta {
+  font-size: 0.75rem;
+  color: var(--gray);
 }
 
 @media (max-width: 480px) {

@@ -21,7 +21,7 @@ class MaterialRepository
     {
         try {
             $stmt = $this->db->query(
-                "SELECT material_id AS id, material_code AS code, name, price, cost_type AS costType, wholesale_qty AS wholesaleQty, current_stock AS stock, image_url AS imageUrl, category_id AS categoryId, material_type AS materialType, supplier_id AS supplierId, current_location_id AS locationId, is_active AS isActive FROM materials ORDER BY material_id DESC"
+                "SELECT m.material_id AS id, m.material_code AS code, m.name, m.price, m.cost_type AS costType, m.wholesale_qty AS wholesaleQty, COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = m.material_id), 0) AS stock, m.reserved_stock AS reservedStock, m.image_url AS imageUrl, m.category_id AS categoryId, m.material_type AS materialType, m.supplier_id AS supplierId, m.current_location_id AS locationId, m.is_active AS isActive, m.unidad_compra AS unidadCompra, m.unidad_consumo AS unidadConsumo, m.factor_conversion AS factorConversion FROM materials m ORDER BY m.material_id DESC"
             );
             $materials = [];
             while ($row = $stmt->fetch()) {
@@ -38,7 +38,7 @@ class MaterialRepository
     {
         try {
             $stmt = $this->db->prepare(
-                "SELECT material_id AS id, material_code AS code, name, price, cost_type AS costType, wholesale_qty AS wholesaleQty, current_stock AS stock, image_url AS imageUrl, category_id AS categoryId, material_type AS materialType, supplier_id AS supplierId, current_location_id AS locationId, is_active AS isActive FROM materials WHERE material_id = :id"
+                "SELECT m.material_id AS id, m.material_code AS code, m.name, m.price, m.cost_type AS costType, m.wholesale_qty AS wholesaleQty, COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = m.material_id), 0) AS stock, m.reserved_stock AS reservedStock, m.image_url AS imageUrl, m.category_id AS categoryId, m.material_type AS materialType, m.supplier_id AS supplierId, m.current_location_id AS locationId, m.is_active AS isActive, m.unidad_compra AS unidadCompra, m.unidad_consumo AS unidadConsumo, m.factor_conversion AS factorConversion FROM materials m WHERE m.material_id = :id"
             );
             $stmt->execute([':id' => $id]);
             $data = $stmt->fetch();
@@ -53,7 +53,7 @@ class MaterialRepository
     {
         try {
             $stmt = $this->db->prepare(
-                "SELECT material_id AS id, material_code AS code, name, price, cost_type AS costType, wholesale_qty AS wholesaleQty, current_stock AS stock, image_url AS imageUrl, category_id AS categoryId, material_type AS materialType, supplier_id AS supplierId, current_location_id AS locationId, is_active AS isActive FROM materials WHERE category_id = :categoryId ORDER BY material_id DESC"
+                "SELECT m.material_id AS id, m.material_code AS code, m.name, m.price, m.cost_type AS costType, m.wholesale_qty AS wholesaleQty, COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = m.material_id), 0) AS stock, m.reserved_stock AS reservedStock, m.image_url AS imageUrl, m.category_id AS categoryId, m.material_type AS materialType, m.supplier_id AS supplierId, m.current_location_id AS locationId, m.is_active AS isActive, m.unidad_compra AS unidadCompra, m.unidad_consumo AS unidadConsumo, m.factor_conversion AS factorConversion FROM materials m WHERE m.category_id = :categoryId ORDER BY m.material_id DESC"
             );
             $stmt->execute([':categoryId' => $categoryId]);
             $materials = [];
@@ -108,8 +108,8 @@ class MaterialRepository
         try {
             $this->db->beginTransaction();
 
-            $sql = "INSERT INTO materials (material_code, name, price, cost_type, wholesale_qty, current_stock, category_id, material_type, supplier_id, current_location_id) 
-                    VALUES (:code, :name, :price, :cost_type, :wholesale_qty, :stock, :category_id, :material_type, :supplier_id, :location_id)";
+            $sql = "INSERT INTO materials (material_code, name, price, cost_type, wholesale_qty, category_id, material_type, supplier_id, current_location_id, unidad_compra, unidad_consumo, factor_conversion) 
+                    VALUES (:code, :name, :price, :cost_type, :wholesale_qty, :category_id, :material_type, :supplier_id, :location_id, :unidad_compra, :unidad_consumo, :factor_conversion)";
             $stmt = $this->db->prepare($sql);
             $ok = $stmt->execute([
                 ':code' => $material->getCode(),
@@ -117,11 +117,13 @@ class MaterialRepository
                 ':price' => $material->getPrice(),
                 ':cost_type' => $material->getCostType(),
                 ':wholesale_qty' => $material->getWholesaleQty(),
-                ':stock' => $material->getStock(),
                 ':category_id' => $material->getCategoryId(),
                 ':material_type' => $material->getMaterialType(),
                 ':supplier_id' => $material->getSupplierId(),
-                ':location_id' => $material->getLocationId()
+                ':location_id' => $material->getLocationId(),
+                ':unidad_compra' => $material->getUnidadCompra(),
+                ':unidad_consumo' => $material->getUnidadConsumo(),
+                ':factor_conversion' => $material->getFactorConversion()
             ]);
 
             if ($ok && $material->getStock() > 0 && $material->getLocationId()) {
@@ -151,12 +153,12 @@ class MaterialRepository
             $this->db->beginTransaction();
 
             $stmtOld = $this->db->prepare(
-                "SELECT current_stock, current_location_id FROM materials WHERE material_id = :id"
+                "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = m.material_id), 0) AS current_stock, m.current_location_id FROM materials m WHERE m.material_id = :id"
             );
             $stmtOld->execute([':id' => $material->getId()]);
             $old = $stmtOld->fetch();
 
-            $sql = "UPDATE materials SET material_code = :code, name = :name, price = :price, cost_type = :cost_type, wholesale_qty = :wholesale_qty, current_stock = :stock, category_id = :category_id, material_type = :material_type, supplier_id = :supplier_id, current_location_id = :location_id, is_active = :is_active WHERE material_id = :id";
+            $sql = "UPDATE materials SET material_code = :code, name = :name, price = :price, cost_type = :cost_type, wholesale_qty = :wholesale_qty, category_id = :category_id, material_type = :material_type, supplier_id = :supplier_id, current_location_id = :location_id, is_active = :is_active, unidad_compra = :unidad_compra, unidad_consumo = :unidad_consumo, factor_conversion = :factor_conversion WHERE material_id = :id";
             $stmt = $this->db->prepare($sql);
             $ok = $stmt->execute([
                 ':id' => $material->getId(),
@@ -165,12 +167,14 @@ class MaterialRepository
                 ':price' => $material->getPrice(),
                 ':cost_type' => $material->getCostType(),
                 ':wholesale_qty' => $material->getWholesaleQty(),
-                ':stock' => $material->getStock(),
                 ':category_id' => $material->getCategoryId(),
                 ':material_type' => $material->getMaterialType(),
                 ':supplier_id' => $material->getSupplierId(),
                 ':location_id' => $material->getLocationId(),
-                ':is_active' => $material->getIsActive() ? 1 : 0
+                ':is_active' => $material->getIsActive() ? 1 : 0,
+                ':unidad_compra' => $material->getUnidadCompra(),
+                ':unidad_consumo' => $material->getUnidadConsumo(),
+                ':factor_conversion' => $material->getFactorConversion()
             ]);
 
             if ($ok) {

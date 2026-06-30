@@ -23,7 +23,7 @@ class ControllerSystem
     {
         SessionHelpers::requireAuth();
 
-        if (SessionHelpers::get('user_role') !== 'admin') {
+        if (!in_array(SessionHelpers::get('user_role'), ['super_admin', 'admin'])) {
             ApiResponse::error('Solo los administradores pueden consultar la configuración del sistema.', 403);
         }
 
@@ -50,7 +50,7 @@ class ControllerSystem
     {
         SessionHelpers::requireAuth();
 
-        if (SessionHelpers::get('user_role') !== 'admin') {
+        if (!in_array(SessionHelpers::get('user_role'), ['super_admin', 'admin'])) {
             ApiResponse::error('Solo los administradores pueden consultar la configuración del sistema.', 403);
         }
 
@@ -77,7 +77,7 @@ class ControllerSystem
         SessionHelpers::requireAuth();
         CsrfHelper::validateRequestOrFail();
 
-        if (SessionHelpers::get('user_role') !== 'admin') {
+        if (!in_array(SessionHelpers::get('user_role'), ['super_admin', 'admin'])) {
             ApiResponse::error('Solo los administradores pueden modificar la configuración del sistema.', 403);
         }
 
@@ -108,7 +108,7 @@ class ControllerSystem
         SessionHelpers::requireAuth();
         CsrfHelper::validateRequestOrFail();
 
-        if (SessionHelpers::get('user_role') !== 'admin') {
+        if (!in_array(SessionHelpers::get('user_role'), ['super_admin', 'admin'])) {
             ApiResponse::error('Solo los administradores pueden modificar la configuración del sistema.', 403);
         }
 

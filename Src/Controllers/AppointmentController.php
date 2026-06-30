@@ -38,14 +38,16 @@ class AppointmentController
     private static function evaluarEstado(array &$row): void
     {
         $ahora = date('Y-m-d H:i:s');
-        $estado = $row['estado'];
-        $inicio = $row['fechaHoraInicio'] ?? '';
-        $fin = $row['fechaHoraFin'] ?? '';
+        $modelo = new AppointmentModel($row);
 
-        if ($estado === 'Pendiente' && $inicio && $ahora >= $inicio) {
-            $row['estado'] = 'En Progreso';
-        } elseif ($estado === 'En Progreso' && $fin && $ahora >= $fin) {
-            $row['estado'] = 'Terminado';
+        if ($modelo->getEstado() === 'Pendiente' && $row['fechaHoraInicio'] && $ahora >= $row['fechaHoraInicio']) {
+            if ($modelo->canTransitionTo('En Progreso')) {
+                $row['estado'] = 'En Progreso';
+            }
+        } elseif ($modelo->getEstado() === 'En Progreso' && $row['fechaHoraFin'] && $ahora >= $row['fechaHoraFin']) {
+            if ($modelo->canTransitionTo('Terminado')) {
+                $row['estado'] = 'Terminado';
+            }
         }
     }
 
@@ -55,6 +57,10 @@ class AppointmentController
         self::evaluarEstado($row);
         if ($row['estado'] !== $estadoOriginal) {
             $repo->actualizarEstado((int)$row['id'], $row['estado']);
+            if ($row['estado'] === 'Terminado') {
+                $matRepo = new CitaMaterialRepository();
+                $matRepo->executeDeductionOnCompleted((int)$row['id'], (int)$_SESSION['user_id']);
+            }
         }
     }
 
@@ -66,14 +72,13 @@ class AppointmentController
 
         switch ($method) {
             case 'GET':
-                if (isset($_GET['canceladas'])) {
-                    $filas = $repo->findCanceladas();
-                    ApiResponse::success(array_map(function ($f) {
-                        return self::toArray(self::modelFromRow($f));
-                    }, $filas));
+                if (isset($_GET['historial']) && isset($_GET['id'])) {
+                    $matRepo = new CitaMaterialRepository();
+                    $historial = $matRepo->obtenerHistorial((int)$_GET['id']);
+                    ApiResponse::success($historial);
                     return;
-                } elseif (isset($_GET['todos'])) {
-                    $filas = $repo->findAllWithCanceladas();
+                } elseif (isset($_GET['canceladas'])) {
+                    $filas = $repo->findCanceladas();
                     foreach ($filas as &$f) self::persistirEvaluacionEstado($repo, $f);
                     ApiResponse::success(array_map(function ($f) {
                         return self::toArray(self::modelFromRow($f));
@@ -145,15 +150,12 @@ class AppointmentController
                     ApiResponse::error('Error al crear la cita.', 500); return;
                 }
 
-                // Guardar materiales asignados y descontar stock
+                // Asignar materiales con reserva de stock
                 $materiales = $input['materiales'] ?? [];
                 if (!empty($materiales)) {
                     $matRepo = new CitaMaterialRepository();
-                    if (!$matRepo->guardarMateriales($id, $materiales)) {
-                        ApiResponse::error('Error al asignar materiales.', 500); return;
-                    }
-                    if (!$matRepo->descontarStock($id)) {
-                        ApiResponse::error('Stock insuficiente para los materiales seleccionados.', 500); return;
+                    if (!$matRepo->syncMaterialsWithReservation($id, $materiales, 'En Proceso', (int)$_SESSION['user_id'], 'Asignado')) {
+                        return; // ApiResponse::error ya fue llamada
                     }
                 }
 
@@ -173,11 +175,10 @@ class AppointmentController
 
                 // ---- C A N C E L A C I Ó N ----
                 if (isset($input['motivoCancelacion']) && trim($input['motivoCancelacion']) !== '') {
-                    if ($estadoActual === 'Terminado') {
-                        ApiResponse::error('No se puede cancelar una cita ya terminada.'); return;
-                    }
-                    if ($estadoActual === 'Cancelado') {
-                        ApiResponse::error('La cita ya está cancelada.'); return;
+                    try {
+                        $modelo->validarTransicion('Cancelado');
+                    } catch (\DomainException $e) {
+                        ApiResponse::error($e->getMessage()); return;
                     }
                     $repo->update($id, [
                         'estadoPrevioCancelacion' => $estadoActual,
@@ -185,31 +186,25 @@ class AppointmentController
                         'fechaHoraCancelacion'    => date('Y-m-d H:i:s'),
                         'motivoCancelacion'       => trim($input['motivoCancelacion'])
                     ]);
-                    // Restaurar stock de materiales
+                    // Liberar reservas de materiales (mantiene cita_materiales para posible restauración)
                     $matRepo = new CitaMaterialRepository();
-                    $matRepo->restaurarStock($id);
+                    $matRepo->cancelReservations($id, 'Cancelado', (int)$_SESSION['user_id']);
                     ApiResponse::success(null, 'Cita cancelada exitosamente.');
                     return;
                 }
 
                 // ---- R E S T A U R A C I Ó N ----
                 if (!empty($input['restaurar'])) {
-                    if ($estadoActual !== 'Cancelado') {
-                        ApiResponse::error('Solo se puede restaurar una cita cancelada.'); return;
-                    }
-                    $fechaCancelacion = $modelo->getFechaHoraCancelacion();
-                    if ($fechaCancelacion) {
-                        $diferencia = strtotime('now') - strtotime($fechaCancelacion);
-                        if ($diferencia > 3 * 24 * 3600) {
-                            ApiResponse::error('El plazo de 3 días para restaurar esta cita ha expirado.'); return;
-                        }
-                    }
-                    // Verificar stock disponible
-                    $matRepo = new CitaMaterialRepository();
-                    if (!$matRepo->verificarStockDisponible($id)) {
-                        ApiResponse::error('No hay materiales suficientes para restaurar esta cita.'); return;
+                    if (!AppointmentModel::esRestaurable($modelo->getFechaHoraCancelacion(), $modelo->getFechaHoraInicio())) {
+                        ApiResponse::error('El plazo de 3 días hábiles para restaurar ha expirado o la fecha de la cita ya pasó.'); return;
                     }
                     $estadoRestaurado = $modelo->getEstadoPrevioCancelacion() ?: 'En Proceso';
+                    try {
+                        $modelo->validarTransicion($estadoRestaurado);
+                    } catch (\DomainException $e) {
+                        ApiResponse::error($e->getMessage()); return;
+                    }
+                    // Re-evaluar estado por tiempo transcurrido
                     $inicio = $modelo->getFechaHoraInicio();
                     $fin = $modelo->getFechaHoraFin();
                     $ahora = date('Y-m-d H:i:s');
@@ -219,15 +214,21 @@ class AppointmentController
                     if ($estadoRestaurado === 'En Progreso' && $fin && $ahora >= $fin) {
                         $estadoRestaurado = 'Terminado';
                     }
+                    $matRepo = new CitaMaterialRepository();
+                    $stockOk = $matRepo->restoreReservations($id, $estadoRestaurado, (int)$_SESSION['user_id']);
+                    if (!$stockOk) {
+                        $matRepo->deleteByCitaId($id);
+                    }
                     $repo->update($id, [
                         'estado'                  => $estadoRestaurado,
                         'estadoPrevioCancelacion' => null,
                         'fechaHoraCancelacion'    => null,
                         'motivoCancelacion'       => null
                     ]);
-                    // Descontar stock nuevamente
-                    $matRepo->descontarStock($id);
-                    ApiResponse::success(null, 'Cita restaurada exitosamente.');
+                    $mensaje = $stockOk
+                        ? 'Cita restaurada exitosamente.'
+                        : 'Cita restaurada, pero algunos materiales no tenían stock suficiente y fueron removidos. Debe reasignar los materiales manualmente.';
+                    ApiResponse::success(null, $mensaje);
                     return;
                 }
 
@@ -240,6 +241,14 @@ class AppointmentController
                 if (isset($input['ubicacion'])) $datosUpdate['ubicacion'] = trim($input['ubicacion']);
                 if (isset($input['notas'])) $datosUpdate['notas'] = trim($input['notas']);
 
+                if (array_key_exists('estado', $datosUpdate)) {
+                    try {
+                        $modelo->validarTransicion($datosUpdate['estado']);
+                    } catch (\DomainException $e) {
+                        ApiResponse::error($e->getMessage()); return;
+                    }
+                }
+
                 if (!empty($datosUpdate)) {
                     if (isset($datosUpdate['fechaHoraInicio']) && isset($datosUpdate['fechaHoraFin'])) {
                         if ($datosUpdate['fechaHoraInicio'] >= $datosUpdate['fechaHoraFin']) {
@@ -247,13 +256,14 @@ class AppointmentController
                         }
                     }
                     if ($repo->update($id, $datosUpdate)) {
-                        // Reemplazar materiales si se enviaron
-                        $materiales = $input['materiales'] ?? [];
-                        if (!empty($materiales)) {
+                        // Reemplazar materiales si se enviaron (reserva atómica)
+                        // Usamos array_key_exists para que vacío (eliminar todos) también dispare sync
+                        if (array_key_exists('materiales', $input)) {
+                            $materiales = $input['materiales'] ?? [];
                             $matRepo = new CitaMaterialRepository();
-                            $matRepo->eliminarMaterialesDeCita($id);
-                            $matRepo->guardarMateriales($id, $materiales);
-                            $matRepo->descontarStock($id);
+                            if (!$matRepo->syncMaterialsWithReservation($id, $materiales, $estadoActual, (int)$_SESSION['user_id'], 'Modificado')) {
+                                return; // ApiResponse::error ya fue llamada
+                            }
                         }
                         ApiResponse::success(null, 'Cita actualizada exitosamente.');
                     } else {

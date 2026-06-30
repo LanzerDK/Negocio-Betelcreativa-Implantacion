@@ -78,8 +78,8 @@ class UserRepository
     {
         try {
 
-            $sql = "INSERT INTO users (first_name, last_name, username, email, id_number, password, security_code, phone) 
-                VALUES (:first_name, :last_name, :username, :email, :id_number, :password, :security_code, :phone)";
+            $sql = "INSERT INTO users (first_name, last_name, username, email, id_number, password, security_code, phone, id_rol) 
+                VALUES (:first_name, :last_name, :username, :email, :id_number, :password, :security_code, :phone, :id_rol)";
 
             $stmt = $this->db->prepare($sql);
 
@@ -91,7 +91,8 @@ class UserRepository
                 ':id_number'     => $user->getCi(),
                 ':password'      => $user->getPasswordHash(),
                 ':security_code' => '',
-                ':phone'         => $user->getPhone()
+                ':phone'         => $user->getPhone(),
+                ':id_rol'        => $user->getIdRol() ?? 3,
             ]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
@@ -103,19 +104,21 @@ class UserRepository
     {
         try {
             $sql = "SELECT 
-                        user_id AS id, 
-                        first_name AS name, 
-                        last_name AS lastName, 
-                        username AS user, 
-                        email, 
-                        id_number AS ci, 
-                        phone, 
-                        password AS passwordHash,
-                        checkin_time AS checkinTime,
-                        role,
-                        avatar AS avatarUrl
-                    FROM users 
-                    WHERE username = :identifier1 OR email = :identifier2";
+                        u.user_id AS id, 
+                        u.first_name AS name, 
+                        u.last_name AS lastName, 
+                        u.username AS user, 
+                        u.email, 
+                        u.id_number AS ci, 
+                        u.phone, 
+                        u.password AS passwordHash,
+                        u.checkin_time AS checkinTime,
+                        u.id_rol AS idRol,
+                        r.role_name AS role,
+                        u.avatar AS avatarUrl
+                    FROM users u
+                    LEFT JOIN roles r ON u.id_rol = r.id_rol
+                    WHERE u.username = :identifier1 OR u.email = :identifier2";
                     
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':identifier1' => $identifier, ':identifier2' => $identifier]);
@@ -137,19 +140,21 @@ class UserRepository
     {
         try {
             $sql = "SELECT 
-                        user_id AS id, 
-                        first_name AS name, 
-                        last_name AS lastName, 
-                        username AS user, 
-                        email, 
-                        id_number AS ci, 
-                        phone, 
-                        password AS passwordHash,
-                        checkin_time AS checkinTime,
-                        role,
-                        avatar AS avatarUrl
-                    FROM users 
-                    WHERE email = :email";
+                        u.user_id AS id, 
+                        u.first_name AS name, 
+                        u.last_name AS lastName, 
+                        u.username AS user, 
+                        u.email, 
+                        u.id_number AS ci, 
+                        u.phone, 
+                        u.password AS passwordHash,
+                        u.checkin_time AS checkinTime,
+                        u.id_rol AS idRol,
+                        r.role_name AS role,
+                        u.avatar AS avatarUrl
+                    FROM users u
+                    LEFT JOIN roles r ON u.id_rol = r.id_rol
+                    WHERE u.email = :email";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':email' => $email]);
             $data = $stmt->fetch();
@@ -170,19 +175,21 @@ class UserRepository
     {
         try {
             $sql = "SELECT 
-                        user_id AS id, 
-                        first_name AS name, 
-                        last_name AS lastName, 
-                        username AS user, 
-                        email, 
-                        id_number AS ci, 
-                        phone, 
-                        password AS passwordHash,
-                        checkin_time AS checkinTime,
-                        role,
-                        avatar AS avatarUrl
-                    FROM users 
-                    WHERE user_id = :id";
+                        u.user_id AS id, 
+                        u.first_name AS name, 
+                        u.last_name AS lastName, 
+                        u.username AS user, 
+                        u.email, 
+                        u.id_number AS ci, 
+                        u.phone, 
+                        u.password AS passwordHash,
+                        u.checkin_time AS checkinTime,
+                        u.id_rol AS idRol,
+                        r.role_name AS role,
+                        u.avatar AS avatarUrl
+                    FROM users u
+                    LEFT JOIN roles r ON u.id_rol = r.id_rol
+                    WHERE u.user_id = :id";
                     
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
@@ -210,7 +217,8 @@ class UserRepository
                         first_name = :first_name, 
                         last_name = :last_name, 
                         email = :email, 
-                        phone = :phone
+                        phone = :phone,
+                        id_number = :id_number
                     WHERE user_id = :id";
 
             $stmt = $this->db->prepare($sql);
@@ -219,6 +227,7 @@ class UserRepository
                 ':last_name'  => $user->getLastName(),
                 ':email'      => $user->getEmail(),
                 ':phone'      => $user->getPhone(),
+                ':id_number'  => $user->getCi(),
                 ':id'         => $user->getId(),
             ]);
         } catch (PDOException $e) {
@@ -264,14 +273,14 @@ class UserRepository
             $params = [':limit' => $perPage, ':offset' => $offset];
 
             if ($search !== '') {
-                $where = "WHERE (first_name LIKE :q OR last_name LIKE :q2 OR email LIKE :q3 OR username LIKE :q4)";
+                $where = "WHERE (u.first_name LIKE :q OR u.last_name LIKE :q2 OR u.email LIKE :q3 OR u.username LIKE :q4)";
                 $params[':q'] = "%{$search}%";
                 $params[':q2'] = "%{$search}%";
                 $params[':q3'] = "%{$search}%";
                 $params[':q4'] = "%{$search}%";
             }
 
-            $countSql = "SELECT COUNT(*) FROM users $where";
+            $countSql = "SELECT COUNT(*) FROM users u $where";
             $countStmt = $this->db->prepare($countSql);
             if ($search !== '') {
                 $countStmt->execute([':q' => "%{$search}%", ':q2' => "%{$search}%", ':q3' => "%{$search}%", ':q4' => "%{$search}%"]);
@@ -281,19 +290,21 @@ class UserRepository
             $total = (int)$countStmt->fetchColumn();
 
             $sql = "SELECT 
-                        user_id AS id, 
-                        first_name AS name, 
-                        last_name AS lastName, 
-                        username AS user, 
-                        email,
-                        phone,
-                        role,
-                        is_active,
-                        avatar,
-                        checkin_time AS checkinTime
-                    FROM users 
+                        u.user_id AS id, 
+                        u.first_name AS name, 
+                        u.last_name AS lastName, 
+                        u.username AS user, 
+                        u.email,
+                        u.phone,
+                        r.role_name AS role,
+                        u.id_rol AS idRol,
+                        u.is_active,
+                        u.avatar,
+                        u.checkin_time AS checkinTime
+                    FROM users u
+                    LEFT JOIN roles r ON u.id_rol = r.id_rol
                     $where
-                    ORDER BY checkin_time DESC 
+                    ORDER BY u.checkin_time DESC 
                     LIMIT :limit OFFSET :offset";
 
             $stmt = $this->db->prepare($sql);
@@ -335,11 +346,17 @@ class UserRepository
     /**
      * Admin: actualizar rol de un usuario
      */
-    public function updateRole(int $userId, string $role): bool
+    public function updateRole(int $userId, string $roleName): bool
     {
         try {
-            $stmt = $this->db->prepare("UPDATE users SET role = :role WHERE user_id = :id");
-            return $stmt->execute([':role' => $role, ':id' => $userId]);
+            $stmt = $this->db->prepare("SELECT id_rol FROM roles WHERE role_name = :rn");
+            $stmt->execute([':rn' => $roleName]);
+            $idRol = (int)$stmt->fetchColumn();
+            if ($idRol <= 0) {
+                return false;
+            }
+            $stmt = $this->db->prepare("UPDATE users SET id_rol = :id_rol WHERE user_id = :id");
+            return $stmt->execute([':id_rol' => $idRol, ':id' => $userId]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
             return false;
@@ -367,7 +384,7 @@ class UserRepository
     public function getRole(int $userId): string
     {
         try {
-            $stmt = $this->db->prepare("SELECT role FROM users WHERE user_id = :id");
+            $stmt = $this->db->prepare("SELECT r.role_name FROM users u LEFT JOIN roles r ON u.id_rol = r.id_rol WHERE u.user_id = :id");
             $stmt->execute([':id' => $userId]);
             $role = $stmt->fetchColumn();
             return $role !== false ? $role : 'user';

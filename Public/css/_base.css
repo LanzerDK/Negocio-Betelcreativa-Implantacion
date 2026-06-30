@@ -132,7 +132,6 @@ body {
 .main-menu {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   display: flex;
-  overflow-x: auto;
   padding: 0 15px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
 }
@@ -1100,6 +1099,120 @@ body.modal-open { overflow: hidden; }
 }
 
 /* ============================================
+   SUBMENÚ - Dropdown del menú principal (Almacén)
+   ============================================ */
+
+/* Wrapper para ítem del menú con submenú */
+.menu-item-wrapper {
+  position: relative;
+}
+
+/* Botón para desplegar submenú — mini icono superpuesto sobre el menu-item */
+.submenu-toggle {
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: var(--gold);
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: var(--transition);
+  padding: 0;
+  line-height: 1;
+}
+
+.submenu-toggle:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Color del icono cuando el link está activo */
+.menu-item.active ~ .submenu-toggle,
+.menu-item-wrapper:has(.menu-item.active) .submenu-toggle {
+  color: var(--primary);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Dropdown del submenú — azul sistema con bordes dorados */
+.submenu-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  display: none;
+  z-index: 9999;
+}
+
+.submenu-dropdown::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  padding: 2px;
+  background: var(--gold-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.submenu-dropdown.show {
+  display: block;
+}
+
+/* Cada opción del submenú — texto blanco sobre fondo azul */
+.submenu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+
+.submenu-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.submenu-item i {
+  width: 18px;
+  text-align: center;
+  color: var(--gold);
+  font-size: 0.95rem;
+}
+
+/* Separador entre items */
+.submenu-item + .submenu-item {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Opción activa del submenú */
+.submenu-item.submenu-active {
+  background: rgba(212, 175, 55, 0.2);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+/* ============================================
    SPINNER - Loading state en botones
    ============================================ */
 .btn-loading {
@@ -1192,6 +1305,13 @@ body.modal-open { overflow: hidden; }
   }
 }
 
+/* Rango medio: menú necesita scroll si los items no caben en una fila */
+@media (min-width: 769px) and (max-width: 880px) {
+  .main-menu {
+    overflow-x: auto;
+  }
+}
+
 @media (max-width: 768px) {
   .app-header {
     flex-direction: column;
@@ -1217,6 +1337,9 @@ body.modal-open { overflow: hidden; }
   .menu-item i {
     font-size: 18px;
   }
+  .submenu-dropdown {
+    min-width: 180px;
+  }
   .main-content {
     padding: 15px;
   }
@@ -1229,5 +1352,18 @@ body.modal-open { overflow: hidden; }
 @media (max-width: 480px) {
   .menu-item span {
     font-size: 0.8rem;
+  }
+  .submenu-toggle {
+    width: 16px;
+    height: 16px;
+    font-size: 0.5rem;
+  }
+  .submenu-dropdown {
+    min-width: 160px;
+  }
+  .submenu-item {
+    padding: 14px 18px;
+    font-size: 1rem;
+    justify-content: center;
   }
 }
