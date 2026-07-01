@@ -148,11 +148,27 @@ function cargarSelectProveedores(proveedores) {
       const opt = document.createElement('option');
       opt.value = s.id;
       opt.textContent = s.company_name;
+      opt.dataset.type = s.supplier_type || 'fijo';
       if (String(s.id) === String(currentVal)) opt.selected = true;
       sel.appendChild(opt);
     }
   }
 }
+
+document.addEventListener('change', function (e) {
+  if (e.target.id === 'nuevoProveedor') {
+    const opt = e.target.selectedOptions[0];
+    const isComodin = opt && opt.dataset.type === 'comodin';
+    document.getElementById('nuevoDetalleComodinGroup').style.display = isComodin ? 'block' : 'none';
+    if (!isComodin) document.getElementById('nuevoDetalleComodin').value = '';
+  }
+  if (e.target.id === 'editProveedor') {
+    const opt = e.target.selectedOptions[0];
+    const isComodin = opt && opt.dataset.type === 'comodin';
+    document.getElementById('editDetalleComodinGroup').style.display = isComodin ? 'block' : 'none';
+    if (!isComodin) document.getElementById('editDetalleComodin').value = '';
+  }
+});
 
 function cargarCategoriasSidebar(categorias) {
   const list = document.querySelector('.category-list');
@@ -369,6 +385,8 @@ function llenarFormularioEdicion(mat) {
   const wq = document.getElementById('wholesaleQty');
   if (wq) wq.value = (mat.cost_type === 'wholesale' && mat.wholesale_qty) ? mat.wholesale_qty : '';
   document.getElementById('editProveedor').value = mat.supplier_id || '';
+  document.getElementById('editProveedor').dispatchEvent(new Event('change'));
+  document.getElementById('editDetalleComodin').value = mat.detalle_comodin || '';
   document.getElementById('editUnidadCompra').value = mat.unidad_compra || 'Paquete';
   document.getElementById('editUnidadConsumo').value = mat.unidad_consumo || 'Unidad';
   document.getElementById('editFactorConversion').value = mat.factor_conversion || 1;
@@ -421,6 +439,7 @@ async function agregarNuevoMaterial() {
         stock: 0, price: price, cost_type: costType,
         wholesale_qty: dataWholesaleQty, material_type: tipoMaterial,
         supplier_id: parseInt(document.getElementById('nuevoProveedor').value) || null,
+        detalle_comodin: document.getElementById('nuevoDetalleComodin')?.value.trim() || null,
         unidad_compra: document.getElementById('nuevaUnidadCompra').value.trim() || 'Paquete',
         unidad_consumo: document.getElementById('nuevaUnidadConsumo').value.trim() || 'Unidad',
         factor_conversion: parseInt(document.getElementById('nuevoFactorConversion').value) || 1
@@ -482,6 +501,7 @@ async function guardarEdicionMaterial() {
         name, category_id: categoryId,
         price, cost_type: costType, wholesale_qty: dataWholesaleQty,
         supplier_id: parseInt(document.getElementById('editProveedor').value) || null,
+        detalle_comodin: document.getElementById('editDetalleComodin')?.value.trim() || null,
         unidad_compra: document.getElementById('editUnidadCompra').value.trim(),
         unidad_consumo: document.getElementById('editUnidadConsumo').value.trim(),
         factor_conversion: parseInt(document.getElementById('editFactorConversion').value) || 1
@@ -561,8 +581,4 @@ function guardarQuickSupplier() {
     });
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
+

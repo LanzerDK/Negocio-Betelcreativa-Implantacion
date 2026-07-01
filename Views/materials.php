@@ -190,6 +190,10 @@
                                     <button type="button" class="btn-add-supplier" data-target="nuevoProveedor" title="Nuevo Proveedor"><i class="fas fa-plus"></i></button>
                                 </div>
                             </div>
+                            <div class="mb-3" id="nuevoDetalleComodinGroup" style="display:none;">
+                                <label for="nuevoDetalleComodin" class="form-label">Detalle (tienda/local)</label>
+                                <input type="text" class="form-control" id="nuevoDetalleComodin" placeholder="Ej: Tienda Los Teques">
+                            </div>
                             <div class="mb-3">
                                 <label for="nuevoCostType" class="form-label">Tipo de Costo</label>
                                 <select class="form-select" id="nuevoCostType">
@@ -270,6 +274,10 @@
                                     </select>
                                     <button type="button" class="btn-add-supplier" data-target="editProveedor" title="Nuevo Proveedor"><i class="fas fa-plus"></i></button>
                                 </div>
+                            </div>
+                            <div class="mb-3" id="editDetalleComodinGroup" style="display:none;">
+                                <label for="editDetalleComodin" class="form-label">Detalle (tienda/local)</label>
+                                <input type="text" class="form-control" id="editDetalleComodin" placeholder="Ej: Tienda Los Teques">
                             </div>
                             <div class="mb-3">
                                 <label for="costType" class="form-label">Tipo de Costo</label>

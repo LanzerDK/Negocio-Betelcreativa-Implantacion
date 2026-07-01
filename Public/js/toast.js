@@ -46,9 +46,9 @@
     return data;
   };
 
-  function escapeHtml(text) {
+  window.escapeHtml = function (text) {
     var div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-  }
+  };
 })();

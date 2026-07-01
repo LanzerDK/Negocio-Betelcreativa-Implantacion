@@ -59,13 +59,18 @@ CREATE TABLE IF NOT EXISTS suppliers (
     phone VARCHAR(20) DEFAULT NULL,
     email VARCHAR(100) DEFAULT NULL,
     address TEXT DEFAULT NULL,
+    supplier_type ENUM('fijo','comodin') NOT NULL DEFAULT 'fijo',
+    subtype VARCHAR(50) DEFAULT NULL,
     is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
-INSERT IGNORE INTO suppliers (company_name, contact_name, is_active)
-VALUES ('Proveedor General', 'Sistema', 1);
+INSERT IGNORE INTO suppliers (company_name, contact_name, supplier_type, subtype, is_active) VALUES
+('Proveedor General', 'Sistema', 'fijo', NULL, 1),
+('Compras al Detal', NULL, 'comodin', 'Compras al Detal', 1),
+('Caja Chica', NULL, 'comodin', 'Caja Chica', 1),
+('Proveedores Eventuales', NULL, 'comodin', 'Proveedores Eventuales', 1);
 
 -- =============================================
 -- Tabla: materials
@@ -84,6 +89,7 @@ CREATE TABLE IF NOT EXISTS materials (
     category_id INT,
     material_type ENUM('activo_retornable','consumible') NOT NULL DEFAULT 'consumible',
     supplier_id INT,
+    detalle_comodin VARCHAR(255) DEFAULT NULL,
     current_location_id INT,
     is_active TINYINT(1) DEFAULT 1,
     reserved_stock INT NOT NULL DEFAULT 0,

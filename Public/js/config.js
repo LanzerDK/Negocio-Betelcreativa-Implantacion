@@ -315,11 +315,6 @@ function renderUsers(data) {
     });
 }
 
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
 
 // ── Users: búsqueda con debounce ─────────────────────────
 document.getElementById('userSearch')?.addEventListener('input', function () {

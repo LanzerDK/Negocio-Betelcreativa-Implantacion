@@ -261,12 +261,7 @@ function priorityLabel(p)
     return { high: 'Alta', medium: 'Media', low: 'Baja' }[p] || p;
 }
 
-function escapeHtml(str)
-{
-    const d = document.createElement('div');
-    d.textContent = str;
-    return d.innerHTML;
-}
+
 
 async function completeTask(id)
 {

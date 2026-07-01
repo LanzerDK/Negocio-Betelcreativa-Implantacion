@@ -15,6 +15,7 @@ class MaterialModel
     private ?int $categoryId;
     private string $materialType;
     private ?int $supplierId;
+    private ?string $detalleComodin;
     private ?int $locationId;
     private bool $isActive;
     private int $reservedStock;
@@ -35,6 +36,7 @@ class MaterialModel
         $this->categoryId = $data['categoryId'] ?? null;
         $this->materialType = $data['materialType'] ?? 'consumible';
         $this->supplierId = $data['supplierId'] ?? null;
+        $this->detalleComodin = $data['detalleComodin'] ?? null;
         $this->locationId = $data['locationId'] ?? null;
         $this->isActive = (bool)($data['isActive'] ?? true);
         $this->reservedStock = (int)($data['reservedStock'] ?? 0);
@@ -54,6 +56,7 @@ class MaterialModel
     public function getCategoryId(): ?int { return $this->categoryId; }
     public function getMaterialType(): string { return $this->materialType; }
     public function getSupplierId(): ?int { return $this->supplierId; }
+    public function getDetalleComodin(): ?string { return $this->detalleComodin; }
     public function getLocationId(): ?int { return $this->locationId; }
     public function getIsActive(): bool { return $this->isActive; }
     public function getReservedStock(): int { return $this->reservedStock; }
@@ -70,6 +73,7 @@ class MaterialModel
     public function setImageUrl(?string $imageUrl): void { $this->imageUrl = $imageUrl; }
     public function setCategoryId(?int $categoryId): void { $this->categoryId = $categoryId; }
     public function setSupplierId(?int $supplierId): void { $this->supplierId = $supplierId; }
+    public function setDetalleComodin(?string $detalleComodin): void { $this->detalleComodin = $detalleComodin; }
     public function setLocationId(?int $locationId): void { $this->locationId = $locationId; }
     public function setIsActive(bool $isActive): void { $this->isActive = $isActive; }
     public function setReservedStock(int $reservedStock): void { $this->reservedStock = $reservedStock; }

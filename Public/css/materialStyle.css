@@ -470,3 +470,11 @@
     grid-template-columns: 1fr;
   }
 }
+
+#quickSupplierModal {
+  z-index: 1060;
+}
+
+#quickSupplierModal .supplier-modal {
+  z-index: 1061;
+}

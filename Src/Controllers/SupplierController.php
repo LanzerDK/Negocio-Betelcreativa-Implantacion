@@ -35,12 +35,15 @@ class SupplierController
                 CsrfHelper::validateRequestOrFail();
                 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
+                $supplierType = $input['supplier_type'] ?? 'fijo';
                 $supplier = new SupplierModel([
                     'company_name' => trim($input['company_name'] ?? ''),
                     'contact_name' => trim($input['contact_name'] ?? ''),
                     'phone' => trim($input['phone'] ?? ''),
                     'email' => trim($input['email'] ?? ''),
-                    'address' => trim($input['address'] ?? '')
+                    'address' => trim($input['address'] ?? ''),
+                    'supplier_type' => $supplierType,
+                    'subtype' => $supplierType === 'comodin' ? trim($input['subtype'] ?? '') : null
                 ]);
 
                 if (empty($supplier->getCompanyName())) {
@@ -81,6 +84,7 @@ class SupplierController
                     }
                 }
 
+                $newSupplierType = $input['supplier_type'] ?? $existing->getSupplierType();
                 $supplier = new SupplierModel([
                     'id' => $id,
                     'company_name' => $newName,
@@ -88,6 +92,10 @@ class SupplierController
                     'phone' => trim($input['phone'] ?? $existing->getPhone()),
                     'email' => trim($input['email'] ?? $existing->getEmail()),
                     'address' => trim($input['address'] ?? $existing->getAddress()),
+                    'supplier_type' => $newSupplierType,
+                    'subtype' => $newSupplierType === 'comodin'
+                        ? trim($input['subtype'] ?? $existing->getSubtype() ?? '')
+                        : null,
                     'is_active' => $newStatus
                 ]);
 
@@ -103,22 +111,7 @@ class SupplierController
                 break;
 
             case 'DELETE':
-                CsrfHelper::validateRequestOrFail();
-                $id = (int)($_GET['id'] ?? 0);
-                if (!$id) {
-                    ApiResponse::error('ID de proveedor requerido.');
-                }
-
-                $existing = $repo->findById($id);
-                if ($existing && $repo->countMaterials($id) > 0) {
-                    ApiResponse::error('No se puede eliminar el proveedor, tiene materiales vinculados.');
-                }
-
-                if ($repo->delete($id)) {
-                    ApiResponse::success(null, 'Proveedor eliminado exitosamente.');
-                } else {
-                    ApiResponse::error('Error al eliminar el proveedor.', 500);
-                }
+                ApiResponse::error('La eliminación física no está permitida. Use la inhabilitación.', 405);
                 break;
 
             default:
@@ -135,6 +128,8 @@ class SupplierController
             'phone' => $s->getPhone(),
             'email' => $s->getEmail(),
             'address' => $s->getAddress(),
+            'supplier_type' => $s->getSupplierType(),
+            'subtype' => $s->getSubtype(),
             'is_active' => $s->getIsActive() ? 1 : 0
         ];
     }

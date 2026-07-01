@@ -275,11 +275,6 @@ function formatNumber(n) {
     return Number(n).toLocaleString('es-VE');
 }
 
-function escapeHtml(t) {
-    const d = document.createElement('div');
-    d.textContent = t;
-    return d.innerHTML;
-}
 
 // ── PDF export ──────────────────────────────────
 
