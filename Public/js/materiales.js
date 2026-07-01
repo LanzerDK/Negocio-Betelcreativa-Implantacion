@@ -65,50 +65,51 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.btn-add-supplier').forEach(btn => {
     btn.addEventListener('click', function () {
       quickSupplierTarget = this.getAttribute('data-target');
-      const rect = this.getBoundingClientRect();
-      const dialog = document.getElementById('quickSupplierDialog');
-      const overlay = document.getElementById('quickSupplierModal');
-      overlay.style.display = 'flex';
-      overlay.style.alignItems = 'flex-start';
-      overlay.style.justifyContent = 'flex-start';
-      dialog.style.left = Math.min(rect.right + 10, window.innerWidth - 440) + 'px';
-      dialog.style.top = Math.min(rect.top, window.innerHeight - 400) + 'px';
-      document.getElementById('quickSupplierName').value = '';
-      document.getElementById('quickSupplierContact').value = '';
-      document.getElementById('quickSupplierPhone').value = '';
-      document.getElementById('quickSupplierEmail').value = '';
-      document.getElementById('quickSupplierAddress').value = '';
-      document.getElementById('quickSupplierType').value = 'fijo';
-      document.getElementById('quickSupplierSubtype').value = '';
-      document.getElementById('quickSupplierNotes').value = '';
-      toggleQuickSupplierFields('fijo');
+      const prefix = quickSupplierTarget === 'editProveedor' ? 'edit' : 'nuevo';
+      const panel = document.getElementById(prefix + 'SupplierPanel');
+      if (!panel) return;
+      document.getElementById(prefix + 'QuickSupplierName').value = '';
+      document.getElementById(prefix + 'QuickSupplierContact').value = '';
+      document.getElementById(prefix + 'QuickSupplierPhone').value = '';
+      document.getElementById(prefix + 'QuickSupplierEmail').value = '';
+      document.getElementById(prefix + 'QuickSupplierAddress').value = '';
+      document.getElementById(prefix + 'QuickSupplierType').value = 'fijo';
+      document.getElementById(prefix + 'QuickSupplierSubtype').value = '';
+      document.getElementById(prefix + 'QuickSupplierNotes').value = '';
+      toggleQuickSupplierFields(prefix, 'fijo');
+      panel.style.display = 'flex';
     });
   });
 
-  document.getElementById('closeQuickSupplierBtn')?.addEventListener('click', function () {
-    document.getElementById('quickSupplierModal').style.display = 'none';
+  document.addEventListener('click', function (e) {
+    const closeBtn = e.target.closest('[data-close-panel]');
+    if (closeBtn) {
+      const panelId = closeBtn.getAttribute('data-close-panel');
+      document.getElementById(panelId).style.display = 'none';
+    }
   });
-  document.getElementById('cancelQuickSupplierBtn')?.addEventListener('click', function () {
-    document.getElementById('quickSupplierModal').style.display = 'none';
+  document.getElementById('nuevoSaveQuickSupplierBtn')?.addEventListener('click', guardarQuickSupplier);
+  document.getElementById('editSaveQuickSupplierBtn')?.addEventListener('click', guardarQuickSupplier);
+  document.getElementById('nuevoQuickSupplierType')?.addEventListener('change', function () {
+    toggleQuickSupplierFields('nuevo', this.value);
   });
-  document.getElementById('saveQuickSupplierBtn')?.addEventListener('click', guardarQuickSupplier);
-  document.getElementById('quickSupplierType')?.addEventListener('change', function () {
-    toggleQuickSupplierFields(this.value);
+  document.getElementById('editQuickSupplierType')?.addEventListener('change', function () {
+    toggleQuickSupplierFields('edit', this.value);
   });
 });
 
-function toggleQuickSupplierFields(type) {
+function toggleQuickSupplierFields(prefix, type) {
   const isComodin = type === 'comodin';
-  document.getElementById('quickFijoFields').style.display = isComodin ? 'none' : 'block';
-  document.getElementById('quickComodinFields').style.display = isComodin ? 'block' : 'none';
+  document.getElementById(prefix + 'QuickFijoFields').style.display = isComodin ? 'none' : 'block';
+  document.getElementById(prefix + 'QuickComodinFields').style.display = isComodin ? 'block' : 'none';
   if (!isComodin) {
-    document.getElementById('quickSupplierSubtype').value = '';
-    document.getElementById('quickSupplierNotes').value = '';
+    document.getElementById(prefix + 'QuickSupplierSubtype').value = '';
+    document.getElementById(prefix + 'QuickSupplierNotes').value = '';
   } else {
-    document.getElementById('quickSupplierContact').value = '';
-    document.getElementById('quickSupplierPhone').value = '';
-    document.getElementById('quickSupplierEmail').value = '';
-    document.getElementById('quickSupplierAddress').value = '';
+    document.getElementById(prefix + 'QuickSupplierContact').value = '';
+    document.getElementById(prefix + 'QuickSupplierPhone').value = '';
+    document.getElementById(prefix + 'QuickSupplierEmail').value = '';
+    document.getElementById(prefix + 'QuickSupplierAddress').value = '';
   }
 }
 
@@ -573,21 +574,22 @@ function clearErrors() {
 }
 
 function guardarQuickSupplier() {
-  const name = document.getElementById('quickSupplierName').value.trim();
-  const type = document.getElementById('quickSupplierType').value;
+  const prefix = quickSupplierTarget === 'editProveedor' ? 'edit' : 'nuevo';
+  const name = document.getElementById(prefix + 'QuickSupplierName').value.trim();
+  const type = document.getElementById(prefix + 'QuickSupplierType').value;
   if (!name) {
     toast('El nombre de la empresa es obligatorio.', 'warning');
     return;
   }
   const body = { company_name: name, supplier_type: type };
   if (type === 'fijo') {
-    body.contact_name = document.getElementById('quickSupplierContact').value.trim() || null;
-    body.phone = document.getElementById('quickSupplierPhone').value.trim() || null;
-    body.email = document.getElementById('quickSupplierEmail').value.trim() || null;
-    body.address = document.getElementById('quickSupplierAddress').value.trim() || null;
+    body.contact_name = document.getElementById(prefix + 'QuickSupplierContact').value.trim() || null;
+    body.phone = document.getElementById(prefix + 'QuickSupplierPhone').value.trim() || null;
+    body.email = document.getElementById(prefix + 'QuickSupplierEmail').value.trim() || null;
+    body.address = document.getElementById(prefix + 'QuickSupplierAddress').value.trim() || null;
   } else {
-    body.subtype = document.getElementById('quickSupplierSubtype').value || null;
-    body.notes = document.getElementById('quickSupplierNotes').value.trim() || null;
+    body.subtype = document.getElementById(prefix + 'QuickSupplierSubtype').value || null;
+    body.notes = document.getElementById(prefix + 'QuickSupplierNotes').value.trim() || null;
   }
   callApi(APP_URL + 'Public/api/admin/suppliers.php', {
     method: 'POST',
@@ -596,7 +598,7 @@ function guardarQuickSupplier() {
   })
     .then(data => {
       if (data.success) {
-        document.getElementById('quickSupplierModal').style.display = 'none';
+        document.getElementById(prefix + 'SupplierPanel').style.display = 'none';
         return callApi(APP_URL + 'Public/api/admin/suppliers.php');
       } else {
         toast(data.message, 'error');
@@ -610,7 +612,7 @@ function guardarQuickSupplier() {
         if (quickSupplierTarget) {
           const sel = document.getElementById(quickSupplierTarget);
           if (sel && supRes.data.length > 0) {
-            sel.value = supRes.data[0].id;
+            sel.value = supRes.data[supRes.data.length - 1].id;
           }
         }
         quickSupplierTarget = null;
