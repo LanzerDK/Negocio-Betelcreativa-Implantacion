@@ -403,7 +403,8 @@ body {
 /* Contenedor del modal - blanco, redondeado, tamaño responsivo */
 .modal-content,
 .client-modal,
-.category-modal {
+.category-modal,
+.supplier-modal {
   background: #ffffff;
   border-radius: 15px;
   width: 100%;

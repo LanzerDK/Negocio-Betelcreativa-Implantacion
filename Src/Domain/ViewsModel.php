@@ -22,6 +22,7 @@ class ViewsModel
             "storage-inventario",
             "facturas",
             "factura-recibo",
+            "suppliers",
         ];
         $publicViews = ["login", "register", "recoverPassword"];
 

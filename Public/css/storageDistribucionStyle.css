@@ -84,7 +84,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(100px, 0.8fr);
+  grid-template-columns: minmax(180px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(100px, 0.8fr);
   gap: 16px;
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: white;
@@ -95,7 +95,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(100px, 0.8fr);
+  grid-template-columns: minmax(180px, 1.5fr) minmax(120px, 1fr) minmax(120px, 1fr) minmax(100px, 0.8fr) minmax(120px, 1fr) minmax(100px, 0.8fr);
   gap: 16px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--light-gray);

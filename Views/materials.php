@@ -70,6 +70,10 @@
                 <i class="fas fa-layer-group"></i>
                 <span>Categoría</span>
             </a>
+            <a href="<?php echo APP_URL; ?>suppliers" class="menu-item">
+                <i class="fas fa-truck"></i>
+                <span>Proveedores</span>
+            </a>
             <a href="<?php echo APP_URL; ?>customers" class="menu-item">
                 <i class="fas fa-users"></i>
                 <span>Clientes</span>
@@ -178,6 +182,15 @@
                                 </select>
                             </div>
                             <div class="mb-3">
+                                <label for="nuevoProveedor" class="form-label">Proveedor</label>
+                                <div class="supplier-select-wrap">
+                                    <select class="form-select" id="nuevoProveedor">
+                                        <option value="">Seleccionar proveedor</option>
+                                    </select>
+                                    <button type="button" class="btn-add-supplier" data-target="nuevoProveedor" title="Nuevo Proveedor"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
                                 <label for="nuevoCostType" class="form-label">Tipo de Costo</label>
                                 <select class="form-select" id="nuevoCostType">
                                     <option value="unit">Unitario</option>
@@ -250,6 +263,15 @@
                             </div>
                            
                             <div class="mb-3">
+                                <label for="editProveedor" class="form-label">Proveedor</label>
+                                <div class="supplier-select-wrap">
+                                    <select class="form-select" id="editProveedor">
+                                        <option value="">Seleccionar proveedor</option>
+                                    </select>
+                                    <button type="button" class="btn-add-supplier" data-target="editProveedor" title="Nuevo Proveedor"><i class="fas fa-plus"></i></button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
                                 <label for="costType" class="form-label">Tipo de Costo</label>
                                 <select class="form-select" id="costType">
                                     <option value="unit">Unitario</option>
@@ -294,6 +316,30 @@
 
 
 
+    </div>
+
+    <!-- Mini-modal Nuevo Proveedor Rápido -->
+    <div class="modal-overlay" id="quickSupplierModal">
+        <div class="supplier-modal" style="max-width:420px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Nuevo Proveedor</h2>
+                <button class="close-btn" id="closeQuickSupplierBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="quickSupplierName">Nombre de la Empresa</label>
+                    <input type="text" id="quickSupplierName" class="form-control" placeholder="Ej: Proveedora de Globos C.A.">
+                </div>
+                <div class="form-group">
+                    <label for="quickSupplierContact">Persona de Contacto</label>
+                    <input type="text" id="quickSupplierContact" class="form-control" placeholder="Ej: María Pérez">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal btn-cancel" id="cancelQuickSupplierBtn">Cancelar</button>
+                <button class="btn-modal btn-save" id="saveQuickSupplierBtn">Guardar Proveedor</button>
+            </div>
+        </div>
     </div>
 
     <script>

@@ -1,6 +1,8 @@
 let editingMaterialId = null;
 let categoriasMap = {};
+let suppliersMap = {};
 let allMaterials = [];
+let quickSupplierTarget = null;
 
 const FILTERS = {
   search: '',
@@ -59,18 +61,40 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('wholesaleQtyGroup').style.display = 'none';
     });
   }
+
+  document.querySelectorAll('.btn-add-supplier').forEach(btn => {
+    btn.addEventListener('click', function () {
+      quickSupplierTarget = this.getAttribute('data-target');
+      document.getElementById('quickSupplierName').value = '';
+      document.getElementById('quickSupplierContact').value = '';
+      document.getElementById('quickSupplierModal').style.display = 'flex';
+    });
+  });
+
+  document.getElementById('closeQuickSupplierBtn')?.addEventListener('click', function () {
+    document.getElementById('quickSupplierModal').style.display = 'none';
+  });
+  document.getElementById('cancelQuickSupplierBtn')?.addEventListener('click', function () {
+    document.getElementById('quickSupplierModal').style.display = 'none';
+  });
+  document.getElementById('saveQuickSupplierBtn')?.addEventListener('click', guardarQuickSupplier);
 });
 
 async function cargarMateriales() {
   try {
-    const [matRes, catRes] = await Promise.all([
+    const [matRes, catRes, supRes] = await Promise.all([
       fetch(APP_URL + 'Public/api/materials.php').then(r => r.json()),
-      fetch(APP_URL + 'Public/api/categories.php').then(r => r.json())
+      fetch(APP_URL + 'Public/api/categories.php').then(r => r.json()),
+      fetch(APP_URL + 'Public/api/admin/suppliers.php').then(r => r.json()).catch(() => ({ success: false, data: [] }))
     ]);
     if (catRes && catRes.success) {
       catRes.data.forEach(c => { categoriasMap[c.id] = c.name; });
       try { cargarSelectCategorias(catRes.data); } catch (e) { console.error('Error en cargarSelectCategorias:', e); }
       try { cargarCategoriasSidebar(catRes.data); } catch (e) { console.error('Error en cargarCategoriasSidebar:', e); }
+    }
+    if (supRes && supRes.success) {
+      supRes.data.forEach(s => { suppliersMap[s.id] = s.company_name; });
+      try { cargarSelectProveedores(supRes.data); } catch (e) { console.error('Error en cargarSelectProveedores:', e); }
     }
     if (matRes && matRes.success) {
       allMaterials = matRes.data;
@@ -107,6 +131,24 @@ function cargarSelectCategorias(categorias) {
       opt.value = c.id;
       opt.textContent = c.name;
       if (String(c.id) === String(currentVal)) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+}
+
+function cargarSelectProveedores(proveedores) {
+  const selects = ['nuevoProveedor', 'editProveedor'];
+  for (const id of selects) {
+    const sel = document.getElementById(id);
+    if (!sel) continue;
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">Seleccionar proveedor</option>';
+    for (const s of proveedores) {
+      if (s.is_active === false || s.is_active === 0) continue;
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.company_name;
+      if (String(s.id) === String(currentVal)) opt.selected = true;
       sel.appendChild(opt);
     }
   }
@@ -230,6 +272,7 @@ function renderizarMateriales(materials) {
     const badgeText = mat.stock <= 0 ? 'Sin Stock' : mat.stock <= 10 ? 'Stock Bajo' : 'En Stock';
     const progressClass = mat.stock <= 0 ? 'progress-low' : mat.stock <= 10 ? 'progress-medium' : 'progress-high';
     const categoriaNombre = categoriasMap[mat.category_id] || 'Sin categoría';
+    const proveedorNombre = suppliersMap[mat.supplier_id] || null;
 
     let costDisplay = '$' + Number(mat.price).toFixed(2);
     if (mat.cost_type === 'wholesale' && mat.wholesale_qty) {
@@ -250,6 +293,7 @@ function renderizarMateriales(materials) {
           <span><i class="fas fa-tag"></i> ${escapeHtml(categoriaNombre)}</span>
           <span><i class="fas fa-barcode"></i> ${escapeHtml(mat.code)}</span>
           <span><i class="fas fa-boxes"></i> ${mat.material_type === 'activo_retornable' ? 'Activo/Retornable' : 'Consumible'}</span>
+          ${proveedorNombre ? `<span><i class="fas fa-truck"></i> ${escapeHtml(proveedorNombre)}</span>` : ''}
         </div>
         <div class="stock-info">
           <span><i class="fas fa-box"></i> ${mat.stock} unidades</span>
@@ -324,6 +368,7 @@ function llenarFormularioEdicion(mat) {
   }
   const wq = document.getElementById('wholesaleQty');
   if (wq) wq.value = (mat.cost_type === 'wholesale' && mat.wholesale_qty) ? mat.wholesale_qty : '';
+  document.getElementById('editProveedor').value = mat.supplier_id || '';
   document.getElementById('editUnidadCompra').value = mat.unidad_compra || 'Paquete';
   document.getElementById('editUnidadConsumo').value = mat.unidad_consumo || 'Unidad';
   document.getElementById('editFactorConversion').value = mat.factor_conversion || 1;
@@ -375,6 +420,7 @@ async function agregarNuevoMaterial() {
         code: codigo, name: nombre, category_id: categoryId,
         stock: 0, price: price, cost_type: costType,
         wholesale_qty: dataWholesaleQty, material_type: tipoMaterial,
+        supplier_id: parseInt(document.getElementById('nuevoProveedor').value) || null,
         unidad_compra: document.getElementById('nuevaUnidadCompra').value.trim() || 'Paquete',
         unidad_consumo: document.getElementById('nuevaUnidadConsumo').value.trim() || 'Unidad',
         factor_conversion: parseInt(document.getElementById('nuevoFactorConversion').value) || 1
@@ -435,6 +481,7 @@ async function guardarEdicionMaterial() {
       body: JSON.stringify({
         name, category_id: categoryId,
         price, cost_type: costType, wholesale_qty: dataWholesaleQty,
+        supplier_id: parseInt(document.getElementById('editProveedor').value) || null,
         unidad_compra: document.getElementById('editUnidadCompra').value.trim(),
         unidad_consumo: document.getElementById('editUnidadConsumo').value.trim(),
         factor_conversion: parseInt(document.getElementById('editFactorConversion').value) || 1
@@ -471,6 +518,47 @@ function showError(fieldId, message) {
 
 function clearErrors() {
   document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+}
+
+function guardarQuickSupplier() {
+  const name = document.getElementById('quickSupplierName').value.trim();
+  const contact = document.getElementById('quickSupplierContact').value.trim();
+  if (!name) {
+    toast('El nombre de la empresa es obligatorio.', 'warning');
+    return;
+  }
+  callApi(APP_URL + 'Public/api/admin/suppliers.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
+    body: JSON.stringify({ company_name: name, contact_name: contact || null })
+  })
+    .then(data => {
+      if (data.success) {
+        document.getElementById('quickSupplierModal').style.display = 'none';
+        return callApi(APP_URL + 'Public/api/admin/suppliers.php');
+      } else {
+        toast(data.message, 'error');
+        return null;
+      }
+    })
+    .then(supRes => {
+      if (supRes && supRes.success) {
+        supRes.data.forEach(s => { suppliersMap[s.id] = s.company_name; });
+        cargarSelectProveedores(supRes.data);
+        if (quickSupplierTarget) {
+          const sel = document.getElementById(quickSupplierTarget);
+          if (sel && supRes.data.length > 0) {
+            sel.value = supRes.data[0].id;
+          }
+        }
+        quickSupplierTarget = null;
+        toast('Proveedor creado exitosamente.', 'success');
+      }
+    })
+    .catch(err => {
+      toast('Error de conexión.', 'error');
+      console.error(err);
+    });
 }
 
 function escapeHtml(text) {

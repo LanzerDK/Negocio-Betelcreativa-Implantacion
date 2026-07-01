@@ -47,6 +47,8 @@ class MaterialController
                     $locationId = (int)$locStmt->fetchColumn() ?: null;
                 }
 
+                $supplierId = !empty($input['supplier_id']) ? (int)$input['supplier_id'] : null;
+
                 $material = new MaterialModel([
                     'code' => trim($input['code'] ?? ''),
                     'name' => trim($input['name'] ?? ''),
@@ -56,7 +58,7 @@ class MaterialController
                     'stock' => 0,
                     'categoryId' => !empty($input['category_id']) ? (int)$input['category_id'] : null,
                     'materialType' => $input['material_type'] ?? 'consumible',
-                    'supplierId' => null,
+                    'supplierId' => $supplierId,
                     'locationId' => $locationId,
                     'unidadCompra' => $input['unidad_compra'] ?? 'Unidad',
                     'unidadConsumo' => $input['unidad_consumo'] ?? 'Unidad',
@@ -76,6 +78,15 @@ class MaterialController
                     $cat = $catRepo->findById($material->getCategoryId());
                     if (!$cat || $cat->getStatus() !== 'Active') {
                         ApiResponse::error('La categoría seleccionada no está disponible.');
+                    }
+                }
+
+                if ($supplierId !== null) {
+                    $supDb = \BetelCreativa\Config\Database::getConnection();
+                    $supStmt = $supDb->prepare("SELECT COUNT(*) FROM suppliers WHERE supplier_id = :id AND is_active = 1");
+                    $supStmt->execute([':id' => $supplierId]);
+                    if ((int)$supStmt->fetchColumn() === 0) {
+                        ApiResponse::error('El proveedor seleccionado no está disponible.');
                     }
                 }
 
@@ -108,6 +119,10 @@ class MaterialController
                     ApiResponse::error('Material no encontrado.', 404);
                 }
 
+                $supplierId = array_key_exists('supplier_id', $input)
+                    ? (!empty($input['supplier_id']) ? (int)$input['supplier_id'] : null)
+                    : $existing->getSupplierId();
+
                 $material = new MaterialModel([
                     'id' => $id,
                     'code' => $existing->getCode(),
@@ -119,7 +134,7 @@ class MaterialController
                     'isActive' => array_key_exists('is_active', $input) ? (int)$input['is_active'] : $existing->getIsActive(),
                     'categoryId' => array_key_exists('category_id', $input) ? (!empty($input['category_id']) ? (int)$input['category_id'] : null) : $existing->getCategoryId(),
                     'materialType' => $existing->getMaterialType(),
-                    'supplierId' => $existing->getSupplierId(),
+                    'supplierId' => $supplierId,
                     'locationId' => $existing->getLocationId(),
                     'unidadCompra' => $input['unidad_compra'] ?? $existing->getUnidadCompra(),
                     'unidadConsumo' => $input['unidad_consumo'] ?? $existing->getUnidadConsumo(),
@@ -136,6 +151,15 @@ class MaterialController
                     $cat = $catRepo->findById($newCategoryId);
                     if (!$cat || $cat->getStatus() !== 'Active') {
                         ApiResponse::error('La categoría seleccionada no está disponible.');
+                    }
+                }
+
+                if ($supplierId !== null && array_key_exists('supplier_id', $input)) {
+                    $supDb = \BetelCreativa\Config\Database::getConnection();
+                    $supStmt = $supDb->prepare("SELECT COUNT(*) FROM suppliers WHERE supplier_id = :id AND is_active = 1");
+                    $supStmt->execute([':id' => $supplierId]);
+                    if ((int)$supStmt->fetchColumn() === 0) {
+                        ApiResponse::error('El proveedor seleccionado no está disponible.');
                     }
                 }
 

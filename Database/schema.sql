@@ -1,11 +1,5 @@
 -- Betel Creativa - Esquema de Base de Datos
--- Refleja la estructura real de la base de datos en producción
-
-CREATE DATABASE IF NOT EXISTS BetelCreativa
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
-USE BetelCreativa;
+-- Compatible con MySQL 5.7+ y MariaDB 10.2+
 
 -- =============================================
 -- Tabla: users
@@ -56,6 +50,24 @@ CREATE TABLE IF NOT EXISTS categories (
 ) ENGINE=InnoDB;
 
 -- =============================================
+-- Tabla: suppliers (proveedores)
+-- =============================================
+CREATE TABLE IF NOT EXISTS suppliers (
+    supplier_id INT AUTO_INCREMENT PRIMARY KEY,
+    company_name VARCHAR(200) NOT NULL,
+    contact_name VARCHAR(100) DEFAULT NULL,
+    phone VARCHAR(20) DEFAULT NULL,
+    email VARCHAR(100) DEFAULT NULL,
+    address TEXT DEFAULT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO suppliers (company_name, contact_name, is_active)
+VALUES ('Proveedor General', 'Sistema', 1);
+
+-- =============================================
 -- Tabla: materials
 -- =============================================
 CREATE TABLE IF NOT EXISTS materials (
@@ -77,7 +89,8 @@ CREATE TABLE IF NOT EXISTS materials (
     reserved_stock INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL
+    FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- =============================================
@@ -100,6 +113,29 @@ CREATE TABLE IF NOT EXISTS customers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabla: event_types
+-- Tipos de evento configurables por el usuario
+-- =============================================
+CREATE TABLE IF NOT EXISTS event_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    is_active TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO event_types (name) VALUES
+('Boda'),
+('Cumpleaños'),
+('Evento Corporativo'),
+('Quinceañero'),
+('Baby Shower'),
+('Bautizo'),
+('Graduación'),
+('Aniversario'),
+('Otro');
 
 -- =============================================
 -- Tabla: citas (antes appointments)
@@ -128,13 +164,14 @@ CREATE TABLE IF NOT EXISTS citas (
 -- =============================================
 -- Tabla: cita_materiales
 -- Relación muchos a muchos entre citas y materiales
--- con cantidades utilizadas
+-- con cantidades utilizadas y precio unitario
 -- =============================================
 CREATE TABLE IF NOT EXISTS cita_materiales (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cita_id INT NOT NULL,
     material_id INT NOT NULL,
     cantidad_utilizada INT NOT NULL DEFAULT 0,
+    precio_unitario DECIMAL(12,2) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_cita_materiales_cita FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT,
     CONSTRAINT fk_cita_materiales_material FOREIGN KEY (material_id) REFERENCES materials(material_id) ON DELETE RESTRICT
@@ -280,36 +317,8 @@ INSERT IGNORE INTO settings (setting_key, setting_value, description) VALUES
 ('business_hours_end', '18:00', 'Hora de cierre'),
 ('working_days', '1,2,3,4,5,6', 'Días laborales (1=domingo, 7=sábado)'),
 ('backup_frequency', 'weekly', 'Frecuencia de respaldo: daily|weekly|monthly'),
-('log_retention_days', '90', 'Días de retención de logs');
-
--- =============================================
--- Tabla: event_types
--- Tipos de evento configurables por el usuario
--- =============================================
-CREATE TABLE IF NOT EXISTS event_types (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    is_active TINYINT(1) DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-
--- Valores iniciales de tipos de evento
-INSERT IGNORE INTO event_types (name) VALUES
-('Boda'),
-('Cumpleaños'),
-('Evento Corporativo'),
-('Quinceañero'),
-('Baby Shower'),
-('Bautizo'),
-('Graduación'),
-('Aniversario'),
-('Otro');
-
--- Nota: Las columnas id_number, material_type, unidad_compra, unidad_consumo,
--- factor_conversion y reserved_stock ya están incluidas en las definiciones
--- CREATE TABLE de customers y materials respectivamente (migraciones del
--- 2026-06-28/29 integradas directamente en el schema).
+('log_retention_days', '90', 'Días de retención de logs'),
+('bcv_rate', '36.50', 'Tasa de cambio BCV (USD a VES)');
 
 -- =============================================
 -- Tabla: cita_materiales_historial
@@ -361,22 +370,3 @@ CREATE TABLE IF NOT EXISTS pagos_factura (
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
-
--- =============================================
--- Migración: precio_unitario en cita_materiales
--- =============================================
-ALTER TABLE cita_materiales
-  ADD COLUMN IF NOT EXISTS precio_unitario DECIMAL(12,2) DEFAULT NULL AFTER cantidad_utilizada;
-
--- =============================================
--- Configuración inicial: tasa BCV
--- =============================================
-INSERT IGNORE INTO settings (setting_key, setting_value, description)
-VALUES ('bcv_rate', '36.50', 'Tasa de cambio BCV (USD a VES)');
-
--- Nota: Las FKs críticas (citas.cliente_id, cita_materiales.cita_id,
--- cita_materiales.material_id, quotes.customer_id) ya fueron renombradas
--- con nombres explícitos (fk_citas_customer, fk_cita_materiales_cita,
--- fk_cita_materiales_material, fk_quotes_customer) y usan ON DELETE RESTRICT.
--- Para migrar una DB existente con nombres auto-generados, ejecutar los
--- ALTER TABLE correspondientes (ver Database/roles_migration.sql para referencia).

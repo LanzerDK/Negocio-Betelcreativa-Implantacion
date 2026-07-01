@@ -2,6 +2,7 @@ let allMaterials = [];
 let allCategories = [];
 let allLocations = [];
 let allZones = [];
+let suppliersMap = {};
 let historyData = [];
 let historyPage = 1;
 let currentTab = 'inventory';
@@ -119,6 +120,16 @@ function llenarSelectores() {
       catSel.appendChild(opt);
     });
   }
+  const supSel = document.getElementById('addMatSupplier');
+  if (supSel) {
+    supSel.innerHTML = '<option value="">Seleccionar proveedor</option>';
+    Object.entries(suppliersMap).forEach(([id, name]) => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = name;
+      supSel.appendChild(opt);
+    });
+  }
 }
 
 function llenarSelectMaterial(selectId, selected) {
@@ -193,6 +204,7 @@ function renderTabla() {
         </div>
       </div>
       <div class="col-3" data-label="Categoría">${escapeHtml(allCategories.find(c => c.id === m.category_id)?.name || '—')}</div>
+      <div class="col-supplier" data-label="Proveedor">${escapeHtml(suppliersMap[m.supplier_id] || '—')}</div>
       <div class="col-4" data-label="Stock"><span class="status ${statusClass}">${formatearStock(m)}</span></div>
       <div class="col-5" data-label="Acciones">
         <button class="action-btn adjust" data-id="${m.id}" title="Ajustar Inventario"><i class="fas fa-sliders-h"></i></button>
@@ -397,11 +409,12 @@ async function guardarMovimiento() {
 
 async function recargarDatos() {
   try {
-    const [mat, cat, loc, sum] = await Promise.all([
+    const [mat, cat, loc, sum, sup] = await Promise.all([
       fetch(APP_URL + 'Public/api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/locations.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'Public/api/storage.php?action=summary').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
+      fetch(APP_URL + 'Public/api/storage.php?action=summary').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
+      fetch(APP_URL + 'Public/api/admin/suppliers.php').then(r => r.json()).catch(() => ({ success: false, data: [] }))
     ]);
     if (mat.success) allMaterials = mat.data;
     if (cat.success) allCategories = cat.data;
@@ -410,6 +423,10 @@ async function recargarDatos() {
       const zoneSet = new Set();
       loc.data.forEach(l => { if (l.description) zoneSet.add(l.description); });
       allZones = Array.from(zoneSet).sort();
+    }
+    if (sup && sup.success) {
+      suppliersMap = {};
+      sup.data.forEach(s => { suppliersMap[s.id] = s.company_name; });
     }
     if (sum.success) renderOverview(sum.data);
     renderTabla();
@@ -520,6 +537,7 @@ async function guardarNuevoMaterial() {
   const price = parseFloat(document.getElementById('addMatPrice').value) || 0;
   const wholesaleQty = costType === 'wholesale' ? parseInt(document.getElementById('addMatWholesaleQty').value) || 0 : 0;
   const locationId = parseInt(document.getElementById('addMaterialLocation').value) || null;
+  const supplierId = parseInt(document.getElementById('addMatSupplier').value) || null;
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   if (!name) { marcarError('addMatName'); return toast('El nombre del material es obligatorio.', 'error'); }
   if (!code) { marcarError('addMatCode'); return toast('El código del material es obligatorio.', 'error'); }
@@ -528,7 +546,7 @@ async function guardarNuevoMaterial() {
     const data = await callApi(APP_URL + 'Public/api/materials.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-      body: JSON.stringify({ name, code, category_id: categoryId, stock, cost_type: costType, price, wholesale_qty: wholesaleQty, location_id: locationId })
+      body: JSON.stringify({ name, code, category_id: categoryId, stock, cost_type: costType, price, wholesale_qty: wholesaleQty, location_id: locationId, supplier_id: supplierId })
     });
     if (data.success) {
       Modal.close('addMaterialModal');

@@ -59,6 +59,9 @@
         <a href="<?php echo APP_URL; ?>category" class="menu-item">
             <i class="fas fa-layer-group"></i><span>Categoría</span>
         </a>
+        <a href="<?php echo APP_URL; ?>suppliers" class="menu-item">
+            <i class="fas fa-truck"></i><span>Proveedores</span>
+        </a>
         <a href="<?php echo APP_URL; ?>customers" class="menu-item">
             <i class="fas fa-users"></i><span>Clientes</span>
         </a>
@@ -151,6 +154,7 @@
                                 <div class="col-1">ID</div>
                                 <div class="col-2">Material</div>
                                 <div class="col-3">Categoría</div>
+                                <div class="col-supplier">Proveedor</div>
                                 <div class="col-4">Stock</div>
                                 <div class="col-5">Acciones</div>
                             </div>
@@ -351,6 +355,12 @@
                             <label for="addMatCategory" class="form-label">Categoría</label>
                             <select class="form-select" id="addMatCategory">
                                 <option value="">Seleccionar categoría</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addMatSupplier" class="form-label">Proveedor</label>
+                            <select class="form-select" id="addMatSupplier">
+                                <option value="">Seleccionar proveedor</option>
                             </select>
                         </div>
                         <div class="mb-3">

@@ -59,6 +59,9 @@
         <a href="<?php echo APP_URL; ?>category" class="menu-item">
             <i class="fas fa-layer-group"></i><span>Categoría</span>
         </a>
+        <a href="<?php echo APP_URL; ?>suppliers" class="menu-item">
+            <i class="fas fa-truck"></i><span>Proveedores</span>
+        </a>
         <a href="<?php echo APP_URL; ?>customers" class="menu-item">
             <i class="fas fa-users"></i><span>Clientes</span>
         </a>

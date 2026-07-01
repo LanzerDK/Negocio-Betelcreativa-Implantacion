@@ -2,6 +2,7 @@ let allMaterials = [];
 let allCategories = [];
 let allLocations = [];
 let allZones = [];
+let suppliersMap = {};
 let currentPage = 1;
 const PER_PAGE = 15;
 
@@ -28,10 +29,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 async function cargarDatos() {
   try {
-    const [mat, cat, loc] = await Promise.all([
+    const [mat, cat, loc, sup] = await Promise.all([
       fetch(APP_URL + 'Public/api/materials.php').then(r => r.json()),
       fetch(APP_URL + 'Public/api/categories.php').then(r => r.json()),
-      fetch(APP_URL + 'Public/api/locations.php').then(r => r.json())
+      fetch(APP_URL + 'Public/api/locations.php').then(r => r.json()),
+      fetch(APP_URL + 'Public/api/admin/suppliers.php').then(r => r.json()).catch(() => ({ success: false, data: [] }))
     ]);
     if (mat.success) allMaterials = mat.data;
     if (cat.success) allCategories = cat.data;
@@ -40,6 +42,10 @@ async function cargarDatos() {
       const zoneSet = new Set();
       loc.data.forEach(l => { if (l.description) zoneSet.add(l.description); });
       allZones = Array.from(zoneSet).sort();
+    }
+    if (sup && sup.success) {
+      suppliersMap = {};
+      sup.data.forEach(s => { suppliersMap[s.id] = s.company_name; });
     }
     llenarSelectores();
     renderTabla();
@@ -127,6 +133,7 @@ function renderTabla() {
       </div>
       <div data-label="Stock">${stockText}</div>
       <div data-label="Empaque"><span class="packaging-badge">${escapeHtml(packaging)}${fc > 1 ? ' (1 ' + escapeHtml(m.unidad_compra || 'Paquete') + ' = ' + fc + ' ' + escapeHtml(m.unidad_consumo || 'Unidad') + ')' : ''}</span></div>
+      <div data-label="Proveedor">${escapeHtml(suppliersMap[m.supplier_id] || '—')}</div>
       <div data-label="Ubicación"><span class="location-name">${escapeHtml(loc.name)}</span></div>
       <div data-label="Zona"><span class="zone-name">${escapeHtml(loc.zone)}</span></div>
     `;

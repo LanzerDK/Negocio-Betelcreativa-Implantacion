@@ -14,11 +14,16 @@ class DatabaseInitializer
 
     public static function runIfNeeded(): void
     {
+        $dbExists = self::isDatabasePopulated();
+
         if (file_exists(self::$lockFile)) {
-            return;
+            if ($dbExists) {
+                return;
+            }
+            @unlink(self::$lockFile);
         }
 
-        if (self::isDatabasePopulated()) {
+        if ($dbExists) {
             file_put_contents(self::$lockFile, 'Installed on ' . date('Y-m-d H:i:s'));
             return;
         }
@@ -72,19 +77,33 @@ class DatabaseInitializer
 
             $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
             $pdo->exec("USE `$dbname`");
+            $pdo->exec("SET NAMES utf8mb4");
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
 
             $sql = file_get_contents(self::$schemaFile);
 
-            // Remover comentarios de línea SQL (--) para evitar errores de parseo
-            $sql = preg_replace('/--[^\n]*\n?/', '', $sql);
+            // Eliminar comentarios de línea SQL (--) de forma segura
+            $sql = preg_replace('/^\s*--.*$/m', '', $sql);
 
             // Ejecutar cada sentencia por separado
             $statements = explode(';', $sql);
+            $errors = [];
             foreach ($statements as $stmt) {
                 $stmt = trim($stmt);
                 if ($stmt !== '') {
-                    $pdo->exec($stmt);
+                    try {
+                        $pdo->exec($stmt);
+                    } catch (PDOException $e) {
+                        $errors[] = $e->getMessage();
+                        Logger::error("Error ejecutando statement: " . $e->getMessage());
+                    }
                 }
+            }
+
+            $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+
+            if (!empty($errors)) {
+                Logger::error("Autoinstalación completada con " . count($errors) . " errores");
             }
 
             file_put_contents(self::$lockFile, 'Installed automatically on ' . date('Y-m-d H:i:s'));

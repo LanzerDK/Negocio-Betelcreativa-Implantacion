@@ -59,6 +59,9 @@
         <a href="<?php echo APP_URL; ?>category" class="menu-item">
             <i class="fas fa-layer-group"></i><span>Categoría</span>
         </a>
+        <a href="<?php echo APP_URL; ?>suppliers" class="menu-item">
+            <i class="fas fa-truck"></i><span>Proveedores</span>
+        </a>
         <a href="<?php echo APP_URL; ?>customers" class="menu-item">
             <i class="fas fa-users"></i><span>Clientes</span>
         </a>
@@ -110,6 +113,7 @@
                     <div class="d-col-1">Material</div>
                     <div class="d-col-2">Stock</div>
                     <div class="d-col-3">Empaque</div>
+                    <div class="d-col-supplier">Proveedor</div>
                     <div class="d-col-4">Ubicación</div>
                     <div class="d-col-5">Zona</div>
                 </div>
