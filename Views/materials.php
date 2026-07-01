@@ -326,9 +326,9 @@
 
     </div>
 
-    <!-- Mini-modal Nuevo Proveedor Rápido -->
+    <!-- Mini-modal Nuevo Proveedor Rápido (posicionado lateralmente) -->
     <div class="modal-overlay" id="quickSupplierModal">
-        <div class="supplier-modal" style="max-width:420px;">
+        <div class="supplier-modal" id="quickSupplierDialog" style="max-width:420px;position:fixed;">
             <div class="modal-header">
                 <h2><i class="fas fa-plus-circle"></i> Nuevo Proveedor</h2>
                 <button class="close-btn" id="closeQuickSupplierBtn">&times;</button>
@@ -338,9 +338,49 @@
                     <label for="quickSupplierName">Nombre de la Empresa</label>
                     <input type="text" id="quickSupplierName" class="form-control" placeholder="Ej: Proveedora de Globos C.A.">
                 </div>
+
                 <div class="form-group">
-                    <label for="quickSupplierContact">Persona de Contacto</label>
-                    <input type="text" id="quickSupplierContact" class="form-control" placeholder="Ej: María Pérez">
+                    <label for="quickSupplierType">Tipo de Proveedor</label>
+                    <select id="quickSupplierType" class="form-control">
+                        <option value="fijo">Fijo</option>
+                        <option value="comodin">Comodín</option>
+                    </select>
+                </div>
+
+                <div id="quickFijoFields">
+                    <div class="form-group">
+                        <label for="quickSupplierContact">Persona de Contacto</label>
+                        <input type="text" id="quickSupplierContact" class="form-control" placeholder="Ej: María Pérez">
+                    </div>
+                    <div class="form-group">
+                        <label for="quickSupplierPhone">Teléfono</label>
+                        <input type="text" id="quickSupplierPhone" class="form-control" placeholder="Ej: 0412-1234567">
+                    </div>
+                    <div class="form-group">
+                        <label for="quickSupplierEmail">Correo Electrónico</label>
+                        <input type="email" id="quickSupplierEmail" class="form-control" placeholder="Ej: contacto@proveedora.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="quickSupplierAddress">Dirección</label>
+                        <textarea id="quickSupplierAddress" class="form-control" rows="2" placeholder="Dirección física..."></textarea>
+                    </div>
+                </div>
+
+                <div id="quickComodinFields" style="display:none;">
+                    <div class="form-group">
+                        <label for="quickSupplierSubtype">Subtipo</label>
+                        <select id="quickSupplierSubtype" class="form-control">
+                            <option value="">Seleccionar subtipo</option>
+                            <option value="Compras al Detal">Compras al Detal</option>
+                            <option value="Caja Chica">Caja Chica</option>
+                            <option value="Proveedores Eventuales">Proveedores Eventuales</option>
+                            <option value="Ocacionales">Ocacionales</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="quickSupplierNotes">Nota</label>
+                        <textarea id="quickSupplierNotes" class="form-control" rows="2" placeholder="Nota sobre este proveedor comodín..."></textarea>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

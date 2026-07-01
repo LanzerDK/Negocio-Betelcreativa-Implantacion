@@ -21,7 +21,26 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('saveSupplierBtn').addEventListener('click', guardarProveedor);
 
     document.getElementById('searchInput')?.addEventListener('input', filtrarProveedores);
+
+    document.getElementById('supplierType').addEventListener('change', function () {
+        toggleSupplierFields(this.value);
+    });
 });
+
+function toggleSupplierFields(type) {
+    const isComodin = type === 'comodin';
+    document.getElementById('fijoFields').style.display = isComodin ? 'none' : 'block';
+    document.getElementById('comodinFields').style.display = isComodin ? 'block' : 'none';
+    if (!isComodin) {
+        document.getElementById('supplierSubtype').value = '';
+        document.getElementById('supplierNotes').value = '';
+    } else {
+        document.getElementById('supplierContact').value = '';
+        document.getElementById('supplierPhone').value = '';
+        document.getElementById('supplierEmail').value = '';
+        document.getElementById('supplierAddress').value = '';
+    }
+}
 
 function limpiarFormulario() {
     document.getElementById('supplierCompany').value = '';
@@ -29,6 +48,10 @@ function limpiarFormulario() {
     document.getElementById('supplierPhone').value = '';
     document.getElementById('supplierEmail').value = '';
     document.getElementById('supplierAddress').value = '';
+    document.getElementById('supplierType').value = 'fijo';
+    document.getElementById('supplierSubtype').value = '';
+    document.getElementById('supplierNotes').value = '';
+    toggleSupplierFields('fijo');
 }
 
 function cargarProveedores() {
@@ -98,6 +121,14 @@ function renderizarProveedores(proveedores, materiales) {
         const email = sup.email ? escapeHtml(sup.email) : null;
         const address = sup.address ? escapeHtml(sup.address) : null;
 
+        const isComodin = sup.supplier_type === 'comodin';
+        const typeBadge = isComodin
+            ? `<span class="supplier-type-badge comodin"><i class="fas fa-exchange-alt"></i> Comodín</span>`
+            : `<span class="supplier-type-badge fijo"><i class="fas fa-check-circle"></i> Fijo</span>`;
+        const subtypeLabel = isComodin && sup.subtype
+            ? `<div class="subtype-label"><i class="fas fa-tag"></i> ${escapeHtml(sup.subtype)}</div>`
+            : '';
+
         card.innerHTML = `
             <div class="supplier-header">
                 <div class="supplier-avatar">
@@ -109,6 +140,8 @@ function renderizarProveedores(proveedores, materiales) {
                 </div>
             </div>
             <div class="supplier-body">
+                ${typeBadge}
+                ${subtypeLabel}
                 ${contact ? `<div class="supplier-detail"><i class="fas fa-user"></i> ${contact}</div>` : ''}
                 ${phone ? `<div class="supplier-detail"><i class="fas fa-phone"></i> ${phone}</div>` : ''}
                 ${email ? `<div class="supplier-detail"><i class="fas fa-envelope"></i> ${email}</div>` : ''}
@@ -149,6 +182,10 @@ function editarProveedor(sup) {
     document.getElementById('supplierPhone').value = sup.phone || '';
     document.getElementById('supplierEmail').value = sup.email || '';
     document.getElementById('supplierAddress').value = sup.address || '';
+    document.getElementById('supplierType').value = sup.supplier_type || 'fijo';
+    document.getElementById('supplierSubtype').value = sup.subtype || '';
+    document.getElementById('supplierNotes').value = sup.notes || '';
+    toggleSupplierFields(sup.supplier_type || 'fijo');
     document.getElementById('supplierModal').style.display = 'flex';
 }
 
@@ -178,7 +215,10 @@ function guardarProveedor() {
             contact_name: contactName || null,
             phone: phone || null,
             email: email || null,
-            address: address || null
+            address: address || null,
+            notes: document.getElementById('supplierNotes').value.trim() || null,
+            supplier_type: document.getElementById('supplierType').value || 'fijo',
+            subtype: document.getElementById('supplierSubtype').value || null
         })
     })
         .then(data => {

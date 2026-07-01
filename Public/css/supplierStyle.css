@@ -398,6 +398,37 @@
   box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }
 
+.supplier-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.supplier-type-badge.fijo {
+  background: rgba(40, 167, 69, 0.12);
+  color: #28a745;
+}
+.supplier-type-badge.comodin {
+  background: rgba(255, 193, 7, 0.15);
+  color: #b8860b;
+}
+.subtype-label {
+  font-size: 0.8rem;
+  color: var(--gray);
+  margin-bottom: 6px;
+  padding-left: 2px;
+}
+.subtype-label i {
+  margin-right: 4px;
+  color: var(--gold);
+}
+
 @media (max-width: 576px) {
   .supplier-modal {
     max-width: 95%;

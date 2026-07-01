@@ -42,6 +42,7 @@ class SupplierController
                     'phone' => trim($input['phone'] ?? ''),
                     'email' => trim($input['email'] ?? ''),
                     'address' => trim($input['address'] ?? ''),
+                    'notes' => $supplierType === 'comodin' ? trim($input['notes'] ?? '') : null,
                     'supplier_type' => $supplierType,
                     'subtype' => $supplierType === 'comodin' ? trim($input['subtype'] ?? '') : null
                 ]);
@@ -92,6 +93,9 @@ class SupplierController
                     'phone' => trim($input['phone'] ?? $existing->getPhone()),
                     'email' => trim($input['email'] ?? $existing->getEmail()),
                     'address' => trim($input['address'] ?? $existing->getAddress()),
+                    'notes' => $newSupplierType === 'comodin'
+                        ? trim($input['notes'] ?? $existing->getNotes() ?? '')
+                        : null,
                     'supplier_type' => $newSupplierType,
                     'subtype' => $newSupplierType === 'comodin'
                         ? trim($input['subtype'] ?? $existing->getSubtype() ?? '')
@@ -128,6 +132,7 @@ class SupplierController
             'phone' => $s->getPhone(),
             'email' => $s->getEmail(),
             'address' => $s->getAddress(),
+            'notes' => $s->getNotes(),
             'supplier_type' => $s->getSupplierType(),
             'subtype' => $s->getSubtype(),
             'is_active' => $s->getIsActive() ? 1 : 0

@@ -65,9 +65,23 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.btn-add-supplier').forEach(btn => {
     btn.addEventListener('click', function () {
       quickSupplierTarget = this.getAttribute('data-target');
+      const rect = this.getBoundingClientRect();
+      const dialog = document.getElementById('quickSupplierDialog');
+      const overlay = document.getElementById('quickSupplierModal');
+      overlay.style.display = 'flex';
+      overlay.style.alignItems = 'flex-start';
+      overlay.style.justifyContent = 'flex-start';
+      dialog.style.left = Math.min(rect.right + 10, window.innerWidth - 440) + 'px';
+      dialog.style.top = Math.min(rect.top, window.innerHeight - 400) + 'px';
       document.getElementById('quickSupplierName').value = '';
       document.getElementById('quickSupplierContact').value = '';
-      document.getElementById('quickSupplierModal').style.display = 'flex';
+      document.getElementById('quickSupplierPhone').value = '';
+      document.getElementById('quickSupplierEmail').value = '';
+      document.getElementById('quickSupplierAddress').value = '';
+      document.getElementById('quickSupplierType').value = 'fijo';
+      document.getElementById('quickSupplierSubtype').value = '';
+      document.getElementById('quickSupplierNotes').value = '';
+      toggleQuickSupplierFields('fijo');
     });
   });
 
@@ -78,7 +92,25 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('quickSupplierModal').style.display = 'none';
   });
   document.getElementById('saveQuickSupplierBtn')?.addEventListener('click', guardarQuickSupplier);
+  document.getElementById('quickSupplierType')?.addEventListener('change', function () {
+    toggleQuickSupplierFields(this.value);
+  });
 });
+
+function toggleQuickSupplierFields(type) {
+  const isComodin = type === 'comodin';
+  document.getElementById('quickFijoFields').style.display = isComodin ? 'none' : 'block';
+  document.getElementById('quickComodinFields').style.display = isComodin ? 'block' : 'none';
+  if (!isComodin) {
+    document.getElementById('quickSupplierSubtype').value = '';
+    document.getElementById('quickSupplierNotes').value = '';
+  } else {
+    document.getElementById('quickSupplierContact').value = '';
+    document.getElementById('quickSupplierPhone').value = '';
+    document.getElementById('quickSupplierEmail').value = '';
+    document.getElementById('quickSupplierAddress').value = '';
+  }
+}
 
 async function cargarMateriales() {
   try {
@@ -542,15 +574,25 @@ function clearErrors() {
 
 function guardarQuickSupplier() {
   const name = document.getElementById('quickSupplierName').value.trim();
-  const contact = document.getElementById('quickSupplierContact').value.trim();
+  const type = document.getElementById('quickSupplierType').value;
   if (!name) {
     toast('El nombre de la empresa es obligatorio.', 'warning');
     return;
   }
+  const body = { company_name: name, supplier_type: type };
+  if (type === 'fijo') {
+    body.contact_name = document.getElementById('quickSupplierContact').value.trim() || null;
+    body.phone = document.getElementById('quickSupplierPhone').value.trim() || null;
+    body.email = document.getElementById('quickSupplierEmail').value.trim() || null;
+    body.address = document.getElementById('quickSupplierAddress').value.trim() || null;
+  } else {
+    body.subtype = document.getElementById('quickSupplierSubtype').value || null;
+    body.notes = document.getElementById('quickSupplierNotes').value.trim() || null;
+  }
   callApi(APP_URL + 'Public/api/admin/suppliers.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-    body: JSON.stringify({ company_name: name, contact_name: contact || null })
+    body: JSON.stringify(body)
   })
     .then(data => {
       if (data.success) {

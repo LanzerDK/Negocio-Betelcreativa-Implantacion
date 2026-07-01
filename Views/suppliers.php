@@ -161,24 +161,51 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="supplierContact">Persona de Contacto</label>
-                        <input type="text" id="supplierContact" class="form-control" placeholder="Ej: María Pérez">
+                        <label for="supplierType">Tipo de Proveedor</label>
+                        <select id="supplierType" class="form-control">
+                            <option value="fijo">Fijo</option>
+                            <option value="comodin">Comodín</option>
+                        </select>
                     </div>
 
-                    <div class="form-row">
+                    <div id="fijoFields">
                         <div class="form-group">
-                            <label for="supplierPhone">Teléfono</label>
-                            <input type="text" id="supplierPhone" class="form-control" placeholder="Ej: 0412-1234567">
+                            <label for="supplierContact">Persona de Contacto</label>
+                            <input type="text" id="supplierContact" class="form-control" placeholder="Ej: María Pérez">
                         </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierPhone">Teléfono</label>
+                                <input type="text" id="supplierPhone" class="form-control" placeholder="Ej: 0412-1234567">
+                            </div>
+                            <div class="form-group">
+                                <label for="supplierEmail">Correo Electrónico</label>
+                                <input type="email" id="supplierEmail" class="form-control" placeholder="Ej: contacto@proveedora.com">
+                            </div>
+                        </div>
+
                         <div class="form-group">
-                            <label for="supplierEmail">Correo Electrónico</label>
-                            <input type="email" id="supplierEmail" class="form-control" placeholder="Ej: contacto@proveedora.com">
+                            <label for="supplierAddress">Dirección</label>
+                            <textarea id="supplierAddress" class="form-control" rows="2" placeholder="Dirección física del proveedor..."></textarea>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="supplierAddress">Dirección</label>
-                        <textarea id="supplierAddress" class="form-control" rows="2" placeholder="Dirección física del proveedor..."></textarea>
+                    <div id="comodinFields" style="display:none;">
+                        <div class="form-group">
+                            <label for="supplierSubtype">Subtipo</label>
+                            <select id="supplierSubtype" class="form-control">
+                                <option value="">Seleccionar subtipo</option>
+                                <option value="Compras al Detal">Compras al Detal</option>
+                                <option value="Caja Chica">Caja Chica</option>
+                                <option value="Proveedores Eventuales">Proveedores Eventuales</option>
+                                <option value="Ocacionales">Ocacionales</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="supplierNotes">Nota</label>
+                            <textarea id="supplierNotes" class="form-control" rows="2" placeholder="Nota sobre este proveedor comodín..."></textarea>
+                        </div>
                     </div>
                 </div>
 

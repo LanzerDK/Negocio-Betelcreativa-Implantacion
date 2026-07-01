@@ -10,6 +10,7 @@ class SupplierModel
     private ?string $phone;
     private ?string $email;
     private ?string $address;
+    private ?string $notes;
     private string $supplierType;
     private ?string $subtype;
     private bool $isActive;
@@ -22,6 +23,7 @@ class SupplierModel
         $this->phone = $data['phone'] ?? null;
         $this->email = $data['email'] ?? null;
         $this->address = $data['address'] ?? null;
+        $this->notes = $data['notes'] ?? null;
         $this->supplierType = $data['supplier_type'] ?? 'fijo';
         $this->subtype = $data['subtype'] ?? null;
         $this->isActive = (bool)($data['isActive'] ?? $data['is_active'] ?? true);
@@ -33,6 +35,7 @@ class SupplierModel
     public function getPhone(): ?string { return $this->phone; }
     public function getEmail(): ?string { return $this->email; }
     public function getAddress(): ?string { return $this->address; }
+    public function getNotes(): ?string { return $this->notes; }
     public function getSupplierType(): string { return $this->supplierType; }
     public function getSubtype(): ?string { return $this->subtype; }
     public function getIsActive(): bool { return $this->isActive; }
@@ -43,6 +46,7 @@ class SupplierModel
     public function setPhone(?string $phone): void { $this->phone = $phone; }
     public function setEmail(?string $email): void { $this->email = $email; }
     public function setAddress(?string $address): void { $this->address = $address; }
+    public function setNotes(?string $notes): void { $this->notes = $notes; }
     public function setSupplierType(string $supplierType): void { $this->supplierType = $supplierType; }
     public function setSubtype(?string $subtype): void { $this->subtype = $subtype; }
     public function setIsActive(bool $isActive): void { $this->isActive = $isActive; }
