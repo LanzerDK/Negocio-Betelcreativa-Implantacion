@@ -121,7 +121,7 @@ class StorageController
                         ApiResponse::error('Motivo no válido.');
                     }
 
-                    if ($repo->recordMove($materialId, $userId, $fromLocationId, $toLocationId, $quantity, $reason, $notes, 'transferencia')) {
+                    if ($repo->recordMove($materialId, $userId, $fromLocationId, $toLocationId, $quantity, $reason, $notes)) {
                         ApiResponse::success(null, 'Material movido exitosamente.');
                     } else {
                         ApiResponse::error('Error al mover el material.', 500);

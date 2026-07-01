@@ -63,7 +63,9 @@ class StorageRepository
                 ':action_type' => $actionType,
                 ':quantity' => $quantity,
                 ':reason' => $reason,
-                ':extra_note' => $notes
+                ':extra_note' => $notes,
+                ':tipo_referencia' => $tipoReferencia,
+                ':referencia_id' => $referenciaId
             ]);
 
             $this->db->commit();
@@ -124,9 +126,7 @@ class StorageRepository
                 ':reason'          => $reason,
                 ':extra_note'      => $notes,
                 ':origin'          => $fromLocationId,
-                ':destination'     => $toLocationId,
-                ':tipo_referencia' => $tipoReferencia,
-                ':referencia_id'   => $referenciaId
+                ':destination'     => $toLocationId
             ]);
 
             $this->db->commit();
