@@ -46,9 +46,12 @@
   padding: 20px 15px;
   text-align: center;
   color: white;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   transition: transform 0.3s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .overview-card::before {
@@ -71,10 +74,10 @@
 .overview-label { font-size: 1rem; opacity: 0.9; }
 
 .filters-sidebar {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-radius: 15px;
   padding: 25px 20px;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   height: fit-content;
   position: relative;
 }
@@ -134,7 +137,7 @@
 }
 
 .materials-table {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-radius: 15px;
   overflow: hidden;
   box-shadow: var(--shadow);
@@ -214,7 +217,7 @@
 
 .history-container {
   position: relative;
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-radius: 15px;
   padding: 25px;
   box-shadow: var(--shadow);

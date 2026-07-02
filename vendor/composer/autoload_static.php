@@ -27,6 +27,8 @@ class ComposerStaticInitb1cd9067b1b56c677569ec2a9e4706f7
         array (
             'Psr\\Http\\Message\\' => 17,
             'Psr\\Http\\Client\\' => 16,
+            'PhpOffice\\PhpWord\\' => 18,
+            'PhpOffice\\Math\\' => 15,
         ),
         'G' => 
         array (
@@ -58,6 +60,14 @@ class ComposerStaticInitb1cd9067b1b56c677569ec2a9e4706f7
         'Psr\\Http\\Client\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/http-client/src',
+        ),
+        'PhpOffice\\PhpWord\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phpoffice/phpword/src/PhpWord',
+        ),
+        'PhpOffice\\Math\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/phpoffice/math/src/Math',
         ),
         'GuzzleHttp\\Psr7\\' => 
         array (

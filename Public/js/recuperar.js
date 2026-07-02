@@ -48,7 +48,7 @@ function hideFeedback(el) {
   if (el) { el.style.display = 'none'; el.textContent = ''; }
 }
 
-function callApi(data) {
+function recoverApi(data) {
   return window.callApi(window.APP_URL + 'Public/api/recover.php', {
     method: 'POST',
     headers: {
@@ -69,7 +69,7 @@ sendCodeBtn.addEventListener('click', function () {
   sendCodeBtn.disabled = true;
   sendCodeBtn.textContent = 'Enviando...';
 
-  callApi({ action: 'send_code', contact })
+  recoverApi({ action: 'send_code', contact })
     .then(res => {
       if (res.success) {
         currentContact = contact;
@@ -100,7 +100,7 @@ resendCode.addEventListener('click', function (e) {
   resendCode.style.pointerEvents = 'none';
   resendCode.style.opacity = '0.5';
 
-  callApi({ action: 'send_code', contact: currentContact })
+  recoverApi({ action: 'send_code', contact: currentContact })
     .then(res => {
       if (res.success) {
         clearCodeInputs();
@@ -152,7 +152,7 @@ verifyCodeBtn.addEventListener('click', function () {
   verifyCodeBtn.disabled = true;
   verifyCodeBtn.textContent = 'Verificando...';
 
-  callApi({ action: 'verify_code', contact: currentContact, code })
+  recoverApi({ action: 'verify_code', contact: currentContact, code })
     .then(res => {
       if (res.success) {
         currentCode = code;
@@ -219,7 +219,7 @@ document.getElementById('recoveryForm').addEventListener('submit', function (e) 
   submitBtn.disabled = true;
   submitBtn.textContent = 'Restableciendo...';
 
-  callApi({ action: 'reset_password', contact: currentContact, code: currentCode, password })
+  recoverApi({ action: 'reset_password', contact: currentContact, code: currentCode, password })
     .then(res => {
       if (res.success) {
         document.getElementById('recoveryForm').style.display = 'none';

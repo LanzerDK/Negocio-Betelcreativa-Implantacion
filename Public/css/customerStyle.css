@@ -40,10 +40,10 @@
 
 /* Sidebar de clientes con lista */
 .clients-sidebar {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-radius: 10px;
   padding: 20px;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   height: fit-content;
   position: relative;
 }
@@ -173,10 +173,10 @@
 
 /* Panel de detalle del cliente */
 .client-detail {
-  background: rgba(255, 255, 255, 0.747);
+  background: #ffffff;
   border-radius: 10px;
   padding: 25px;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   display: none;
   position: relative;
 }
@@ -306,12 +306,14 @@
 
 /* Tarjeta de información */
 .info-card {
-  background-color: var(--light);
+  background-color: #ffffff;
   border-radius: 10px;
   padding: 20px;
   transition: var(--transition);
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
+  display: flex;
+  flex-direction: column;
 }
 
 .info-card::before {
@@ -328,8 +330,8 @@
 }
 
 .info-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
 .info-card h4 {
@@ -379,7 +381,7 @@
   transition: var(--transition);
   background: white;
   position: relative;
-  box-shadow: 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
 }
 
 .event-card::before {
@@ -397,7 +399,8 @@
 
 .event-card:hover {
   border-color: var(--primary);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
 .event-image {
@@ -470,13 +473,13 @@
 }
 
 .preference-card {
-  background-color: var(--light);
+  background: #ffffff;
   border-radius: 10px;
   padding: 20px;
   text-align: center;
   transition: var(--transition);
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
 }
 
 .preference-card::before {
@@ -493,8 +496,8 @@
 }
 
 .preference-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
 .preference-icon {

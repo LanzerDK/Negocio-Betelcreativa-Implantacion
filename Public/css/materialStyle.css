@@ -88,18 +88,17 @@
   align-items: stretch;
 }
 
-/* Tarjeta individual de material con flex column para altura uniforme */
+/* Tarjeta individual de material con contenido adaptable */
 .material-card {
-  background: rgba(255, 255, 255, 0.747);
+  background: #ffffff;
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   transition: var(--transition);
   position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-height: 480px;
 }
 
 .material-card::before {
@@ -117,7 +116,7 @@
 
 .material-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
 /* Estado inhabilitado - escala reducida, borde rojo y sombra */

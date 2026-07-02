@@ -52,9 +52,12 @@
   padding: 25px 20px;
   text-align: center;
   color: white;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   transition: transform 0.3s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .overview-card::before {
@@ -93,10 +96,10 @@
 
 /* Sidebar de filtros con fondo semitransparente */
 .filters-sidebar {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-radius: 15px;
   padding: 25px 20px;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   height: fit-content;
   position: relative;
 }
@@ -163,7 +166,7 @@
 
 /* Sección de layout del almacén (zonas) */
 .warehouse-layout {
-  background: rgba(255, 255, 255, 0.747);
+  background: #ffffff;
   border-radius: 15px;
   padding: 25px;
   box-shadow: var(--shadow);
@@ -198,11 +201,11 @@
 
 /* Tarjeta de zona con bordes y hover */
 .zone {
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-radius: 15px;
   padding: 20px;
   box-shadow: var(--shadow);
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   border: 1px solid var(--light-gray);
 }
 
@@ -273,7 +276,7 @@
 
 /* Tabla de materiales del inventario */
 .materials-table {
-  background: rgba(255, 255, 255, 0.747);
+  background: #ffffff;
   border-radius: 15px;
   overflow: hidden;
   box-shadow: var(--shadow);
@@ -492,7 +495,7 @@
 /* Contenedor del historial con fondo y borde dorado característico */
 .history-container {
   position: relative;
-  background: rgba(255, 255, 255, 0.747);
+  background: #ffffff;
   border-radius: 15px;
   padding: 25px;
   box-shadow: var(--shadow);

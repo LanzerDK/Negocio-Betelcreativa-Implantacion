@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio de Sesión</title>
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/loginStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
@@ -70,7 +71,7 @@
             <p>Ingrese el código de seguridad para acceder al registro de nuevos usuarios.</p>
 
             <div class="secret-input-group" id="secretCodeGroup">
-                <input type="text" class="secret-input" id="secretCodeInput" placeholder="XBX-89X-XsA" maxlength="11" autocomplete="off">
+                <input type="text" class="secret-input" id="secretCodeInput" placeholder="Codigo de seguridad" maxlength="11" autocomplete="off">
                 <button class="btn-validate" id="confirmSecretBtn">Confirmar Clave</button>
             </div>
             <div class="secret-feedback" id="secretFeedback"></div>

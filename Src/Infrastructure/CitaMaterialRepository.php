@@ -94,6 +94,10 @@ class CitaMaterialRepository
             ksort($newActive);
             $materialsChanged = ($oldActive !== $newActive);
 
+            // Orden ascendente para prevenir deadlocks en FOR UPDATE
+            ksort($oldByMat);
+            ksort($newByMat);
+
             if (!$materialsChanged) {
                 // If materials did not change, bypass all validations/updates and return true
                 return true;
@@ -120,24 +124,22 @@ class CitaMaterialRepository
                 $extra = $newCant - $oldCant;
                 if ($extra > 0) {
                     $stmt = $this->db->prepare(
-                        "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS current_stock, reserved_stock FROM materials WHERE material_id = :id"
+                        "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS current_stock, reserved_stock FROM materials WHERE material_id = :id2 FOR UPDATE"
                     );
-                    $stmt->execute([':id' => $mid]);
+                    $stmt->execute([':id' => $mid, ':id2' => $mid]);
                     $mat = $stmt->fetch();
                     if (!$mat) {
-                        if ($manageTransaction) {
+                        if ($this->db->inTransaction()) {
                             $this->db->rollBack();
-                            ApiResponse::error('Material no encontrado (ID: ' . $mid . ').', 500);
                         }
-                        return false;
+                        ApiResponse::error('Material no encontrado (ID: ' . $mid . ').', 500);
                     }
                     $disponible = (int)$mat['current_stock'] - (int)$mat['reserved_stock'];
                     if ($extra > $disponible) {
-                        if ($manageTransaction) {
+                        if ($this->db->inTransaction()) {
                             $this->db->rollBack();
-                            ApiResponse::error('Stock insuficiente para el material seleccionado.', 500);
                         }
-                        return false;
+                        ApiResponse::error('Stock insuficiente para el material seleccionado.', 500);
                     }
                 }
             }
@@ -254,6 +256,7 @@ class CitaMaterialRepository
             $this->db->beginTransaction();
 
             $materiales = $this->findByCitaId($citaId);
+            usort($materiales, fn($a, $b) => (int)$a['materialId'] - (int)$b['materialId']);
 
             $reserveStmt = $this->db->prepare(
                 "UPDATE materials SET reserved_stock = reserved_stock + :cant WHERE material_id = :id"
@@ -263,9 +266,9 @@ class CitaMaterialRepository
                 $cant = (int)$mat['cantidadUtilizada'];
                 if ($cant > 0) {
                     $check = $this->db->prepare(
-                        "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS current_stock, reserved_stock FROM materials WHERE material_id = :id"
+                        "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS current_stock, reserved_stock FROM materials WHERE material_id = :id2 FOR UPDATE"
                     );
-                    $check->execute([':id' => $mat['materialId']]);
+                    $check->execute([':id' => $mat['materialId'], ':id2' => $mat['materialId']]);
                     $m = $check->fetch();
                     if (!$m || ((int)$m['current_stock'] - (int)$m['reserved_stock']) < $cant) {
                         $this->db->rollBack();
@@ -287,7 +290,8 @@ class CitaMaterialRepository
 
     /**
      * Ejecuta la deducción real de stock cuando una cita pasa a Finalizada.
-     * Descuenta stock de material_stock_locations, libera reserved_stock y registra en inventory_movements.
+     * Consume stock secuencialmente de todas las ubicaciones (FIFO por location_id),
+     * libera reserved_stock y registra en inventory_movements.
      */
     public function executeDeductionOnCompleted(int $citaId, int $usuarioId): bool
     {
@@ -295,14 +299,20 @@ class CitaMaterialRepository
             $this->db->beginTransaction();
 
             $materiales = $this->findByCitaId($citaId);
+            usort($materiales, fn($a, $b) => (int)$a['materialId'] - (int)$b['materialId']);
+
             $now = date('Y-m-d H:i:s');
 
-            $availableStmt = $this->db->prepare(
-                "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS stock_total"
+            $locsStmt = $this->db->prepare(
+                "SELECT location_id, quantity FROM material_stock_locations
+                 WHERE material_id = :id AND quantity > 0
+                 ORDER BY location_id ASC FOR UPDATE"
             );
-            $deductStmt = $this->db->prepare(
-                "UPDATE material_stock_locations SET quantity = GREATEST(quantity - :cant, 0)
-                 WHERE material_id = :id LIMIT 1"
+            $deleteStmt = $this->db->prepare(
+                "DELETE FROM material_stock_locations WHERE material_id = :mid AND location_id = :lid"
+            );
+            $updateStmt = $this->db->prepare(
+                "UPDATE material_stock_locations SET quantity = quantity - :take WHERE material_id = :mid AND location_id = :lid"
             );
             $releaseStmt = $this->db->prepare(
                 "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
@@ -317,18 +327,33 @@ class CitaMaterialRepository
                 $cant = (int)$mat['cantidadUtilizada'];
                 if ($cant <= 0) continue;
 
-                $availableStmt->execute([':id' => $mat['materialId']]);
-                $stockTotal = (int)$availableStmt->fetchColumn();
-                if ($stockTotal < $cant) {
+                // Bloquear y leer todas las ubicaciones con stock > 0
+                $locsStmt->execute([':id' => $mat['materialId']]);
+                $locations = $locsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // Verificar stock total disponible
+                $total = array_sum(array_column($locations, 'quantity'));
+                if ($total < $cant) {
                     $this->db->rollBack();
                     ApiResponse::error('Stock insuficiente al ejecutar cita para: ' . $mat['materialName'], 500);
                     return false;
                 }
 
-                $deductStmt->execute([
-                    ':cant' => $cant,
-                    ':id'   => $mat['materialId']
-                ]);
+                // Consumo secuencial FIFO por ubicación
+                $remaining = $cant;
+                foreach ($locations as $loc) {
+                    if ($remaining <= 0) break;
+                    $locQty = (int)$loc['quantity'];
+                    $take = min($locQty, $remaining);
+                    if ($take === $locQty) {
+                        $deleteStmt->execute([':mid' => $mat['materialId'], ':lid' => $loc['location_id']]);
+                    } else {
+                        $updateStmt->execute([':take' => $take, ':mid' => $mat['materialId'], ':lid' => $loc['location_id']]);
+                    }
+                    $remaining -= $take;
+                }
+
+                // Liberar reserved_stock
                 $releaseStmt->execute([
                     ':cant' => $cant,
                     ':id'   => $mat['materialId']

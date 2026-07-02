@@ -130,8 +130,8 @@
                             <th>Código</th>
                             <th>Material</th>
                             <th class="text-right">Cant.</th>
-                            <th class="text-right">Precio Unit.</th>
-                            <th class="text-right">Total</th>
+                            <th class="text-right">P. Unit. (Bs)</th>
+                            <th class="text-right">Total (Bs)</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-materiales">
@@ -140,16 +140,20 @@
                 </table>
                 <div class="factura-total-section">
                     <div class="total-row">
-                        <span>Costo de Servicio:</span>
-                        <span id="card2-costo-servicio">$0.00</span>
+                        <span>Total Materiales:</span>
+                        <span id="card2-total-materiales">0.00 Bs</span>
                     </div>
                     <div class="total-row">
-                        <span>Total Materiales:</span>
-                        <span id="card2-total-materiales">$0.00</span>
+                        <span>Costo de Servicio:</span>
+                        <span id="card2-costo-servicio">0.00 Bs</span>
+                    </div>
+                    <div class="total-row">
+                        <span>I.V.A (16%):</span>
+                        <span id="card2-iva">0.00 Bs</span>
                     </div>
                     <div class="total-row total-final">
                         <span><strong>TOTAL FACTURA:</strong></span>
-                        <span id="card2-total-valor"><strong>$0.00</strong></span>
+                        <span id="card2-total-valor"><strong>0.00 Bs</strong></span>
                     </div>
                 </div>
                 <div class="factura-actions" id="facturaActions" style="margin-top:15px;display:flex;gap:10px;">
@@ -168,19 +172,11 @@
             <div class="factura-card-body">
                 <div class="pago-resumen">
                     <div class="pago-item">
-                        <span class="pago-label">Total en USD</span>
-                        <span class="pago-monto" id="card3-total-usd">$0.00</span>
-                    </div>
-                    <div class="pago-item">
-                        <span class="pago-label">Total en Bs</span>
+                        <span class="pago-label">Total Factura</span>
                         <span class="pago-monto" id="card3-total-ves">0.00 Bs</span>
                     </div>
                     <div class="pago-item pendiente">
                         <span class="pago-label">Saldo Pendiente</span>
-                        <span class="pago-monto" id="card3-pendiente-usd">$0.00</span>
-                    </div>
-                    <div class="pago-item pendiente">
-                        <span class="pago-label">Saldo Pendiente (Bs)</span>
                         <span class="pago-monto" id="card3-pendiente-ves">0.00 Bs</span>
                     </div>
                 </div>
@@ -191,7 +187,7 @@
                     <thead>
                         <tr>
                             <th>Fecha</th>
-                            <th class="text-right">Monto $</th>
+                            <th class="text-right">Monto (Bs)</th>
                             <th>Método</th>
                             <th class="text-right">Tasa</th>
                         </tr>
@@ -236,17 +232,15 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Monto en Dólares ($)</label>
-                    <input type="number" step="0.01" min="0" class="form-input" id="pagoMontoUsd" placeholder="0.00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Monto en Bolívares (Bs)</label>
+                    <label class="form-label">Monto (Bs)</label>
                     <input type="number" step="0.01" min="0" class="form-input" id="pagoMontoVes" placeholder="0.00">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Tasa BCV Usada</label>
-                    <input type="number" step="0.01" min="0" class="form-input" id="pagoTasa" readonly style="background:#f5f5f5;">
+                <div class="form-group" id="divisaGroup" style="display:none;">
+                    <label class="form-label">Equivalencia en Dólares ($)</label>
+                    <input type="number" step="0.01" min="0" class="form-input" id="pagoMontoUsd" placeholder="0.00" readonly style="background:#f5f5f5;">
+                    <small style="color:var(--gray);">1 $ = <span id="pagoTasaDisplay">0.00</span> Bs</small>
                 </div>
+                <input type="hidden" id="pagoTasa">
                 <div class="form-actions">
                     <button type="button" class="btn btn-outline" id="cancelPago">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="btnGuardarPago">Registrar Pago</button>
@@ -258,7 +252,7 @@
 
 <!-- Modal: Generar Factura -->
 <div class="modal" id="generarFacturaModal">
-    <div class="modal-content" style="max-width:480px;">
+    <div class="modal-content" style="max-width:560px;">
         <div class="modal-header">
             <h3 class="modal-title">Generar Factura</h3>
             <span class="close-modal">&times;</span>
@@ -267,7 +261,11 @@
             <form id="generarFacturaForm">
                 <input type="hidden" id="genFacturaCitaId">
                 <div class="form-group">
-                    <label class="form-label">Costo de Servicio ($)</label>
+                    <label class="form-label">Descripción del Servicio</label>
+                    <input type="text" class="form-input" id="genDescripcionServicio" placeholder="Ej: Decoración de mesa principal">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Costo de Servicio (Bs)</label>
                     <input type="number" step="0.01" min="0" class="form-input" id="genCostoServicio" placeholder="0.00" required>
                     <small style="color:var(--gray);">Mano de obra / honorarios de decoración</small>
                 </div>
@@ -275,9 +273,66 @@
                     <label class="form-label">Notas de Cuota</label>
                     <input type="text" class="form-input" id="genNotasCuota" placeholder="Ej: 50% de inicial para reservar">
                 </div>
-                <div class="form-actions">
+
+                <!-- Radio: Tipo de pago -->
+                <div class="form-group" style="margin-top:12px;">
+                    <label class="form-label">Tipo de Pago</label>
+                    <div class="radio-group" style="display:flex;gap:20px;margin-top:6px;">
+                        <label class="radio-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="radio" name="planTipo" value="contado" checked> Pagar ahora
+                        </label>
+                        <label class="radio-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                            <input type="radio" name="planTipo" value="cuotas"> Pagar por Cuotas
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Sección Pagar ahora (preview) -->
+                <div id="contadoPreview" style="margin-top:12px;padding:12px;background:#f9f9f9;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;">
+                    <div style="text-align:center;font-weight:700;margin-bottom:6px;">— RECIBO DE PAGO —</div>
+                    <div class="preview-line"><span>Sub-Total:</span><span class="pr" id="previewSubtotal">0.00 Bs</span></div>
+                    <div class="preview-line"><span>I.V.A (16%):</span><span class="pr" id="previewIva">0.00 Bs</span></div>
+                    <div class="preview-line" style="border-top:1px solid #000;padding-top:4px;font-weight:700;"><span>TOTAL:</span><span class="pr" id="previewTotal">0.00 Bs</span></div>
+                    <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ccc;">
+                        <div class="form-group" style="margin-bottom:6px;">
+                            <label style="font-family:inherit;font-size:11px;font-weight:600;display:block;margin-bottom:2px;">Método de Pago</label>
+                            <select class="form-select" id="genMetodoPago" style="font-size:11px;padding:4px 6px;">
+                                <option value="efectivo">Efectivo (Bs)</option>
+                                <option value="pagomovil">PagoMóvil</option>
+                                <option value="divisas">Divisas ($)</option>
+                            </select>
+                        </div>
+                        <div id="genDivisaSection" style="display:none;">
+                            <div class="form-group" style="margin-bottom:2px;">
+                                <label style="font-family:inherit;font-size:11px;font-weight:600;display:block;margin-bottom:2px;">Monto en Dólares ($)</label>
+                                <input type="number" step="0.01" min="0" class="form-input" id="genMontoUsd" placeholder="0.00" style="font-size:11px;padding:4px 6px;">
+                            </div>
+                            <small style="color:var(--gray);">1 $ = <span id="genTasaBcv">0.00</span> Bs</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Cuotas -->
+                <div id="cuotasSection" style="display:none;margin-top:12px;">
+                    <div class="form-group">
+                        <label class="form-label">Número de Cuotas</label>
+                        <select class="form-select" id="genNumCuotas">
+                            <option value="2">2 cuotas</option>
+                            <option value="3">3 cuotas</option>
+                            <option value="6">6 cuotas</option>
+                        </select>
+                    </div>
+                    <div style="padding:12px;background:#f9f9f9;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;">
+                        <div class="preview-line"><span>Sub-Total:</span><span class="pr" id="cuotaPreviewSubtotal">0.00 Bs</span></div>
+                        <div class="preview-line"><span>I.V.A (16%):</span><span class="pr" id="cuotaPreviewIva">0.00 Bs</span></div>
+                        <div class="preview-line" style="border-top:1px solid #000;padding-top:4px;font-weight:700;"><span>TOTAL:</span><span class="pr" id="cuotaPreviewTotal">0.00 Bs</span></div>
+                        <div class="preview-line" style="border-top:1px dashed #000;margin-top:4px;padding-top:4px;"><span>Cuotas:</span><span class="pr" id="cuotaPreviewCuota">—</span></div>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top:16px;">
                     <button type="button" class="btn btn-outline" id="cancelGenFactura">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btnGuardarFactura">Generar Factura</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarFactura">Confirmar</button>
                 </div>
             </form>
         </div>
@@ -308,10 +363,11 @@
 .factura-selector { max-width:500px; margin-bottom:10px; }
 .factura-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
 .factura-grid .factura-card:last-child { grid-column:1 / -1; }
-.factura-card { background:#fff; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; }
-.factura-card-header { padding:14px 18px; font-weight:600; font-size:1rem; background:var(--bg-card-header,#f8f9fa); border-bottom:1px solid #eee; }
+.factura-card { background:#fff; border-radius:10px; box-shadow:var(--shadow),0 2px 20px rgba(212,175,55,0.2); overflow:hidden; transition:var(--transition); display:flex; flex-direction:column; }
+.factura-card:hover { transform:translateY(-3px); box-shadow:0 8px 20px rgba(0,0,0,0.1),0 2px 20px rgba(212,175,55,0.25); }
+.factura-card-header { padding:14px 18px; font-weight:600; font-size:1rem; background:linear-gradient(to right,var(--primary),var(--secondary)); color:var(--gold-button); border-bottom:1px solid rgba(255,255,255,0.1); flex-shrink:0; }
 .factura-card-header i { margin-right:8px; }
-.factura-card-body { padding:16px 18px; }
+.factura-card-body { padding:16px 18px; flex:1; }
 .info-row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f0f0f0; font-size:0.9rem; }
 .info-label { color:var(--gray); font-weight:500; }
 .info-value { font-weight:600; text-align:right; }
@@ -324,8 +380,9 @@
 .total-row { display:flex; justify-content:space-between; padding:4px 0; font-size:0.9rem; }
 .total-final { border-top:2px solid #333; margin-top:6px; padding-top:8px; font-size:1rem; }
 .pago-resumen { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.pago-item { background:#f8f9fa; border-radius:8px; padding:12px; text-align:center; }
+.pago-item { background:#f8f9fa; border-radius:8px; padding:12px; text-align:center; transition:var(--transition); }
 .pago-item.pendiente { background:#fff3cd; }
+.pago-item:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.06); }
 .pago-label { display:block; font-size:0.8rem; color:var(--gray); margin-bottom:4px; }
 .pago-monto { display:block; font-size:1.1rem; font-weight:700; }
 .pago-status { border-radius:6px; padding:8px 12px; text-align:center; font-weight:600; }
@@ -338,6 +395,10 @@
 .estado-activa { background:#e8f4fd; color:#0066cc; }
 .estado-cerrada { background:#d4edda; color:#155724; }
 .estado-anulada { background:#f8d7da; color:#721c24; }
+.radio-label { font-size:0.9rem; user-select:none; }
+.radio-label input[type="radio"] { accent-color:var(--primary); }
+.preview-line { display:flex; justify-content:space-between; padding:1px 0; }
+.preview-line .pr { text-align:right; white-space:nowrap; }
 @media (max-width:900px) { .factura-grid { grid-template-columns:1fr; } .factura-grid .factura-card:last-child { grid-column:1; } .pago-resumen { grid-template-columns:1fr 1fr; } }
 </style>
 

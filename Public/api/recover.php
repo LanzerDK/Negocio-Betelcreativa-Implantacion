@@ -19,9 +19,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     ApiResponse::error('Método no permitido.', 405);
 }
 
+$input = json_decode(file_get_contents('php://input'), true) ?? [];
+
+// Pasar el CSRF desde el input ya parseado para evitar doble lectura de php://input
+if (!empty($input['csrf_token'])) {
+    $_POST['csrf_token'] = $input['csrf_token'];
+}
 CsrfHelper::validateRequestOrFail();
 
-$input = json_decode(file_get_contents('php://input'), true);
 $action = $input['action'] ?? '';
 
 try {

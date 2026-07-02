@@ -9,12 +9,14 @@
 
 /* Tarjeta de perfil del usuario */
 .profile-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   border-radius: 15px;
-  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.35);
+  box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   overflow: hidden;
   margin-bottom: 30px;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .profile-card::before {

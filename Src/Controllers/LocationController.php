@@ -40,6 +40,9 @@ class LocationController
 
                 $name = trim($input['name'] ?? '');
                 $description = trim($input['description'] ?? '');
+                if ($description !== '') {
+                    $description = mb_convert_case($description, MB_CASE_TITLE, 'UTF-8');
+                }
 
                 if (empty($name)) {
                     ApiResponse::error('El nombre de la ubicación es obligatorio.');

@@ -131,6 +131,13 @@ class AppointmentController
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
                     return;
+                } elseif (isset($_GET['todos'])) {
+                    $filas = $repo->findAllWithCanceladas();
+                    foreach ($filas as &$f) self::persistirEvaluacionEstado($repo, $f);
+                    ApiResponse::success(array_map(function ($f) {
+                        return self::toArray(self::modelFromRow($f));
+                    }, $filas));
+                    return;
                 } else {
                     $filas = $repo->findAll();
                     foreach ($filas as &$f) self::persistirEvaluacionEstado($repo, $f);
@@ -162,9 +169,9 @@ class AppointmentController
                     'fechaHoraInicio' => $input['fechaHoraInicio'],
                     'fechaHoraFin'    => $input['fechaHoraFin'],
                     'eventTypeId'     => !empty($input['eventTypeId']) ? (int)$input['eventTypeId'] : null,
-                    'ubicacion'       => trim($input['ubicacion'] ?? ''),
+                    'ubicacion'            => trim($input['ubicacion'] ?? '') ?: null,
                     'estado'                => 'Pendiente',
-                    'notas'                 => trim($input['notas'] ?? ''),
+                    'notas'                 => trim($input['notas'] ?? '') ?: null,
                     'motivoSinMateriales'   => trim($input['motivoSinMateriales'] ?? '') ?: null
                 ];
 
@@ -271,8 +278,8 @@ class AppointmentController
                 if (isset($input['fechaHoraInicio'])) $datosUpdate['fechaHoraInicio'] = $input['fechaHoraInicio'];
                 if (isset($input['fechaHoraFin'])) $datosUpdate['fechaHoraFin'] = $input['fechaHoraFin'];
                 if (isset($input['eventTypeId'])) $datosUpdate['eventTypeId'] = !empty($input['eventTypeId']) ? (int)$input['eventTypeId'] : null;
-                if (isset($input['ubicacion'])) $datosUpdate['ubicacion'] = trim($input['ubicacion']);
-                if (isset($input['notas'])) $datosUpdate['notas'] = trim($input['notas']);
+                if (isset($input['ubicacion'])) $datosUpdate['ubicacion'] = trim($input['ubicacion']) ?: null;
+                if (isset($input['notas'])) $datosUpdate['notas'] = trim($input['notas']) ?: null;
                 if (isset($input['motivoSinMateriales'])) $datosUpdate['motivoSinMateriales'] = trim($input['motivoSinMateriales']) ?: null;
 
                 if (array_key_exists('estado', $datosUpdate)) {
@@ -284,10 +291,14 @@ class AppointmentController
                 }
 
                 if (!empty($datosUpdate)) {
-                    if (isset($datosUpdate['fechaHoraInicio']) && isset($datosUpdate['fechaHoraFin'])) {
-                        if ($datosUpdate['fechaHoraInicio'] >= $datosUpdate['fechaHoraFin']) {
-                            ApiResponse::error('La fecha de fin debe ser posterior a la de inicio.'); return;
-                        }
+                    $inicio = $datosUpdate['fechaHoraInicio'] ?? $existente['fechaHoraInicio'];
+                    $fin    = $datosUpdate['fechaHoraFin'] ?? $existente['fechaHoraFin'];
+                    if ($inicio >= $fin) {
+                        ApiResponse::error('La fecha de fin debe ser posterior a la de inicio.'); return;
+                    }
+                    $clienteId = $datosUpdate['clienteId'] ?? (int)$existente['clienteId'];
+                    if ($repo->hasTimeConflict($clienteId, $inicio, $fin, $id)) {
+                        ApiResponse::error('El cliente ya tiene una cita en ese horario.'); return;
                     }
                     if ($repo->update($id, $datosUpdate)) {
                         // Reemplazar materiales si se enviaron (reserva atómica)

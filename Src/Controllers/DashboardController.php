@@ -20,6 +20,7 @@ class DashboardController
                 'outOfStockCount' => $repo->countOutOfStock(),
                 'pendingAppts'    => $repo->countPendingAppointments(),
                 'totalCustomers'  => $repo->countActiveCustomers(),
+                'currentMonthSales' => $repo->getCurrentMonthSales(),
             ],
             'alerts' => [
                 'lowStock'    => $repo->findLowStockDetails(),
@@ -28,6 +29,7 @@ class DashboardController
             ],
             'upcomingEvents' => $repo->findUpcomingEvents(),
             'eventTypeDistribution' => $repo->countEventsByType(),
+            'monthlySales' => $repo->getMonthlySales(),
         ]);
     }
 }

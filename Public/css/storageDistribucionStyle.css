@@ -37,7 +37,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 20px;
-  background: rgba(255, 255, 255, 0.85);
+  background: #ffffff;
   border-radius: 15px;
   padding: 20px;
   box-shadow: var(--shadow);

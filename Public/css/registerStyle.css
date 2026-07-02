@@ -1,7 +1,7 @@
 /* registerStyle.css - Estilos específicos para registro de usuarios */
 
 body {
-  background: linear-gradient(135deg, #0a1628 0%, #1a237e 50%, #0d47a1 100%);
+  background: url("../images/registro.jpg") center/cover no-repeat;
   min-height: 100vh;
   display: flex;
   justify-content: center;

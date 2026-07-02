@@ -10,6 +10,7 @@ use PDOException;
 class FacturaRepository
 {
     private PDO $db;
+    const IVA_RATE = 0.16;
 
     public function __construct()
     {
@@ -19,7 +20,7 @@ class FacturaRepository
     public function getDetalleByCitaId(int $citaId): ?array
     {
         try {
-            $sqlCita = "SELECT
+                $sqlCita = "SELECT
                             c.id AS citaId,
                             CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
                             cust.id_number AS clienteCedula,
@@ -33,6 +34,11 @@ class FacturaRepository
                             f.costo_servicio AS costoServicio,
                             f.total_factura AS totalFactura,
                             f.notas_cuota AS notasCuota,
+                            f.created_by_name AS createdByName,
+                            f.descripcion_servicio AS descripcionServicio,
+                            f.plan_tipo AS planTipo,
+                            f.plan_cuotas_total AS planCuotasTotal,
+                            f.plan_monto_cuota_sugerido AS planMontoCuotaSugerido,
                             f.estado AS facturaEstado,
                             f.created_at AS facturaCreatedAt
                         FROM citas c
@@ -81,7 +87,7 @@ class FacturaRepository
         }
     }
 
-    public function crearFactura(int $citaId, float $costoServicio, string $notasCuota = ''): ?int
+    public function crearFactura(int $citaId, float $costoServicio, string $notasCuota = '', ?string $createdByName = null, ?string $descripcionServicio = null, string $planTipo = 'contado', ?int $planCuotasTotal = null, ?float $planMontoCuotaSugerido = null): ?int
     {
         try {
             $matStmt = $this->db->prepare(
@@ -92,17 +98,22 @@ class FacturaRepository
             );
             $matStmt->execute([':cid' => $citaId]);
             $totalMateriales = (float)$matStmt->fetchColumn();
-            $totalFactura = $costoServicio + $totalMateriales;
+            $totalFactura = ($costoServicio + $totalMateriales) * (1 + self::IVA_RATE);
 
             $stmt = $this->db->prepare(
-                "INSERT INTO facturas (cita_id, costo_servicio, total_factura, notas_cuota)
-                 VALUES (:cita_id, :costo_servicio, :total_factura, :notas_cuota)"
+                "INSERT INTO facturas (cita_id, costo_servicio, total_factura, notas_cuota, created_by_name, descripcion_servicio, plan_tipo, plan_cuotas_total, plan_monto_cuota_sugerido)
+                 VALUES (:cita_id, :costo_servicio, :total_factura, :notas_cuota, :created_by_name, :descripcion_servicio, :plan_tipo, :plan_cuotas_total, :plan_monto_cuota_sugerido)"
             );
             $stmt->execute([
-                ':cita_id'        => $citaId,
-                ':costo_servicio' => $costoServicio,
-                ':total_factura'  => $totalFactura,
-                ':notas_cuota'    => $notasCuota ?: null
+                ':cita_id'             => $citaId,
+                ':costo_servicio'      => $costoServicio,
+                ':total_factura'       => $totalFactura,
+                ':notas_cuota'         => $notasCuota ?: null,
+                ':created_by_name'     => $createdByName,
+                ':descripcion_servicio'=> $descripcionServicio,
+                ':plan_tipo'           => $planTipo,
+                ':plan_cuotas_total'   => $planCuotasTotal,
+                ':plan_monto_cuota_sugerido' => $planMontoCuotaSugerido
             ]);
             return (int)$this->db->lastInsertId();
         } catch (PDOException $e) {
@@ -193,7 +204,11 @@ class FacturaRepository
         try {
             $stmt = $this->db->prepare(
                 "SELECT id, cita_id AS citaId, costo_servicio AS costoServicio,
-                        total_factura AS totalFactura, notas_cuota AS notasCuota, estado, created_at AS createdAt
+                        total_factura AS totalFactura, notas_cuota AS notasCuota,
+                        created_by_name AS createdByName, descripcion_servicio AS descripcionServicio,
+                        plan_tipo AS planTipo, plan_cuotas_total AS planCuotasTotal,
+                        plan_monto_cuota_sugerido AS planMontoCuotaSugerido,
+                        estado, created_at AS createdAt
                  FROM facturas WHERE cita_id = :cita_id"
             );
             $stmt->execute([':cita_id' => $citaId]);

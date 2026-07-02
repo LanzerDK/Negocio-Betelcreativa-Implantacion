@@ -856,6 +856,7 @@ async function crearCita(datos)
         if (res.success) {
             toast('Cita creada exitosamente.', 'success');
             await fetchCitas();
+            await fetchTodasLasCitas();
             await cargarSelectMateriales();
         } else {
             toast('Error: ' + res.message, 'error');
@@ -1170,7 +1171,7 @@ function initApp()
             clienteId: parseInt(document.getElementById('newClient')?.value || 0),
             fechaHoraInicio: fechaInicio ? fechaInicio + 'T' + hora12a24(hi_h, hi_m, hi_a) : '',
             fechaHoraFin: fechaFin ? fechaFin + 'T' + hora12a24(hf_h, hf_m, hf_a) : '',
-            eventTypeId: parseInt(document.getElementById('newEventType')?.value || 0),
+            eventTypeId: (v => v ? parseInt(v) : null)(document.getElementById('newEventType')?.value),
             ubicacion: document.getElementById('newUbicacion')?.value || '',
             notas: document.getElementById('newNotas')?.value || '',
             materiales: materialesAsignados,
@@ -1209,7 +1210,7 @@ function initApp()
             clienteId: parseInt(document.getElementById('editClient')?.value || 0),
             fechaHoraInicio: fechaInicio ? fechaInicio + 'T' + hora12a24(hi_h, hi_m, hi_a) : '',
             fechaHoraFin: fechaFin ? fechaFin + 'T' + hora12a24(hf_h, hf_m, hf_a) : '',
-            eventTypeId: parseInt(document.getElementById('editEventType')?.value || 0),
+            eventTypeId: (v => v ? parseInt(v) : null)(document.getElementById('editEventType')?.value),
             ubicacion: document.getElementById('editUbicacion')?.value || '',
             notas: document.getElementById('editNotas')?.value || '',
             materiales: materialesAsignados,

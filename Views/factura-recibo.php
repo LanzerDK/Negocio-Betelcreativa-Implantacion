@@ -15,6 +15,8 @@ $db = Database::getConnection();
 $stmt = $db->prepare(
     "SELECT f.id AS facturaId, f.costo_servicio AS costoServicio, f.total_factura AS totalFactura,
             f.notas_cuota AS notasCuota, f.estado, f.created_at AS createdAt,
+            f.created_by_name AS createdByName, f.descripcion_servicio AS descripcionServicio,
+            f.plan_tipo AS planTipo, f.plan_cuotas_total AS planCuotasTotal,
             CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
             cust.id_number AS clienteCedula, cust.phone AS clienteTelefono, cust.email AS clienteEmail,
             c.fecha_hora_inicio AS fechaCita, c.ubicacion,
@@ -46,158 +48,145 @@ $stmtPagos = $db->prepare(
 $stmtPagos->execute([':id' => $facturaId]);
 $pagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
 
-$totalPagado = 0;
-foreach ($pagos as $p) $totalPagado += (float)$p['monto'];
-$saldoPendiente = (float)$f['totalFactura'] - $totalPagado;
+$IVA_RATE = 0.16;
+$totalMateriales = 0;
+foreach ($materiales as $m) $totalMateriales += (float)$m['cantidad'] * (float)$m['precio_unitario'];
+$subtotal = $totalMateriales + (float)$f['costoServicio'];
+$ivaAmount = $subtotal * $IVA_RATE;
+$totalConIva = $subtotal + $ivaAmount;
+$totalFacturaAlmacenado = (float)$f['totalFactura'];
+
+$totalPagadoVes = 0;
+foreach ($pagos as $p) $totalPagadoVes += (float)$p['monto'] * (float)$p['tasa_usada'];
+$saldoPendienteVes = $totalConIva - $totalPagadoVes;
+$cambio = $totalPagadoVes > $totalConIva ? $totalPagadoVes - $totalConIva : 0;
+
+function fmt($v) { return number_format($v, 2, ',', '.'); }
+function line($l, $r) {
+    $pad = 76 - mb_strlen($l) - mb_strlen($r);
+    $pad = max(1, $pad);
+    return '<div class="l"><span class="ll">' . $l . '</span>' . str_repeat(' ', $pad) . '<span class="lr">' . $r . '</span></div>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recibo #<?= $f['facturaId'] ?> — Betel Creativa</title>
+    <title>Recibo #<?= str_pad($f['facturaId'], 8, '0', STR_PAD_LEFT) ?> — Bet-El Creativa</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Segoe UI',Arial,sans-serif; background:#fff; padding:40px; color:#222; }
-        .recibo { max-width:700px; margin:0 auto; }
-        .header { text-align:center; border-bottom:3px solid #c9a84c; padding-bottom:20px; margin-bottom:25px; }
-        .header h1 { font-size:1.8rem; color:#c9a84c; }
-        .header h2 { font-size:1rem; color:#666; margin-top:4px; }
-        .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:25px; font-size:0.9rem; }
-        .info-grid .label { color:#888; }
-        .info-grid .value { font-weight:600; }
-        table { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:0.85rem; }
-        th { background:#f5f5f5; padding:8px 10px; text-align:left; border-bottom:2px solid #ddd; }
-        td { padding:7px 10px; border-bottom:1px solid #eee; }
-        .text-right { text-align:right; }
-        .totales { border-top:2px solid #333; margin-top:10px; padding-top:10px; }
-        .total-row { display:flex; justify-content:space-between; padding:4px 0; font-size:0.9rem; }
-        .total-final { border-top:2px solid #333; margin-top:6px; padding-top:8px; font-size:1.1rem; font-weight:700; }
-        .pagos-table { margin-top:20px; }
-        .pagos-table h3 { font-size:1rem; margin-bottom:8px; color:#333; }
-        .estado-badge { display:inline-block; padding:4px 12px; border-radius:12px; font-size:0.8rem; font-weight:600; }
-        .estado-activa { background:#e8f4fd; color:#0066cc; }
-        .estado-cerrada { background:#d4edda; color:#155724; }
-        .estado-anulada { background:#f8d7da; color:#721c24; }
-        .footer { text-align:center; margin-top:30px; padding-top:15px; border-top:1px solid #ddd; font-size:0.8rem; color:#888; }
-        .no-print { margin-bottom:20px; text-align:center; }
-        .no-print button { padding:10px 24px; background:#c9a84c; color:#fff; border:none; border-radius:6px; font-size:1rem; cursor:pointer; }
-        .no-print button:hover { background:#b8952e; }
-        @media print {
-            .no-print { display:none; }
-            body { padding:20px; }
-        }
+        body { font-family:'Courier New',Courier,monospace; background:#fff; padding:30px; color:#000; font-size:12px; line-height:1.5; }
+        .recibo { max-width:680px; margin:0 auto; }
+        .hdr { text-align:center; margin-bottom:14px; }
+        .hdr .e { font-size:16px; font-weight:700; letter-spacing:1px; }
+        .hdr .r { font-size:13px; }
+        .hdr .d { font-size:11px; line-height:1.3; }
+        .hdr .t { margin-top:5px; border-top:2px solid #000; padding-top:5px; font-weight:700; font-size:13px; }
+        .sep { border:none; border-top:2px solid #000; margin:8px 0; }
+        .l { display:flex; justify-content:space-between; width:100%; padding:1px 0; }
+        .ll { white-space:nowrap; }
+        .lr { white-space:nowrap; text-align:right; }
+        .st { font-weight:700; font-size:13px; margin:8px 0 4px; }
+        .mats { margin:4px 0; }
+        .mats .m { font-weight:600; }
+        .mats .v { font-size:11px; color:#333; display:flex; justify-content:space-between; }
+        .footer { text-align:center; margin-top:18px; padding-top:8px; font-size:10px; color:#555; }
+        .no-print { margin-bottom:14px; text-align:center; }
+        .no-print button { padding:8px 20px; background:#000; color:#fff; border:none; font-family:inherit; font-size:12px; cursor:pointer; margin:0 4px; }
+        .no-print button:hover { background:#333; }
+        .cambio-line { border-top:2px solid #000; margin-top:4px; padding-top:4px; font-weight:700; font-size:13px; }
+        @media print { .no-print { display:none; } body { padding:15px; } }
     </style>
 </head>
 <body>
     <div class="no-print">
-        <button onclick="window.print()"><i class="fas fa-print"></i> Imprimir Recibo</button>
-        <button onclick="window.close()" style="background:#666;margin-left:10px;">Cerrar</button>
+        <button onclick="window.print()">Imprimir Recibo</button>
+        <button onclick="window.close()" style="background:#666;">Cerrar</button>
     </div>
 
     <div class="recibo">
-        <div class="header">
-            <h1>Betel Creativa</h1>
-            <h2>Recibo de Factura #<?= $f['facturaId'] ?></h2>
-            <div style="margin-top:8px;">
-                <span class="estado-badge estado-<?= $f['estado'] ?>"><?= ucfirst($f['estado']) ?></span>
-            </div>
-        </div>
 
-        <div class="info-grid">
-            <div>
-                <div class="label">Cliente</div>
-                <div class="value"><?= htmlspecialchars($f['clienteNombre']) ?></div>
-                <div class="label" style="margin-top:6px;">Cédula</div>
-                <div class="value"><?= htmlspecialchars($f['clienteCedula']) ?></div>
-            </div>
-            <div>
-                <div class="label">Teléfono</div>
-                <div class="value"><?= htmlspecialchars($f['clienteTelefono'] ?: '—') ?></div>
-                <div class="label" style="margin-top:6px;">Email</div>
-                <div class="value"><?= htmlspecialchars($f['clienteEmail'] ?: '—') ?></div>
-            </div>
-            <div>
-                <div class="label">Fecha del Evento</div>
-                <div class="value"><?= date('d/m/Y', strtotime($f['fechaCita'])) ?></div>
-            </div>
-            <div>
-                <div class="label">Ubicación</div>
-                <div class="value"><?= htmlspecialchars($f['ubicacion'] ?: '—') ?></div>
-            </div>
-            <div>
-                <div class="label">Tipo de Evento</div>
-                <div class="value"><?= htmlspecialchars($f['eventType']) ?></div>
-            </div>
-            <div>
-                <div class="label">Emisión</div>
-                <div class="value"><?= date('d/m/Y', strtotime($f['createdAt'])) ?></div>
-            </div>
+        <div class="hdr">
+            <div class="e">Negocio BetEl-Creativa 2020</div>
+            <div class="r">V-173970451</div>
+            <div class="d">Avenida 86 Porto Carrero, Casa NRO 175</div>
+            <div class="d">Valencia, Carabobo Zona postal 2001</div>
+            <div class="t">RECIBO DE PAGO</div>
         </div>
+        <hr class="sep">
 
+        <div><?= line('Nro:', str_pad($f['facturaId'], 8, '0', STR_PAD_LEFT)) ?></div>
+        <div><?= line('Fecha:', date('d/m/Y', strtotime($f['createdAt']))) ?></div>
+        <div><?= line('Atendido por:', htmlspecialchars($f['createdByName'] ?? '—')) ?></div>
+        <div><?= line('Cliente:', htmlspecialchars($f['clienteNombre'])) ?></div>
+        <div><?= line('Fecha Evento:', date('d/m/Y', strtotime($f['fechaCita']))) ?></div>
+        <div><?= line('Tipo Evento:', htmlspecialchars($f['eventType'])) ?></div>
+        <hr class="sep">
+
+        <div class="st">MATERIALES:</div>
         <?php if (!empty($materiales)): ?>
-        <table>
-            <thead>
-                <tr><th>Código</th><th>Material</th><th class="text-right">Cant.</th><th class="text-right">P. Unit.</th><th class="text-right">Total</th></tr>
-            </thead>
-            <tbody>
-                <?php $totalMat = 0; foreach ($materiales as $m):
-                    $subtotal = (float)$m['cantidad'] * (float)$m['precio_unitario'];
-                    $totalMat += $subtotal; ?>
-                <tr>
-                    <td><?= htmlspecialchars($m['codigo']) ?></td>
-                    <td><?= htmlspecialchars($m['nombre']) ?></td>
-                    <td class="text-right"><?= (int)$m['cantidad'] ?></td>
-                    <td class="text-right">$<?= number_format((float)$m['precio_unitario'], 2) ?></td>
-                    <td class="text-right">$<?= number_format($subtotal, 2) ?></td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-        <?php endif; ?>
-
-        <div class="totales">
-            <?php if (!empty($materiales)): ?>
-            <div class="total-row"><span>Total Materiales</span><span>$<?= number_format($totalMat, 2) ?></span></div>
-            <?php endif; ?>
-            <div class="total-row"><span>Costo de Servicio</span><span>$<?= number_format((float)$f['costoServicio'], 2) ?></span></div>
-            <div class="total-row total-final"><span>TOTAL FACTURA</span><span>$<?= number_format((float)$f['totalFactura'], 2) ?></span></div>
-        </div>
-
-        <?php if (!empty($pagos)): ?>
-        <div class="pagos-table">
-            <h3>Abonos Registrados</h3>
-            <table>
-                <thead><tr><th>Fecha</th><th class="text-right">Monto $</th><th>Método</th></tr></thead>
-                <tbody>
-                    <?php $totalP = 0; foreach ($pagos as $p):
-                        $totalP += (float)$p['monto']; ?>
-                    <tr>
-                        <td><?= date('d/m/Y', strtotime($p['fecha'])) ?></td>
-                        <td class="text-right">$<?= number_format((float)$p['monto'], 2) ?></td>
-                        <td><?= htmlspecialchars($p['metodo_pago']) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-            <div class="total-row" style="margin-top:8px;padding-top:8px;border-top:2px solid #ddd;">
-                <span><strong>Total Abonado</strong></span>
-                <span><strong>$<?= number_format($totalP, 2) ?></strong></span>
+            <?php foreach ($materiales as $m):
+                $precio = (float)$m['precio_unitario'];
+                $cant = (int)$m['cantidad'];
+                $total = $precio * $cant;
+                ?>
+            <div class="mats">
+                <div class="m">[<?= $cant ?>] X <?= htmlspecialchars($m['nombre']) ?></div>
+                <div class="v"><span>Valor Original: <?= fmt($precio) ?> Bs</span><span><?= fmt($total) ?> Bs</span></div>
             </div>
-        </div>
+            <?php endforeach; ?>
+            <div style="margin-top:2px;">Cantidad Total de Materiales: <?= count($materiales) ?></div>
+        <?php else: ?>
+            <div>Sin materiales asignados</div>
         <?php endif; ?>
+        <hr class="sep">
 
-        <?php if (abs($saldoPendiente) > 0.01): ?>
-        <div class="total-row" style="margin-top:15px;padding:10px;background:#fff3cd;border-radius:6px;">
-            <span><strong>Saldo Pendiente</strong></span>
-            <span><strong>$<?= number_format($saldoPendiente, 2) ?></strong></span>
-        </div>
+        <div class="st">TOTALES:</div>
+        <?= line('TOTAL:', fmt($totalMateriales) . ' Bs') ?>
+        <?= line('Sub-Total:', fmt($totalMateriales) . ' Bs') ?>
+        <?= line('Mano de obra (' . htmlspecialchars($f['descripcionServicio'] ?? 'Servicio') . '):', fmt((float)$f['costoServicio']) . ' Bs') ?>
+        <?= line('I.V.A (' . ($IVA_RATE * 100) . '%):', fmt($ivaAmount) . ' Bs') ?>
+        <hr class="sep">
+        <div class="l" style="font-weight:700;font-size:13px;"><span>TOTAL:</span><span><?= fmt($totalConIva) ?> Bs</span></div>
+        <hr class="sep">
+
+        <div class="st">FORMAS DE PAGO:</div>
+        <?php if (!empty($pagos)): ?>
+            <?php foreach ($pagos as $p):
+                $monto = (float)$p['monto'];
+                $tasa = (float)$p['tasa_usada'];
+                $montoVes = $monto * $tasa;
+                $label = match ($p['metodo_pago']) {
+                    'efectivo' => 'Efectivo',
+                    'pagomovil' => 'PagoMóvil',
+                    'divisas' => 'Divisas',
+                    default => htmlspecialchars($p['metodo_pago'])
+                };
+                ?>
+            <div>
+                <?php if ($p['metodo_pago'] === 'divisas'): ?>
+                    <?= line($label . ':  $' . fmt($monto), fmt($montoVes) . ' Bs') ?>
+                <?php else: ?>
+                    <?= line($label . ':', fmt($montoVes) . ' Bs') ?>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+            <hr class="sep">
+            <?= line('Total Pagado:', fmt($totalPagadoVes) . ' Bs') ?>
+            <?php if ($cambio > 0): ?>
+                <?= line('Cambio:', fmt($cambio) . ' Bs') ?>
+            <?php endif; ?>
+            <?php if ($saldoPendienteVes > 0.01): ?>
+                <?= line('Saldo Pendiente:', fmt($saldoPendienteVes) . ' Bs') ?>
+            <?php endif; ?>
+        <?php else: ?>
+            <div>Sin pagos registrados</div>
         <?php endif; ?>
+        <hr class="sep">
 
         <?php if ($f['notasCuota']): ?>
-        <div style="margin-top:15px;font-size:0.85rem;color:#666;border-top:1px dashed #ddd;padding-top:12px;">
-            <strong>Nota:</strong> <?= htmlspecialchars($f['notasCuota']) ?>
-        </div>
+        <div style="margin-top:8px;font-size:11px;">Nota: <?= htmlspecialchars($f['notasCuota']) ?></div>
         <?php endif; ?>
 
         <div class="footer">
@@ -205,7 +194,5 @@ $saldoPendiente = (float)$f['totalFactura'] - $totalPagado;
             <p>Este documento es un comprobante de pago.</p>
         </div>
     </div>
-
-    <script src="https://kit.fontawesome.com/your-fa-kit.js" crossorigin="anonymous"></script>
 </body>
 </html>

@@ -188,4 +188,39 @@ class DashboardRepository
             return [];
         }
     }
+
+    public function getMonthlySales(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT DATE_FORMAT(p.fecha, '%Y-%m') AS month,
+                        COALESCE(SUM(p.monto * p.tasa_usada), 0) AS total_bs
+                 FROM pagos_factura p
+                 JOIN facturas f ON p.factura_id = f.id
+                 WHERE f.estado != 'anulada'
+                   AND p.fecha >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                 GROUP BY month
+                 ORDER BY month ASC"
+            );
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function getCurrentMonthSales(): float
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT COALESCE(SUM(p.monto * p.tasa_usada), 0)
+                 FROM pagos_factura p
+                 JOIN facturas f ON p.factura_id = f.id
+                 WHERE f.estado != 'anulada'
+                   AND DATE_FORMAT(p.fecha, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')"
+            );
+            return (float)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return 0.0;
+        }
+    }
 }

@@ -48,9 +48,18 @@ class FacturaController
                     $citaId = (int)($input['cita_id'] ?? 0);
                     $costoServicio = (float)($input['costo_servicio'] ?? 0);
                     $notasCuota = trim($input['notas_cuota'] ?? '');
+                    $descripcionServicio = trim($input['descripcion_servicio'] ?? '') ?: null;
+                    $planTipo = $input['plan_tipo'] ?? 'contado';
+                    $planCuotasTotal = isset($input['plan_cuotas_total']) ? (int)$input['plan_cuotas_total'] : null;
+                    $createdByName = $_SESSION['user_name'] ?? 'Usuario';
 
                     if (!$citaId) {
                         ApiResponse::error('ID de cita requerido.');
+                        return;
+                    }
+
+                    if (!in_array($planTipo, ['contado', 'cuotas'], true)) {
+                        ApiResponse::error('Tipo de plan no válido.');
                         return;
                     }
 
@@ -60,11 +69,53 @@ class FacturaController
                         return;
                     }
 
-                    $id = $repo->crearFactura($citaId, $costoServicio, $notasCuota);
-                    if ($id) {
-                        ApiResponse::success(['id' => $id], 'Factura creada exitosamente.');
-                    } else {
+                    $planMontoCuotaSugerido = null;
+                    if ($planTipo === 'cuotas') {
+                        if (!$planCuotasTotal || $planCuotasTotal < 2) {
+                            ApiResponse::error('Indique el número de cuotas (mínimo 2).');
+                            return;
+                        }
+                        $matStmt = $repo->getDetalleByCitaId($citaId);
+                        $totalMat = 0;
+                        foreach (($matStmt['materiales'] ?? []) as $m) {
+                            $totalMat += (float)$m['cantidad'] * (float)$m['precioUnitario'];
+                        }
+                        $subtotal = $totalMat + $costoServicio;
+                        $planMontoCuotaSugerido = round(($subtotal * (1 + FacturaRepository::IVA_RATE)) / $planCuotasTotal, 2);
+                    }
+
+                    $id = $repo->crearFactura($citaId, $costoServicio, $notasCuota, $createdByName, $descripcionServicio, $planTipo, $planCuotasTotal, $planMontoCuotaSugerido);
+                    if (!$id) {
                         ApiResponse::error('Error al crear la factura.', 500);
+                        return;
+                    }
+
+                    if ($planTipo === 'contado') {
+                        $metodoPago = trim($input['metodo_pago'] ?? 'efectivo');
+                        $allowed = ['divisas', 'efectivo', 'pagomovil'];
+                        if (!in_array($metodoPago, $allowed, true)) $metodoPago = 'efectivo';
+                        $tasa = (float)($input['tasa_usada'] ?? 0);
+                        if ($tasa <= 0) {
+                            $tasaService = new ExchangeRateService();
+                            $tasa = $tasaService->getEffectiveRate();
+                        }
+                        $f = $repo->getFacturaByCitaId($citaId);
+                        $montoTotal = $f ? (float)$f['totalFactura'] : 0;
+                        if ($metodoPago === 'divisas') {
+                            $montoUsd = (float)($input['monto_usd'] ?? 0);
+                            if ($montoUsd <= 0) $montoUsd = $tasa > 0 ? $montoTotal / $tasa : $montoTotal;
+                        } else {
+                            $montoUsd = $tasa > 0 ? $montoTotal / $tasa : $montoTotal;
+                        }
+                        if (!$repo->registrarPago($id, $montoUsd, $metodoPago, $tasa)) {
+                            ApiResponse::error('Factura creada pero error al registrar el pago.', 500);
+                            return;
+                        }
+                        $repo->cambiarEstado($id, 'cerrada');
+                        ApiResponse::success(['id' => $id, 'planTipo' => 'contado'], 'Factura creada y pagada exitosamente.');
+
+                    } else {
+                        ApiResponse::success(['id' => $id, 'planTipo' => 'cuotas', 'planCuotasTotal' => $planCuotasTotal, 'planMontoCuotaSugerido' => $planMontoCuotaSugerido], 'Plan de cuotas creado exitosamente.');
                     }
 
                 } elseif ($action === 'pagar') {

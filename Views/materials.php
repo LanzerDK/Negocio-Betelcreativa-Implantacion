@@ -202,7 +202,7 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="nuevoPrecio" class="form-label">Costo</label>
+                                <label for="nuevoPrecio" class="form-label">Costo (Bs)</label>
                                 <input type="number" step="0.01" class="form-control" id="nuevoPrecio" min="0.01">
                             </div>
                             <div class="mb-3" id="wholesaleQtyGroup">
@@ -345,7 +345,7 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="precio" class="form-label">Costo</label>
+                                <label for="precio" class="form-label">Costo (Bs)</label>
                                 <input type="number" step="0.01" class="form-control" id="precio">
                             </div>
                             <div class="mb-3" id="editWholesaleQtyGroup">

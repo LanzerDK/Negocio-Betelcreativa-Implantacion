@@ -33,6 +33,7 @@ async function fetchDashboard()
             renderStats();
             renderAlerts();
             renderUpcomingEvents();
+            renderSalesChart(dashboardData.monthlySales || []);
             renderEventTypeChart(dashboardData.eventTypeDistribution || []);
         }
     } catch (err) {
@@ -46,6 +47,7 @@ function renderStats()
     document.getElementById('statPendingAppts').textContent = s.pendingAppts;
     document.getElementById('statLowStock').textContent = s.lowStockCount + s.outOfStockCount;
     document.getElementById('statNewCustomers').textContent = s.totalCustomers;
+    document.getElementById('statMonthlySales').textContent = (s.currentMonthSales || 0).toFixed(2) + ' Bs';
 }
 
 function renderAlerts()
@@ -130,18 +132,19 @@ function formatTime(dateStr)
 // ── CHARTS ──────────────────────────────────
 const EVENT_COLORS = ['#002266','#0A369D','#D4AF37','#4A90E2','#F7E493','#28A745','#DC3545','#17A2B8','#6C757D'];
 let eventTypeChart = null;
+let salesChart = null;
 
 function initCharts()
 {
     const salesEl = document.getElementById('salesChart');
     if (salesEl) {
-        new Chart(salesEl.getContext('2d'), {
+        salesChart = new Chart(salesEl.getContext('2d'), {
             type: 'line',
             data: {
-                labels: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+                labels: [],
                 datasets: [{
-                    label: 'Ventas Mensuales ($)',
-                    data: [12000, 19000, 15000, 18000, 22000, 24580, 21000, 23000, 24500, 26000, 28000, 30000],
+                    label: 'Ventas (Bs)',
+                    data: [],
                     backgroundColor: 'rgba(10, 54, 157, 0.1)',
                     borderColor: '#0A369D',
                     borderWidth: 3,
@@ -178,6 +181,22 @@ function initCharts()
             }
         });
     }
+}
+
+function formatMonthLabel(m)
+{
+    const months = { '01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic' };
+    return months[m.slice(5,7)] + " '" + m.slice(2,4);
+}
+
+function renderSalesChart(monthly)
+{
+    if (!salesChart) return;
+    const labels = monthly.map(m => formatMonthLabel(m.month));
+    const data = monthly.map(m => parseFloat(m.total_bs));
+    salesChart.data.labels = labels;
+    salesChart.data.datasets[0].data = data;
+    salesChart.update();
 }
 
 function renderEventTypeChart(distribution)

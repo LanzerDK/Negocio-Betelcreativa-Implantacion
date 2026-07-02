@@ -111,8 +111,8 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Ventas Mensuales</div>
-                    <div class="stat-value">$607</div>
-                    <div>+15% mes anterior</div>
+                    <div class="stat-value" id="statMonthlySales">0</div>
+                    <div>Ventas del mes</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Clientes</div>
