@@ -283,45 +283,105 @@
   border-color: var(--primary);
 }
 
-/* Tabla de citas con columnas específicas */
+/* ============================================
+   TABLA DE CITAS - <table> HTML semántico
+   ============================================ */
+
 .appointments-table {
-  background: rgba(243, 243, 243, 0.836);
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
   border-radius: 10px;
-  overflow: hidden;
   box-shadow: var(--shadow);
   margin-bottom: 25px;
   margin-top: 5px;
-  display: block;
-}
-
-.appointments-table .col-4,
-.appointments-table .col-5 {
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.table-header {
-  display: grid;
-  grid-template-columns: 80px 1.5fr 1fr 1fr 1.5fr 120px 120px;
-  padding: 15px 20px;
+/* Encabezado gradiente */
+.appointments-table thead {
   background: linear-gradient(to right, var(--primary), var(--secondary));
-  color: rgb(255, 255, 255);
-  font-weight: 600;
 }
 
-.table-row {
-  color: black;
-  display: grid;
-  grid-template-columns: 80px 1.5fr 1fr 1fr 1.5fr 120px 120px;
-  padding: 15px 20px;
-  border-bottom: 1px solid #000000;
-  align-items: center;
+.appointments-table th {
+  padding: 14px 16px;
+  text-align: left;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.appointments-table th.col-1 { width: 55px; }
+.appointments-table th.col-7 { width: 90px; }
+
+/* Celdas de datos */
+.appointments-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+  color: var(--dark);
+}
+
+.appointments-table tbody tr {
   transition: var(--transition);
 }
 
-.table-row:hover {
-  background-color: rgba(13, 71, 161, 0.05);
+.appointments-table tbody tr:hover {
+  background-color: rgba(13, 71, 161, 0.04);
+}
+
+.appointments-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Columnas con nowrap */
+.appointments-table td.col-1,
+.appointments-table td.col-3,
+.appointments-table td.col-6 {
+  white-space: nowrap;
+}
+
+/* Teléfono del cliente */
+.col-2-phone {
+  font-size: 0.85rem;
+  color: var(--gray);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Columna Cliente (nombre + avatar + teléfono) */
+.appointments-table td.col-2 {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+}
+
+.appointments-table td.col-2 .client-img {
+  flex-shrink: 0;
+}
+
+.appointments-table td.col-2 > div:last-child {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.appointments-table td.col-2 strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Columna Acciones */
+.appointments-table td.col-7 {
+  white-space: nowrap;
+}
+
+.appointments-table td.col-7 .action-btn {
+  margin: 0 2px;
 }
 
 /* Imagen del cliente en tabla */
@@ -807,11 +867,12 @@
   flex-direction: column;
 }
 
-/* Responsive de la tabla */
+/* ============================================
+   RESPONSIVE DE LA TABLA
+   ============================================ */
 @media (max-width: 1200px) {
-  .table-header,
-  .table-row {
-    grid-template-columns: 80px 1.2fr 1fr 1fr 1.2fr 100px 100px;
+  .filters-panel {
+    flex: 0 0 220px;
   }
 }
 
@@ -841,33 +902,46 @@
   .nav-links li a i {
     margin-right: 0;
   }
-
-  .table-header,
-  .table-row {
-    grid-template-columns: 60px 1.2fr 1fr 1fr 1.2fr 90px 90px;
-  }
 }
 
+/* Vista tarjeta en móviles */
 @media (max-width: 768px) {
   .filters {
     grid-template-columns: 1fr;
   }
 
-  .table-header {
+  .appointments-table,
+  .appointments-table thead,
+  .appointments-table tbody,
+  .appointments-table tr,
+  .appointments-table td {
+    display: block;
+  }
+
+  .appointments-table thead {
     display: none;
   }
 
-  .table-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
+  .appointments-table tr {
     padding: 15px;
     position: relative;
+    border-bottom: 1px solid #000000;
   }
 
-  .col-7 {
+  .appointments-table td {
+    padding: 4px 0;
+    border-bottom: none;
+  }
+
+  .appointments-table td.col-2 {
+    padding-right: 80px;
+  }
+
+  .appointments-table td.col-7 {
     position: absolute;
     top: 15px;
     right: 15px;
+    border: none;
   }
 
   .page-header {

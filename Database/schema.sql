@@ -379,3 +379,19 @@ CREATE TABLE IF NOT EXISTS pagos_factura (
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabla: facturas_historial
+-- Auditoría de cambios de estado en facturas
+-- =============================================
+CREATE TABLE IF NOT EXISTS facturas_historial (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    factura_id INT NOT NULL,
+    estado_anterior VARCHAR(20) NOT NULL,
+    estado_nuevo VARCHAR(20) NOT NULL,
+    changed_by INT DEFAULT NULL COMMENT 'user_id que realizó el cambio',
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    motivo VARCHAR(255) DEFAULT NULL,
+    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
+    FOREIGN KEY (changed_by) REFERENCES users(user_id) ON DELETE SET NULL
+) ENGINE=InnoDB;

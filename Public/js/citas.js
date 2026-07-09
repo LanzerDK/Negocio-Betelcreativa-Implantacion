@@ -203,11 +203,10 @@ function formatearFechaHora(datetime)
 
 function renderizarTabla(pagina)
 {
-    const tabla = document.querySelector('.appointments-table');
-    if (!tabla) return;
+    const tbody = document.querySelector('.appointments-table tbody');
+    if (!tbody) return;
 
-    const filasExistentes = document.querySelectorAll('.table-row:not(.table-header)');
-    filasExistentes.forEach(r => r.remove());
+    tbody.innerHTML = '';
 
     const total = citasList.length;
     const totalPaginas = Math.ceil(total / itemsPorPagina) || 1;
@@ -244,8 +243,7 @@ function renderizarTabla(pagina)
         const avatar = obtenerAvatarCliente(cita.clienteId);
         const fechaHora = formatearFechaHora(cita.fechaHoraInicio);
 
-        const fila = document.createElement('div');
-        fila.className = 'table-row';
+        const fila = document.createElement('tr');
         fila.dataset.id = cita.id;
         fila.dataset.estado = cita.estado;
 
@@ -253,28 +251,28 @@ function renderizarTabla(pagina)
         const esFinalizada = cita.estado === 'Finalizada';
 
         fila.innerHTML = `
-            <div class="col-1">#${cita.id}</div>
-            <div class="col-2" style="display:flex;align-items:center;gap:15px;">
+            <td class="col-1">#${cita.id}</td>
+            <td class="col-2">
                 <div class="client-img">
                     <img src="${avatar}" alt="Cliente" onerror="this.src='https://i.imgur.com/1As0akH.jpg'">
                 </div>
                 <div>
                     <strong>${nombre}</strong>
-                    <div style="font-size:0.85rem;color:var(--gray)">${telefono}</div>
+                    <div class="col-2-phone">${telefono}</div>
                 </div>
-            </div>
-            <div class="col-3">${fechaHora}</div>
-            <div class="col-4"><span class="event-type">${cita.eventType || '—'}</span></div>
-            <div class="col-5">${cita.ubicacion || '—'}</div>
-            <div class="col-6"><span class="status ${classNameEstado(cita.estado)}">${textoEstado(cita.estado)}</span></div>
-            <div class="col-7" style="display:flex;gap:10px;">
+            </td>
+            <td class="col-3">${fechaHora}</td>
+            <td class="col-4"><span class="event-type">${cita.eventType || '—'}</span></td>
+            <td class="col-5">${cita.ubicacion || '—'}</td>
+            <td class="col-6"><span class="status ${classNameEstado(cita.estado)}">${textoEstado(cita.estado)}</span></td>
+            <td class="col-7">
                 ${!esCancelado && !esFinalizada ? `<button class="action-btn edit" data-id="${cita.id}"><i class="fas fa-edit"></i></button>` : ''}
                 ${!esCancelado && !esFinalizada ? `<button class="action-btn cancel-btn" data-id="${cita.id}" title="Cancelar cita"><i class="fas fa-ban"></i></button>` : ''}
                 ${esCancelado && esRestaurable(cita.fechaHoraCancelacion, cita.fechaHoraInicio) ? `<button class="action-btn restore-btn" data-id="${cita.id}" title="Restaurar cita"><i class="fas fa-undo"></i></button>` : ''}
-            </div>
+            </td>
         `;
 
-        tabla.appendChild(fila);
+        tbody.appendChild(fila);
         agregarListenersFila(fila, cita.id);
     });
 }
@@ -310,7 +308,7 @@ function filtrarCitas()
     const dateFrom = document.getElementById('filterDateFrom')?.value || '';
     const dateTo = document.getElementById('filterDateTo')?.value || '';
 
-    document.querySelectorAll('.table-row:not(.table-header)').forEach(fila => {
+    document.querySelectorAll('.appointments-table tbody tr').forEach(fila => {
         const id = parseInt(fila.dataset.id);
         const cita = citasList.find(c => c.id === id);
         if (!cita) { fila.style.display = 'none'; return; }
@@ -320,7 +318,7 @@ function filtrarCitas()
         const coincideEstado = !statusFilter || (cita.estado || '') === statusFilter;
         const fInicio = cita.fechaHoraInicio ? cita.fechaHoraInicio.split(' ')[0] : '';
         const coincideFecha = (!dateFrom || fInicio >= dateFrom) && (!dateTo || fInicio <= dateTo);
-        fila.style.display = (coincideSearch && coincideTipo && coincideEstado && coincideFecha) ? 'grid' : 'none';
+        fila.style.display = (coincideSearch && coincideTipo && coincideEstado && coincideFecha) ? '' : 'none';
     });
 }
 
@@ -1130,10 +1128,6 @@ function initApp()
 {
     poblarSelectoresHora();
     fetchClientes().then(() => {
-        if (clientesList.length === 0) {
-            const addBtn = document.getElementById('addAppointmentBtn');
-            if (addBtn) addBtn.disabled = true;
-        }
         fetchTiposEvento();
         cargarSelectMateriales();
         fetchCitas();

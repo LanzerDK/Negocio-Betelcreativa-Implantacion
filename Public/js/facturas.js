@@ -1,24 +1,38 @@
-let TASA_BCV = 36.50;
+let TASA_BCV = APP_CONFIG?.bcvRate || 0;
 let facturaId = null;
 let facturaEstado = null;
+let facturaCitaId = null;
+let currentTab = 'abiertas';
 let materialesCache = [];
+let allFacturas = [];
+let selectedFacturaId = null;
 
 document.addEventListener('DOMContentLoaded', function () {
-    cargarCitas();
-    document.getElementById('selectorCitas')?.addEventListener('change', function (e) {
-        const citaId = e.target.value;
-        if (citaId) {
-            cargarDetalleCita(citaId);
-        } else {
-            document.getElementById('facturaPanel').style.display = 'none';
-        }
+
+    cargarTerminos();
+
+    // ── Sidebar Tabs ─────────────────────────────────────
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            currentTab = this.dataset.tab;
+            selectedFacturaId = null;
+            ocultarDetalle();
+            cargarFacturas(currentTab);
+        });
     });
 
-    // Abrir modal generar factura
+    // ── Sidebar Search ───────────────────────────────────
+    document.getElementById('sidebarSearch')?.addEventListener('input', function () {
+        clearTimeout(this._timer);
+        this._timer = setTimeout(() => filtrarFacturas(this.value), 300);
+    });
+
+    // ── Abrir modal generar factura ──────────────────────
     document.getElementById('btnGenerarFactura')?.addEventListener('click', function () {
-        const citaId = document.getElementById('selectorCitas').value;
-        if (!citaId) return;
-        document.getElementById('genFacturaCitaId').value = citaId;
+        if (!facturaCitaId) return toast('Seleccione una factura primero.', 'warning');
+        document.getElementById('genFacturaCitaId').value = facturaCitaId;
         document.getElementById('genCostoServicio').value = '';
         document.getElementById('genDescripcionServicio').value = '';
         document.getElementById('genNotasCuota').value = '';
@@ -29,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('genDivisaSection').style.display = 'none';
         document.getElementById('genMontoUsd').value = '';
         document.getElementById('genTasaBcv').textContent = TASA_BCV.toFixed(2);
-        actualizarPreviews(citaId);
+        actualizarPreviews(facturaCitaId);
         document.getElementById('generarFacturaModal').style.display = 'flex';
     });
 
@@ -40,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('pagoModal').style.display = 'none';
     });
 
-    // Radio planTipo toggle
+    // ── Radio planTipo toggle ────────────────────────────
     document.querySelectorAll('input[name="planTipo"]').forEach(el => {
         el.addEventListener('change', function () {
             const isCuotas = this.value === 'cuotas';
@@ -51,24 +65,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Toggle divisa section in contado preview
     document.getElementById('genMetodoPago')?.addEventListener('change', function () {
         document.getElementById('genDivisaSection').style.display = this.value === 'divisas' ? 'block' : 'none';
     });
 
-    // Costo servicio change → update previews
     document.getElementById('genCostoServicio')?.addEventListener('input', function () {
         const citaId = document.getElementById('genFacturaCitaId').value;
         if (citaId) actualizarPreviews(citaId);
     });
 
-    // Cuotas selector change → update preview
     document.getElementById('genNumCuotas')?.addEventListener('change', function () {
         const citaId = document.getElementById('genFacturaCitaId').value;
         if (citaId) actualizarPreviews(citaId);
     });
 
-    // Submit generar factura
+    // ── Submit generar factura ───────────────────────────
     document.getElementById('generarFacturaForm')?.addEventListener('submit', async function (e) {
         e.preventDefault();
         const citaId = parseInt(document.getElementById('genFacturaCitaId').value);
@@ -88,31 +99,36 @@ document.addEventListener('DOMContentLoaded', function () {
             const res = await callApi(APP_URL + 'Public/api/facturas.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-                body: JSON.stringify({
+                body: JSON.stringify(Object.assign({
                     action: 'crear',
                     cita_id: citaId,
                     costo_servicio: costoServicio,
-                    notas_cuota: notasCuota,
                     descripcion_servicio: descripcionServicio,
                     plan_tipo: planTipo,
                     plan_cuotas_total: planCuotasTotal,
                     metodo_pago: metodoPago,
                     tasa_usada: tasaUsada,
                     monto_usd: montoUsd
-                })
+                }, planTipo === 'cuotas' ? { notas_cuota: notasCuota } : {}))
             });
             if (res.success) {
                 document.getElementById('generarFacturaModal').style.display = 'none';
                 if (res.data?.planTipo === 'contado') {
                     toast('Factura creada y pagada exitosamente.', 'success');
+                    const reciboId = res.data?.reciboId || res.data?.id;
                     setTimeout(() => {
-                        window.open(APP_URL + 'factura-recibo?id=' + res.data.id, '_blank');
+                        window.open(APP_URL + 'factura-recibo?id=' + reciboId, '_blank');
                     }, 500);
                 } else {
                     const cuotaStr = (res.data?.planMontoCuotaSugerido || 0).toFixed(2);
                     toast('Plan de ' + res.data?.planCuotasTotal + ' cuotas creado. Cuota sugerida: ' + cuotaStr + ' Bs', 'success');
                 }
-                cargarDetalleCita(citaId);
+                cargarFacturas(currentTab);
+                if (res.data?.id) {
+                    const pDet = new URLSearchParams({ action: 'detalle-factura', factura_id: res.data.id });
+                    callApi(APP_URL + 'Public/api/facturas.php?' + pDet.toString())
+                        .then(r => { if (r.success && r.data) renderDetalleFactura(r.data, res.data.id); });
+                }
             } else {
                 toast('Error: ' + res.message, 'error');
             }
@@ -123,12 +139,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Listener estático del botón de abono en Tarjeta 3
+    // ── Registrar Abono ──────────────────────────────────
     document.getElementById('btnRegistrarAbonoPagos')?.addEventListener('click', function () {
         abrirModalPago();
     });
 
-    // Mostrar/ocultar campo divisas según método de pago
     document.getElementById('pagoMetodo')?.addEventListener('change', function (e) {
         const divGroup = document.getElementById('divisaGroup');
         if (e.target.value === 'divisas') {
@@ -141,7 +156,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Conversor VES → USD (solo para divisas)
     document.getElementById('pagoMontoVes')?.addEventListener('input', function (e) {
         const metodo = document.getElementById('pagoMetodo').value;
         const ves = parseFloat(e.target.value);
@@ -170,8 +184,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (res.success) {
                 toast('Pago registrado exitosamente.', 'success');
                 document.getElementById('pagoModal').style.display = 'none';
-                const citaId = document.getElementById('selectorCitas').value;
-                if (citaId) cargarDetalleCita(citaId);
+                cargarFacturas(currentTab);
+                if (selectedFacturaId) cargarDetalleFactura(selectedFacturaId);
             } else {
                 toast('Error: ' + res.message, 'error');
             }
@@ -182,13 +196,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Cerrar factura: abrir modal de confirmación
+    // ── Cerrar factura ───────────────────────────────────
     document.getElementById('btnCerrarFactura')?.addEventListener('click', function () {
         if (!facturaId) return;
         document.getElementById('cerrarFacturaModal').style.display = 'flex';
     });
 
-    // Confirmar cierre de factura
     document.getElementById('btnConfirmarCerrar')?.addEventListener('click', async function () {
         if (!facturaId) return;
         setLoading('btnConfirmarCerrar', true);
@@ -201,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (res.success) {
                 toast('Factura cerrada exitosamente.', 'success');
                 document.getElementById('cerrarFacturaModal').style.display = 'none';
-                const citaId = document.getElementById('selectorCitas').value;
-                if (citaId) cargarDetalleCita(citaId);
+                cargarFacturas(currentTab);
+                if (selectedFacturaId) cargarDetalleFactura(selectedFacturaId);
             } else {
                 toast('Error: ' + res.message, 'error');
             }
@@ -217,7 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('cerrarFacturaModal').style.display = 'none';
     });
 
-    // Anular factura (confirmación directa)
+    // ── Anular factura ───────────────────────────────────
     document.getElementById('btnAnularFactura')?.addEventListener('click', async function () {
         if (!facturaId) return;
         if (!confirm('¿Está seguro de anular esta factura? Esta acción no se puede deshacer.')) return;
@@ -230,8 +243,8 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             if (res.success) {
                 toast('Factura anulada exitosamente.', 'success');
-                const citaId = document.getElementById('selectorCitas').value;
-                if (citaId) cargarDetalleCita(citaId);
+                cargarFacturas(currentTab);
+                if (selectedFacturaId) cargarDetalleFactura(selectedFacturaId);
             } else {
                 toast('Error: ' + res.message, 'error');
             }
@@ -242,14 +255,290 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Cerrar modales con X
+    // ── Cerrar modales con X ─────────────────────────────
     document.querySelectorAll('.close-modal').forEach(el => {
         el.addEventListener('click', function () {
             this.closest('.modal').style.display = 'none';
         });
     });
+
+    // ── Load initial data ────────────────────────────────
+    cargarFacturas('abiertas');
 });
 
+// ──────────────────────────────────────────────────────────
+// Sidebar: Cargar facturas por tab
+// ──────────────────────────────────────────────────────────
+async function cargarFacturas(tab) {
+    const list = document.getElementById('sidebarList');
+    list.innerHTML = '<div class="sidebar-empty">Cargando facturas...</div>';
+    try {
+        const res = await callApi(APP_URL + 'Public/api/facturas.php?action=list&status=' + tab);
+        if (!res.success || !Array.isArray(res.data)) {
+            list.innerHTML = '<div class="sidebar-empty">Error al cargar facturas.</div>';
+            return;
+        }
+        allFacturas = res.data;
+        renderSidebarList(allFacturas);
+    } catch (err) {
+        list.innerHTML = '<div class="sidebar-empty">Error de conexión.</div>';
+    }
+}
+
+function renderSidebarList(facturas) {
+    const list = document.getElementById('sidebarList');
+    if (!facturas.length) {
+        list.innerHTML = '<div class="sidebar-empty">No hay facturas en esta sección.</div>';
+        return;
+    }
+    list.innerHTML = facturas.map(f => {
+        const fecha = f.fechaCita ? f.fechaCita.slice(0, 10) : '—';
+        const hasFactura = f.facturaId > 0;
+        const estadoLabel = !hasFactura ? 'Pendiente' : f.estado === 'activa' ? 'Abierta' : f.estado === 'cerrada' ? 'Pagada' : 'Anulada';
+        const estadoClass = !hasFactura ? 'estado-pendiente' : f.estado === 'activa' ? 'estado-activa' : f.estado === 'cerrada' ? 'estado-cerrada' : 'estado-anulada';
+        const displayId = hasFactura ? '#' + String(f.facturaId).padStart(6, '0') : 'Cita #' + String(f.citaId).padStart(4, '0');
+        const activeClass = (hasFactura ? parseInt(f.facturaId) : parseInt(f.citaId)) === selectedFacturaId ? ' active' : '';
+        return '<div class="factura-item' + activeClass + '" data-factura-id="' + (f.facturaId || 0) + '" data-cita-id="' + f.citaId + '" onclick="seleccionarFactura(this)">' +
+            '<div class="fi-header">' +
+            '<span class="fi-id">' + displayId + '</span>' +
+            '<span class="fi-date">' + fecha + '</span>' +
+            '</div>' +
+            '<div class="fi-client">' + escapeHtml(f.clienteNombre || '—') + '</div>' +
+            '<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;">' +
+            '<span class="fi-status ' + estadoClass + '">' + estadoLabel + '</span>' +
+            (hasFactura ? '<span style="font-size:0.7rem;color:var(--gray);">' + (parseFloat(f.totalFactura) || 0).toFixed(2) + ' Bs</span>' : '') +
+            '</div>' +
+            '</div>';
+    }).join('');
+}
+
+function filtrarFacturas(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) {
+        renderSidebarList(allFacturas);
+        return;
+    }
+    const filtradas = allFacturas.filter(f => {
+        const searchStr = (f.facturaId ? '#' + String(f.facturaId) : 'Cita #' + String(f.citaId)) + ' ' + (f.clienteNombre || '') + ' ' + (f.estado || '');
+        return searchStr.toLowerCase().includes(q);
+    });
+    renderSidebarList(filtradas);
+}
+
+// ──────────────────────────────────────────────────────────
+// Seleccionar factura de la sidebar
+// ──────────────────────────────────────────────────────────
+function seleccionarFactura(el) {
+    const fid = parseInt(el.dataset.facturaId);
+    const cid = parseInt(el.dataset.citaId);
+    selectedFacturaId = fid;
+    document.querySelectorAll('.factura-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+
+    if (fid > 0) {
+        const params = new URLSearchParams({ action: 'detalle-factura', factura_id: fid });
+        callApi(APP_URL + 'Public/api/facturas.php?' + params.toString())
+            .then(res => {
+                if (res.success && res.data) {
+                    renderDetalleFactura(res.data, fid);
+                } else {
+                    toast('Error al cargar detalle.', 'error');
+                }
+            })
+            .catch(err => {
+                toast('Error al cargar detalle.', 'error');
+            });
+    } else if (cid > 0) {
+        const params = new URLSearchParams({ action: 'detalle', cita_id: cid });
+        callApi(APP_URL + 'Public/api/facturas.php?' + params.toString())
+            .then(res => {
+                if (res.success && res.data) {
+                    renderDetalleFactura(res.data, fid);
+                } else {
+                    toast('Error al cargar detalle.', 'error');
+                }
+            })
+            .catch(err => {
+                toast('Error al cargar detalle.', 'error');
+            });
+    }
+}
+
+function ocultarDetalle() {
+    document.getElementById('detailEmpty').style.display = 'block';
+    document.getElementById('detailContent').style.display = 'none';
+}
+
+// ──────────────────────────────────────────────────────────
+// Renderizar detalle de factura
+// ──────────────────────────────────────────────────────────
+function renderDetalleFactura(d, fid) {
+    document.getElementById('detailEmpty').style.display = 'none';
+    document.getElementById('detailContent').style.display = 'block';
+
+    TASA_BCV = d.tasaBcv || APP_CONFIG.bcvRate || 0;
+    facturaId = d.general?.facturaId || fid || null;
+    facturaEstado = d.general?.facturaEstado || null;
+    facturaCitaId = d.general?.citaId || null;
+    materialesCache = d.materiales || [];
+
+    const badge = document.getElementById('facturaEstadoBadge');
+    if (facturaId && facturaEstado && badge) {
+        badge.style.display = 'inline-block';
+        badge.textContent = facturaEstado.charAt(0).toUpperCase() + facturaEstado.slice(1);
+        badge.className = 'estado-badge estado-' + facturaEstado;
+    } else if (badge) {
+        badge.style.display = 'none';
+    }
+
+    const g = d.general || {};
+    document.getElementById('card1-cliente').textContent = g.clienteNombre || '—';
+    document.getElementById('card1-cedula').textContent = g.clienteCedula || '—';
+    document.getElementById('card1-telefono').textContent = g.clienteTelefono || '—';
+    document.getElementById('card1-fecha').textContent = g.fechaHoraInicio ? g.fechaHoraInicio.replace('T', ' ') : '—';
+    document.getElementById('card1-ubicacion').textContent = g.ubicacion || '—';
+    document.getElementById('card1-evento').textContent = g.eventType || '—';
+    document.getElementById('card1-estado-cita').textContent = g.citaEstado || '—';
+
+    const atendidoRow = document.getElementById('card1-atendido-row');
+    const atendidoEl = document.getElementById('card1-atendido');
+    if (g.createdByName) {
+        atendidoRow.style.display = 'flex';
+        atendidoEl.textContent = g.createdByName;
+    } else {
+        atendidoRow.style.display = 'none';
+    }
+
+    // ── Desglose Table ───────────────────────────────────
+    const mats = d.materiales || [];
+    let html = '';
+    let totalMat = 0;
+    mats.forEach(m => {
+        const cant = parseFloat(m.cantidad) || 0;
+        const pu = parseFloat(m.precioUnitario) || 0;
+        const subtotal = cant * pu;
+        const ivaItem = subtotal * APP_CONFIG.ivaRate;
+        totalMat += subtotal;
+        html += '<tr>' +
+            '<td>' + (m.codigo || '—') + '</td>' +
+            '<td>' + (m.nombre || '—') + '</td>' +
+            '<td class="text-right">' + cant + '</td>' +
+            '<td class="text-right">' + pu.toFixed(2) + '</td>' +
+            '<td class="text-right">' + subtotal.toFixed(2) + '</td>' +
+            '<td class="text-right">' + ivaItem.toFixed(2) + '</td>' +
+            '<td class="text-right">' + subtotal.toFixed(2) + '</td>' +
+            '</tr>';
+    });
+    if (!mats.length) {
+        html = '<tr><td colspan="7" class="text-center" style="color:var(--gray);padding:20px;">Sin materiales asignados</td></tr>';
+    }
+    document.getElementById('tabla-desglose').innerHTML = html;
+
+    const costoServicio = parseFloat(g.costoServicio) || 0;
+    const subtotal = totalMat + costoServicio;
+    const iva = subtotal * APP_CONFIG.ivaRate;
+    const totalFacturaCalc = subtotal + iva;
+    document.getElementById('card2-total-materiales').textContent = totalMat.toFixed(2) + ' Bs';
+    document.getElementById('card2-costo-servicio').textContent = costoServicio.toFixed(2) + ' Bs';
+    document.getElementById('card2-iva').textContent = iva.toFixed(2) + ' Bs';
+    document.getElementById('card2-total-valor').innerHTML = '<strong>' + totalFacturaCalc.toFixed(2) + ' Bs</strong>';
+
+    // ── Actions en Card 2 ────────────────────────────────
+    const actionsDiv = document.getElementById('facturaActions');
+    if (facturaId) {
+        let actionsHtml = '';
+        if (facturaEstado === 'activa') {
+            actionsHtml += '<button type="button" class="btn btn-primary" id="btnRegistrarAbonoCard2" style="flex:1;"><i class="fas fa-plus-circle"></i> Registrar Abono</button>';
+        }
+        actionsHtml += '<button type="button" class="btn btn-outline" id="btnImprimir" style="flex:1;"><i class="fas fa-print"></i> Imprimir Recibo</button>';
+        actionsDiv.innerHTML = actionsHtml;
+        actionsDiv.style.display = 'flex';
+        document.getElementById('btnRegistrarAbonoCard2')?.addEventListener('click', function () {
+            abrirModalPago();
+        });
+        document.getElementById('btnImprimir')?.addEventListener('click', function () {
+            window.open(APP_URL + 'factura-recibo?id=' + facturaId, '_blank');
+        });
+    } else {
+        // No tiene factura
+        actionsDiv.innerHTML = '<button type="button" class="btn btn-primary" id="btnGenerarFactura" style="flex:1;"><i class="fas fa-file-invoice"></i> Generar Factura</button>';
+        actionsDiv.style.display = 'flex';
+        document.getElementById('btnGenerarFactura')?.addEventListener('click', function () {
+            if (!facturaCitaId) return;
+            document.getElementById('genFacturaCitaId').value = facturaCitaId;
+            document.getElementById('generarFacturaModal').style.display = 'flex';
+            actualizarPreviews(facturaCitaId);
+        });
+    }
+
+    // ── Pagos ────────────────────────────────────────────
+    const pagos = d.pagos || [];
+    let pagosHtml = '';
+    let totalPagadoVes = 0;
+    pagos.forEach(p => {
+        const monto = parseFloat(p.monto) || 0;
+        const tasa = parseFloat(p.tasaUsada) || 0;
+        const montoVes = monto * tasa;
+        totalPagadoVes += montoVes;
+        const esDivisas = p.metodoPago === 'divisas';
+        const montoStr = esDivisas
+            ? '$' + monto.toFixed(2) + ' @ ' + tasa.toFixed(2)
+            : montoVes.toFixed(2) + ' Bs';
+        pagosHtml += '<tr>' +
+            '<td>' + (p.fecha ? p.fecha.slice(0, 10) : '—') + '</td>' +
+            '<td class="text-right">' + montoStr + '</td>' +
+            '<td>' + (p.metodoPago === 'divisas' ? 'Divisas' : p.metodoPago === 'efectivo' ? 'Efectivo' : 'PagoMóvil') + '</td>' +
+            '<td class="text-right">' + tasa.toFixed(2) + '</td>' +
+            '</tr>';
+    });
+    if (!pagos.length) {
+        pagosHtml = '<tr><td colspan="4" class="text-center" style="color:var(--gray);padding:15px;">Sin pagos registrados</td></tr>';
+    }
+    document.getElementById('tabla-pagos').innerHTML = pagosHtml;
+
+    const saldoPendienteVes = Math.max(0, totalFacturaCalc - totalPagadoVes);
+    document.getElementById('card3-total-ves').textContent = totalFacturaCalc.toFixed(2) + ' Bs';
+    document.getElementById('card3-pendiente-ves').textContent = saldoPendienteVes.toFixed(2) + ' Bs';
+
+    // Progress bar
+    const progressFill = document.getElementById('pagoProgressFill');
+    const progressPct = totalFacturaCalc > 0 ? (totalPagadoVes / totalFacturaCalc * 100) : 0;
+    progressFill.style.width = Math.min(100, progressPct) + '%';
+    progressFill.className = 'pago-progress-fill ' + (progressPct >= 100 ? 'ok' : 'warning');
+    document.getElementById('pago-progress-pagado').textContent = 'Pagado: ' + totalPagadoVes.toFixed(2) + ' Bs';
+    document.getElementById('pago-progress-pendiente').textContent = 'Pendiente: ' + saldoPendienteVes.toFixed(2) + ' Bs';
+
+    // Status
+    const statusEl = document.getElementById('status-pago');
+    if (!facturaId || totalFacturaCalc <= 0) {
+        statusEl.textContent = 'FACTURA POR GENERAR';
+        statusEl.className = 'pago-status';
+    } else if (saldoPendienteVes <= 0.01) {
+        statusEl.textContent = '✓ FACTURA TOTALMENTE PAGADA';
+        statusEl.className = 'pago-status pagada';
+    } else {
+        statusEl.textContent = 'PAGO POR CUOTAS — Pendiente: ' + saldoPendienteVes.toFixed(2) + ' Bs';
+        statusEl.className = 'pago-status pendiente-pago';
+    }
+
+    // Pago Actions (Card 3)
+    const pagoActions = document.getElementById('pagoActions');
+    const btnAbono = document.getElementById('btnRegistrarAbonoPagos');
+    const btnCerrar = document.getElementById('btnCerrarFactura');
+    const btnAnular = document.getElementById('btnAnularFactura');
+    if (facturaId && facturaEstado === 'activa') {
+        pagoActions.style.display = 'flex';
+        if (btnAbono) { btnAbono.style.display = ''; }
+        if (btnCerrar) { btnCerrar.style.display = ''; }
+        if (btnAnular) { btnAnular.style.display = ''; }
+    } else {
+        pagoActions.style.display = 'none';
+    }
+}
+
+// ──────────────────────────────────────────────────────────
+// Modal: Registrar Abono
+// ──────────────────────────────────────────────────────────
 function abrirModalPago() {
     if (!facturaId) return toast('Debe generar la factura primero.', 'warning');
     document.getElementById('pagoFacturaId').value = facturaId;
@@ -262,25 +551,9 @@ function abrirModalPago() {
     document.getElementById('pagoModal').style.display = 'flex';
 }
 
-async function cargarCitas() {
-    try {
-        const res = await callApi(APP_URL + 'Public/api/appointments.php');
-        const sel = document.getElementById('selectorCitas');
-        if (res.success && Array.isArray(res.data)) {
-            sel.innerHTML = '<option value="">— Seleccione una cita —</option>';
-            res.data.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.id;
-                const fecha = c.fechaHoraInicio ? c.fechaHoraInicio.slice(0, 10) : '—';
-                opt.textContent = '#' + c.id + ' - ' + fecha + ' - ' + (c.ubicacion || 'Sin ubicación');
-                sel.appendChild(opt);
-            });
-        }
-    } catch (err) {
-        console.error('Error al cargar citas:', err);
-    }
-}
-
+// ──────────────────────────────────────────────────────────
+// Preview helpers
+// ──────────────────────────────────────────────────────────
 function actualizarPreviews(citaId) {
     const costoServicio = parseFloat(document.getElementById('genCostoServicio').value) || 0;
     let totalMat = 0;
@@ -288,17 +561,15 @@ function actualizarPreviews(citaId) {
         totalMat += (parseFloat(m.cantidad) || 0) * (parseFloat(m.precioUnitario) || 0);
     });
     const subtotal = totalMat + costoServicio;
-    const iva = subtotal * 0.16;
+    const iva = subtotal * APP_CONFIG.ivaRate;
     const total = subtotal + iva;
 
     const fmt = v => v.toFixed(2) + ' Bs';
 
-    // Contado preview
     document.getElementById('previewSubtotal').textContent = fmt(subtotal);
     document.getElementById('previewIva').textContent = fmt(iva);
     document.getElementById('previewTotal').textContent = fmt(total);
 
-    // Cuotas preview
     document.getElementById('cuotaPreviewSubtotal').textContent = fmt(subtotal);
     document.getElementById('cuotaPreviewIva').textContent = fmt(iva);
     document.getElementById('cuotaPreviewTotal').textContent = fmt(total);
@@ -306,157 +577,32 @@ function actualizarPreviews(citaId) {
     document.getElementById('cuotaPreviewCuota').textContent = n + ' cuotas de ' + fmt(total / n);
 }
 
-async function cargarDetalleCita(citaId) {
+// ──────────────────────────────────────────────────────────
+// Términos y Condiciones
+// ──────────────────────────────────────────────────────────
+async function cargarTerminos() {
     try {
-        const res = await callApi(APP_URL + 'Public/api/facturas.php?action=detalle&cita_id=' + citaId);
-        if (!res.success || !res.data) {
-            toast('Error al cargar detalle.', 'error');
-            return;
-        }
-        const d = res.data;
-        TASA_BCV = d.tasaBcv || 36.50;
-        facturaId = d.general?.facturaId || null;
-        facturaEstado = d.general?.facturaEstado || null;
-        materialesCache = d.materiales || [];
-
-        document.getElementById('facturaPanel').style.display = 'block';
-
-        const badge = document.getElementById('facturaEstadoBadge');
-        if (facturaId && facturaEstado && badge) {
-            badge.style.display = 'inline-block';
-            badge.textContent = facturaEstado.charAt(0).toUpperCase() + facturaEstado.slice(1);
-            badge.className = 'estado-badge estado-' + facturaEstado;
-        } else if (badge) {
-            badge.style.display = 'none';
-        }
-
-        const g = d.general || {};
-        document.getElementById('card1-cliente').textContent = g.clienteNombre || '—';
-        document.getElementById('card1-cedula').textContent = g.clienteCedula || '—';
-        document.getElementById('card1-telefono').textContent = g.clienteTelefono || '—';
-        document.getElementById('card1-fecha').textContent = g.fechaHoraInicio ? g.fechaHoraInicio.replace('T', ' ') : '—';
-        document.getElementById('card1-ubicacion').textContent = g.ubicacion || '—';
-        document.getElementById('card1-evento').textContent = g.eventType || '—';
-        document.getElementById('card1-estado').textContent = g.estado || '—';
-        // Remove old createdByName row if exists, then add fresh
-        const oldRow = document.querySelector('#card1 .factura-card-body .atendido-row');
-        if (oldRow) oldRow.remove();
-        if (g.createdByName) {
-            const row = document.createElement('div');
-            row.className = 'info-row atendido-row';
-            row.innerHTML = '<span class="info-label">Atendido por:</span><span class="info-value">' + g.createdByName + '</span>';
-            document.querySelector('#card1 .factura-card-body').appendChild(row);
-        }
-
-        const mats = d.materiales || [];
-        let html = '';
-        let totalMat = 0;
-        mats.forEach(m => {
-            const subtotal = (parseFloat(m.cantidad) || 0) * (parseFloat(m.precioUnitario) || 0);
-            totalMat += subtotal;
-            html += '<tr>' +
-                '<td>' + (m.codigo || '—') + '</td>' +
-                '<td>' + (m.nombre || '—') + '</td>' +
-                '<td class="text-right">' + (m.cantidad || 0) + '</td>' +
-                '<td class="text-right">' + (parseFloat(m.precioUnitario) || 0).toFixed(2) + '</td>' +
-                '<td class="text-right">' + subtotal.toFixed(2) + '</td>' +
-                '</tr>';
-        });
-        if (!mats.length) {
-            html = '<tr><td colspan="5" class="text-center" style="color:var(--gray);padding:20px;">Sin materiales asignados</td></tr>';
-        }
-        document.getElementById('tabla-materiales').innerHTML = html;
-        const costoServicio = parseFloat(g.costoServicio) || 0;
-        const subtotal = totalMat + costoServicio;
-        const iva = subtotal * 0.16;
-        const totalFacturaCalc = subtotal + iva;
-        document.getElementById('card2-total-materiales').textContent = totalMat.toFixed(2) + ' Bs';
-        document.getElementById('card2-costo-servicio').textContent = costoServicio.toFixed(2) + ' Bs';
-        document.getElementById('card2-iva').textContent = iva.toFixed(2) + ' Bs';
-        document.getElementById('card2-total-valor').innerHTML = '<strong>' + totalFacturaCalc.toFixed(2) + ' Bs</strong>';
-
-        const actionsDiv = document.getElementById('facturaActions');
-        if (facturaId) {
-            let actionsHtml = '';
-            if (facturaEstado === 'activa') {
-                actionsHtml += '<button type="button" class="btn btn-primary" id="btnRegistrarAbonoCard2" style="flex:1;"><i class="fas fa-plus-circle"></i> Registrar Abono</button>';
+        const res = await callApi(APP_URL + 'Public/api/facturas.php?action=terminos');
+        const termsBody = document.getElementById('termsBody');
+        if (res.success && res.data?.terminos) {
+            const terms = res.data.terminos;
+            const lines = terms.split('\n').filter(l => l.trim());
+            if (lines.length) {
+                termsBody.innerHTML = '<ul>' + lines.map(l => '<li>' + escapeHtml(l.trim()) + '</li>').join('') + '</ul>';
+            } else {
+                termsBody.innerHTML = '<p class="terms-placeholder">No hay términos configurados aún.</p>';
             }
-            actionsHtml += '<button type="button" class="btn btn-outline" id="btnImprimir" style="flex:1;"><i class="fas fa-print"></i> Imprimir Recibo</button>';
-            actionsDiv.innerHTML = actionsHtml;
-            document.getElementById('btnRegistrarAbonoCard2')?.addEventListener('click', function () {
-                abrirModalPago();
-            });
-            document.getElementById('btnImprimir')?.addEventListener('click', function () {
-                window.open(APP_URL + 'factura-recibo?id=' + facturaId, '_blank');
-            });
         } else {
-            actionsDiv.innerHTML = '<button type="button" class="btn btn-primary" id="btnGenerarFactura" style="flex:1;"><i class="fas fa-file-invoice"></i> Generar Factura</button>';
-            document.getElementById('btnGenerarFactura')?.addEventListener('click', function () {
-                document.getElementById('genFacturaCitaId').value = citaId;
-                document.getElementById('generarFacturaModal').style.display = 'flex';
-                actualizarPreviews(citaId);
-            });
+            document.getElementById('termsBody').innerHTML = '<p class="terms-placeholder">No hay términos configurados aún.</p>';
         }
-
-        const pagos = d.pagos || [];
-        let pagosHtml = '';
-        let totalPagadoVes = 0;
-        pagos.forEach(p => {
-            const monto = parseFloat(p.monto) || 0;
-            const tasa = parseFloat(p.tasaUsada) || 0;
-            const montoVes = monto * tasa;
-            totalPagadoVes += montoVes;
-            const esDivisas = p.metodoPago === 'divisas';
-            const montoStr = esDivisas
-                ? '$' + monto.toFixed(2) + ' @ ' + tasa.toFixed(2) + ' = ' + montoVes.toFixed(2) + ' Bs'
-                : montoVes.toFixed(2) + ' Bs';
-            pagosHtml += '<tr>' +
-                '<td>' + (p.fecha ? p.fecha.slice(0, 10) : '—') + '</td>' +
-                '<td class="text-right">' + montoStr + '</td>' +
-                '<td>' + (p.metodoPago || '—') + '</td>' +
-                '<td class="text-right">' + tasa.toFixed(2) + '</td>' +
-                '</tr>';
-        });
-        if (!pagos.length) {
-            pagosHtml = '<tr><td colspan="4" class="text-center" style="color:var(--gray);padding:15px;">Sin pagos registrados</td></tr>';
-        }
-        document.getElementById('tabla-pagos').innerHTML = pagosHtml;
-
-        const saldoPendienteVes = totalFacturaCalc - totalPagadoVes;
-        document.getElementById('card3-total-ves').textContent = totalFacturaCalc.toFixed(2) + ' Bs';
-        document.getElementById('card3-pendiente-ves').textContent = Math.max(0, saldoPendienteVes).toFixed(2) + ' Bs';
-
-        const statusEl = document.getElementById('status-pago');
-        if (!facturaId || totalFacturaCalc <= 0) {
-            statusEl.textContent = 'FACTURA POR GENERAR';
-            statusEl.className = 'pago-status';
-        } else if (saldoPendienteVes <= 0.01) {
-            statusEl.textContent = '✓ FACTURA TOTALMENTE PAGADA';
-            statusEl.className = 'pago-status pagada';
-        } else {
-            statusEl.textContent = 'PAGO POR CUOTAS — Pendiente: ' + saldoPendienteVes.toFixed(2) + ' Bs';
-            statusEl.className = 'pago-status pendiente-pago';
-        }
-
-        const btnAbono = document.getElementById('btnRegistrarAbonoPagos');
-        const btnCerrar = document.getElementById('btnCerrarFactura');
-        const btnAnular = document.getElementById('btnAnularFactura');
-        if (facturaId && facturaEstado === 'activa') {
-            if (btnAbono) { btnAbono.disabled = false; btnAbono.style.display = ''; }
-            if (btnCerrar) { btnCerrar.disabled = false; btnCerrar.style.display = ''; }
-            if (btnAnular) { btnAnular.disabled = false; btnAnular.style.display = ''; }
-        } else {
-            if (btnAbono) { btnAbono.disabled = true; btnAbono.style.display = facturaId ? '' : 'none'; }
-            if (btnCerrar) { btnCerrar.disabled = true; btnCerrar.style.display = 'none'; }
-            if (btnAnular) { btnAnular.disabled = true; btnAnular.style.display = 'none'; }
-        }
-
     } catch (err) {
-        console.error('Error al cargar detalle:', err);
-        toast('Error al cargar detalle de facturación.', 'error');
+        document.getElementById('termsBody').innerHTML = '<p class="terms-placeholder">Error al cargar términos.</p>';
     }
 }
 
+// ──────────────────────────────────────────────────────────
+// Utility
+// ──────────────────────────────────────────────────────────
 function setLoading(btnId, loading) {
     const btn = document.getElementById(btnId);
     if (!btn) return;

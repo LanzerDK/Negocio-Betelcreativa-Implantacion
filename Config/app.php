@@ -32,6 +32,8 @@ if (!empty($envUrl)) {
     define('APP_URL', $scheme . '://' . $host . ($base === '/' ? '' : $base) . '/');
 }
 
+define('IVA_RATE', 0.16);
+
 define('APP_NAME', EnvLoader::get('APP_NAME', 'BETEL CREATIVA'));
 define('APP_SESSION_NAME', EnvLoader::get('APP_SESSION_NAME', 'BetEl'));
 date_default_timezone_set(EnvLoader::get('APP_TIMEZONE', 'America/Caracas'));

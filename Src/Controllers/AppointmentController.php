@@ -67,20 +67,41 @@ class AppointmentController
         $estadoOriginal = $row['estado'];
         self::evaluarEstado($row);
         if ($row['estado'] !== $estadoOriginal) {
-            if ($row['estado'] === 'Cancelado' && $estadoOriginal === 'Pendiente') {
-                $repo->update((int)$row['id'], [
-                    'estado'               => 'Cancelado',
-                    'fechaHoraCancelacion' => $row['fechaHoraCancelacion'] ?? date('Y-m-d H:i:s'),
-                    'motivoCancelacion'    => $row['motivoCancelacion'] ?? 'No se realizó el pago a tiempo'
-                ]);
-                $matRepo = new CitaMaterialRepository();
-                $matRepo->cancelReservations((int)$row['id'], 'Cancelado', (int)$_SESSION['user_id']);
-            } else {
-                $repo->actualizarEstado((int)$row['id'], $row['estado']);
-            }
-            if ($row['estado'] === 'Finalizada') {
-                $matRepo = new CitaMaterialRepository();
-                $matRepo->executeDeductionOnCompleted((int)$row['id'], (int)$_SESSION['user_id']);
+            $db = \BetelCreativa\Config\Database::getConnection();
+            $ownTx = !$db->inTransaction();
+            if ($ownTx) $db->beginTransaction();
+            try {
+                if ($row['estado'] === 'Cancelado' && $estadoOriginal === 'Pendiente') {
+                    // C3: no auto-cancelar si existe factura (pagada o no)
+                    $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
+                    $factura = $factRepo->getFacturaByCitaId((int)$row['id']);
+                    if ($factura) {
+                        $row['estado'] = $estadoOriginal;
+                        if ($ownTx) $db->rollBack();
+                        return;
+                    }
+                    $repo->update((int)$row['id'], [
+                        'estado'               => 'Cancelado',
+                        'fechaHoraCancelacion' => $row['fechaHoraCancelacion'] ?? date('Y-m-d H:i:s'),
+                        'motivoCancelacion'    => $row['motivoCancelacion'] ?? 'No se realizó el pago a tiempo'
+                    ]);
+                    $matRepo = new CitaMaterialRepository();
+                    $matRepo->cancelReservations((int)$row['id'], 'Cancelado', (int)($_SESSION['user_id'] ?? 0));
+                } else {
+                    $repo->actualizarEstado((int)$row['id'], $row['estado']);
+                }
+                if ($row['estado'] === 'Finalizada') {
+                    // C4: solo deducir stock si la factura está cerrada (pagada)
+                    $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
+                    $factura = $factRepo->getFacturaByCitaId((int)$row['id']);
+                    if ($factura && $factura['estado'] === 'cerrada') {
+                        $matRepo = new CitaMaterialRepository();
+                        $matRepo->executeDeductionOnCompleted((int)$row['id'], (int)($_SESSION['user_id'] ?? 0));
+                    }
+                }
+                if ($ownTx) $db->commit();
+            } catch (\Throwable $e) {
+                if ($ownTx && $db->inTransaction()) $db->rollBack();
             }
         }
     }
@@ -100,7 +121,7 @@ class AppointmentController
                     return;
                 } elseif (isset($_GET['canceladas'])) {
                     $filas = $repo->findCanceladas();
-                    foreach ($filas as &$f) self::persistirEvaluacionEstado($repo, $f);
+                    foreach ($filas as &$f) self::evaluarEstado($f);
                     ApiResponse::success(array_map(function ($f) {
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
@@ -108,7 +129,7 @@ class AppointmentController
                 } elseif (isset($_GET['id'])) {
                     $fila = $repo->findById((int)$_GET['id']);
                     if (!$fila) { ApiResponse::error('Cita no encontrada.', 404); return; }
-                    self::persistirEvaluacionEstado($repo, $fila);
+                    self::evaluarEstado($fila);
                     $modelo = self::modelFromRow($fila);
                     $data = self::toArray($modelo);
                     $customerRepo = new CustomerRepository();
@@ -126,21 +147,21 @@ class AppointmentController
                     return;
                 } elseif (isset($_GET['cliente_id'])) {
                     $filas = $repo->findByClienteId((int)$_GET['cliente_id']);
-                    foreach ($filas as &$f) self::persistirEvaluacionEstado($repo, $f);
+                    foreach ($filas as &$f) self::evaluarEstado($f);
                     ApiResponse::success(array_map(function ($f) {
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
                     return;
                 } elseif (isset($_GET['todos'])) {
                     $filas = $repo->findAllWithCanceladas();
-                    foreach ($filas as &$f) self::persistirEvaluacionEstado($repo, $f);
+                    foreach ($filas as &$f) self::evaluarEstado($f);
                     ApiResponse::success(array_map(function ($f) {
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
                     return;
                 } else {
                     $filas = $repo->findAll();
-                    foreach ($filas as &$f) self::persistirEvaluacionEstado($repo, $f);
+                    foreach ($filas as &$f) self::evaluarEstado($f);
                     ApiResponse::success(array_map(function ($f) {
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
@@ -150,6 +171,21 @@ class AppointmentController
             case 'POST':
                 CsrfHelper::validateRequestOrFail();
                 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+                // A4: endpoint para evaluar y persistir estados de cita (cron o llamada manual)
+                $action = $input['action'] ?? '';
+                if ($action === 'evaluate') {
+                    $filas = $repo->findAll();
+                    $cambios = 0;
+                    foreach ($filas as &$f) {
+                        $antes = $f['estado'];
+                        self::persistirEvaluacionEstado($repo, $f);
+                        $despues = $f['estado'];
+                        if ($antes !== $despues) $cambios++;
+                    }
+                    ApiResponse::success(['cambios' => $cambios], "Evaluación completada. $cambios cita(s) cambiaron de estado.");
+                    return;
+                }
 
                 if (empty($input['clienteId'])) {
                     ApiResponse::error('Debe seleccionar un cliente.'); return;
@@ -191,10 +227,9 @@ class AppointmentController
                 $materiales = $input['materiales'] ?? [];
                 if (!empty($materiales)) {
                     $matRepo = new CitaMaterialRepository();
-                    if (!$matRepo->syncMaterialsWithReservation($id, $materiales, 'Pendiente', (int)$_SESSION['user_id'], 'Asignado', false)) {
+                    if (!$matRepo->syncMaterialsWithReservation($id, $materiales, 'Pendiente', (int)$_SESSION['user_id'], 'Asignado', false, false)) {
                         $db->rollBack();
-                        // ApiResponse::error ya fue llamada internamente con exit
-                        // El rollBack no se ejecutará por el exit, pero MySQL lo hará al cerrar conexión
+                        return;
                     }
                 }
 

@@ -43,6 +43,16 @@ class FacturaModel
     public function getPlanMontoCuotaSugerido(): ?float { return $this->planMontoCuotaSugerido; }
     public function getCreatedAt(): ?string { return $this->createdAt; }
 
+    public function verificarSaldoPendiente(PagoFacturaModel ...$pagos): float
+    {
+        $totalPagado = 0;
+        foreach ($pagos as $pago) {
+            $totalPagado += $pago->getMonto() * $pago->getTasaUsada();
+        }
+        $saldo = $this->totalFactura - $totalPagado;
+        return round(max($saldo, 0), 2);
+    }
+
     public function toArray(): array
     {
         return [

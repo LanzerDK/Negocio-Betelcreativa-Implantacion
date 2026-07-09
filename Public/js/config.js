@@ -173,6 +173,43 @@ async function loadSystemSettings() {
     } catch (_) { /* ignore */ }
 }
 
+// ── Facturacion: cargar terminos ─────────────────────────
+async function loadBillingSettings() {
+    try {
+        const json = await callApi(API + 'facturas.php?action=terminos', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
+        if (json.success && json.data?.terminos) {
+            const el = document.getElementById('set_terminos_condiciones');
+            if (el) el.value = json.data.terminos;
+        }
+        const mJson = await callApi(API + 'facturas.php?action=metodos-pago', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
+        if (mJson.success && Array.isArray(mJson.data)) {
+            const el = document.getElementById('set_metodos_pago');
+            if (el) el.value = mJson.data.join('\n');
+        }
+    } catch (_) { /* ignore */ }
+}
+
+// ── Facturacion: guardar ─────────────────────────────────
+document.getElementById('saveBilling')?.addEventListener('click', async function () {
+    const terminos = document.getElementById('set_terminos_condiciones')?.value.trim() || '';
+    const metodosRaw = document.getElementById('set_metodos_pago')?.value.trim() || '';
+    const metodos = metodosRaw.split('\n').map(s => s.trim()).filter(Boolean).join(',');
+    try {
+        const json = await callApi(API + 'settings.php?action=batch-update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body: JSON.stringify({ settings: { terminos_condiciones: terminos, metodos_pago: metodos } }),
+        });
+        if (json.success) {
+            toast('Configuración de facturación guardada.', 'success');
+        } else {
+            toast(json.message || 'Error al guardar.', 'error');
+        }
+    } catch (_) {
+        toast('Error de conexión.', 'error');
+    }
+});
+
 // ── Sistema: guardar ────────────────────────────────────
 document.getElementById('saveSystem')?.addEventListener('click', async function () {
     const keys = [
@@ -423,4 +460,5 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
 loadProfile();
 loadPreferences();
 if (document.getElementById('system-section')) loadSystemSettings();
+if (document.getElementById('billing-section')) loadBillingSettings();
 if (document.getElementById('users-section')) loadUsers();

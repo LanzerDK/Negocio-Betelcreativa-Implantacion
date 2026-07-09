@@ -157,20 +157,20 @@
                     <!-- Contenido principal a la derecha -->
                     <div class="main-panel">
                         <!-- Appointments Table -->
-                        <div class="appointments-table" id="appointmentsTable">
-                            <!-- Table Header -->
-                            <div class="table-header">
-                                <div class="col-1">Codigo</div>
-                                <div class="col-2">Cliente</div>
-                                <div class="col-3">Fecha y Hora</div>
-                                <div class="col-4">Tipo de Evento</div>
-                                <div class="col-5">Ubicación</div>
-                                <div class="col-6">Estado</div>
-                                <div class="col-7">Acciones</div>
-                            </div>
-
-                            
-                        </div>
+                        <table class="appointments-table" id="appointmentsTable">
+                            <thead>
+                                <tr>
+                                    <th class="col-1">Codigo</th>
+                                    <th class="col-2">Cliente</th>
+                                    <th class="col-3">Fecha y Hora</th>
+                                    <th class="col-4">Tipo de Evento</th>
+                                    <th class="col-5">Ubicación</th>
+                                    <th class="col-6">Estado</th>
+                                    <th class="col-7">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
 
                         <!-- Calendar View -->
                         <div class="calendar-view" id="calendarView">

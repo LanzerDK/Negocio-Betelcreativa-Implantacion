@@ -10,7 +10,6 @@ use PDOException;
 class FacturaRepository
 {
     private PDO $db;
-    const IVA_RATE = 0.16;
 
     public function __construct()
     {
@@ -20,8 +19,9 @@ class FacturaRepository
     public function getDetalleByCitaId(int $citaId): ?array
     {
         try {
-                $sqlCita = "SELECT
+            $sqlCita = "SELECT
                             c.id AS citaId,
+                            c.estado AS citaEstado,
                             CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
                             cust.id_number AS clienteCedula,
                             cust.phone AS clienteTelefono,
@@ -31,6 +31,7 @@ class FacturaRepository
                             COALESCE(et.name, '—') AS eventType,
                             c.notas,
                             f.id AS facturaId,
+                            f.tipo AS facturaTipo,
                             f.costo_servicio AS costoServicio,
                             f.total_factura AS totalFactura,
                             f.notas_cuota AS notasCuota,
@@ -44,7 +45,7 @@ class FacturaRepository
                         FROM citas c
                         JOIN customers cust ON c.cliente_id = cust.customer_id
                         LEFT JOIN event_types et ON c.event_type_id = et.id
-                        LEFT JOIN facturas f ON c.id = f.cita_id
+                        LEFT JOIN facturas f ON c.id = f.cita_id AND f.tipo = 'factura'
                         WHERE c.id = :cita_id";
             $stmt = $this->db->prepare($sqlCita);
             $stmt->execute([':cita_id' => $citaId]);
@@ -67,13 +68,7 @@ class FacturaRepository
 
             $pagos = [];
             if ($general['facturaId']) {
-                $sqlPagos = "SELECT id, monto, metodo_pago AS metodoPago, tasa_usada AS tasaUsada, fecha
-                             FROM pagos_factura
-                             WHERE factura_id = :factura_id
-                             ORDER BY fecha ASC";
-                $stmt = $this->db->prepare($sqlPagos);
-                $stmt->execute([':factura_id' => $general['facturaId']]);
-                $pagos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $pagos = $this->getPagosByFacturaOrRecibos((int)$general['facturaId']);
             }
 
             return [
@@ -87,7 +82,26 @@ class FacturaRepository
         }
     }
 
-    public function crearFactura(int $citaId, float $costoServicio, string $notasCuota = '', ?string $createdByName = null, ?string $descripcionServicio = null, string $planTipo = 'contado', ?int $planCuotasTotal = null, ?float $planMontoCuotaSugerido = null): ?int
+    public function getPagosByFacturaOrRecibos(int $facturaId): array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT p.id, p.monto, p.metodo_pago AS metodoPago, p.tasa_usada AS tasaUsada, p.fecha,
+                        r.id AS reciboId
+                 FROM pagos_factura p
+                 LEFT JOIN facturas r ON p.factura_id = r.id
+                 WHERE p.factura_id = :fid1
+                    OR r.factura_origen_id = :fid2
+                 ORDER BY p.fecha ASC"
+            );
+            $stmt->execute([':fid1' => $facturaId, ':fid2' => $facturaId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function crearFactura(int $citaId, float $costoServicio, string $notasCuota = '', ?string $createdByName = null, ?string $descripcionServicio = null, string $planTipo = 'contado', ?int $planCuotasTotal = null, ?float $planMontoCuotaSugerido = null, ?int $changedBy = null): ?int
     {
         try {
             $matStmt = $this->db->prepare(
@@ -98,11 +112,11 @@ class FacturaRepository
             );
             $matStmt->execute([':cid' => $citaId]);
             $totalMateriales = (float)$matStmt->fetchColumn();
-            $totalFactura = ($costoServicio + $totalMateriales) * (1 + self::IVA_RATE);
+            $totalFactura = round(($costoServicio + $totalMateriales) * (1 + IVA_RATE), 2);
 
             $stmt = $this->db->prepare(
-                "INSERT INTO facturas (cita_id, costo_servicio, total_factura, notas_cuota, created_by_name, descripcion_servicio, plan_tipo, plan_cuotas_total, plan_monto_cuota_sugerido)
-                 VALUES (:cita_id, :costo_servicio, :total_factura, :notas_cuota, :created_by_name, :descripcion_servicio, :plan_tipo, :plan_cuotas_total, :plan_monto_cuota_sugerido)"
+                "INSERT INTO facturas (cita_id, costo_servicio, total_factura, notas_cuota, created_by_name, descripcion_servicio, plan_tipo, plan_cuotas_total, plan_monto_cuota_sugerido, tipo)
+                 VALUES (:cita_id, :costo_servicio, :total_factura, :notas_cuota, :created_by_name, :descripcion_servicio, :plan_tipo, :plan_cuotas_total, :plan_monto_cuota_sugerido, 'factura')"
             );
             $stmt->execute([
                 ':cita_id'             => $citaId,
@@ -115,34 +129,65 @@ class FacturaRepository
                 ':plan_cuotas_total'   => $planCuotasTotal,
                 ':plan_monto_cuota_sugerido' => $planMontoCuotaSugerido
             ]);
-            return (int)$this->db->lastInsertId();
+            $facturaId = (int)$this->db->lastInsertId();
+
+            // M6: log de creación
+            $logStmt = $this->db->prepare(
+                "INSERT INTO facturas_historial (factura_id, estado_anterior, estado_nuevo, changed_by, motivo)
+                 VALUES (:fid, '', 'activa', :uid, 'Creación de factura')"
+            );
+            $logStmt->execute([':fid' => $facturaId, ':uid' => $changedBy]);
+
+            return $facturaId;
         } catch (PDOException $e) {
-            ApiResponse::error('Error al crear factura: ' . $e->getMessage(), 500);
-            return null;
+            throw $e;
         }
     }
 
-    public function registrarPago(int $facturaId, float $monto, string $metodoPago, float $tasaUsada): bool
+    public function registrarPago(int $facturaId, float $monto, string $metodoPago, float $tasaUsada, bool $manageTransaction = true): int
     {
         try {
-            $this->db->beginTransaction();
+            $ownTx = $manageTransaction && !$this->db->inTransaction();
+            if ($ownTx) $this->db->beginTransaction();
 
+            // Crear un recibo (tipo='recibo') con su propio ID correlativo
+            $montoVes = round($monto * $tasaUsada, 2);
+            $reciboStmt = $this->db->prepare(
+                "INSERT INTO facturas (cita_id, costo_servicio, total_factura, tipo, factura_origen_id, created_by_name, estado)
+                 VALUES (
+                     (SELECT cita_id FROM facturas WHERE id = :fid),
+                     0, :monto_ves, 'recibo', :fid2,
+                     (SELECT created_by_name FROM facturas WHERE id = :fid3),
+                     'cerrada'
+                 )"
+            );
+            $reciboStmt->execute([
+                ':fid'       => $facturaId,
+                ':monto_ves' => $montoVes,
+                ':fid2'      => $facturaId,
+                ':fid3'      => $facturaId
+            ]);
+            $reciboId = (int)$this->db->lastInsertId();
+
+            // Registrar el pago contra el recibo
             $stmt = $this->db->prepare(
                 "INSERT INTO pagos_factura (factura_id, monto, metodo_pago, tasa_usada)
                  VALUES (:factura_id, :monto, :metodo_pago, :tasa_usada)"
             );
             $stmt->execute([
-                ':factura_id'  => $facturaId,
+                ':factura_id'  => $reciboId,
                 ':monto'       => $monto,
                 ':metodo_pago' => $metodoPago,
                 ':tasa_usada'  => $tasaUsada
             ]);
 
-            // Si es el primer pago, avanzar cita de Pendiente a En Proceso
+            // M5: contar pagos del recibo, si es 1ra vez, actualizar estado cita
             $countStmt = $this->db->prepare(
-                "SELECT COUNT(*) FROM pagos_factura WHERE factura_id = :fid"
+                "SELECT COUNT(*) FROM pagos_factura
+                 WHERE factura_id IN (:fid4)
+                    OR factura_id IN (SELECT id FROM facturas WHERE factura_origen_id = :fid5)"
             );
-            $countStmt->execute([':fid' => $facturaId]);
+            $countStmt->execute([':fid4' => $facturaId, ':fid5' => $facturaId]);
             $esPrimerPago = ((int)$countStmt->fetchColumn() === 1);
 
             if ($esPrimerPago) {
@@ -160,42 +205,112 @@ class FacturaRepository
                 }
             }
 
-            $this->db->commit();
-            return true;
+            if ($ownTx) $this->db->commit();
+            return $reciboId;
         } catch (PDOException $e) {
-            $this->db->rollBack();
-            ApiResponse::error('Error al registrar pago: ' . $e->getMessage(), 500);
-            return false;
+            if (isset($ownTx) && $ownTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
     }
 
     public function getPagosByFacturaId(int $facturaId): array
     {
         try {
-            $stmt = $this->db->prepare(
-                "SELECT id, monto, metodo_pago AS metodoPago, tasa_usada AS tasaUsada, fecha
-                 FROM pagos_factura
-                 WHERE factura_id = :factura_id
-                 ORDER BY fecha ASC"
-            );
-            $stmt->execute([':factura_id' => $facturaId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Check if facturaId is a recibo
+            $check = $this->db->prepare("SELECT tipo, factura_origen_id FROM facturas WHERE id = :id");
+            $check->execute([':id' => $facturaId]);
+            $row = $check->fetch(PDO::FETCH_ASSOC);
+            if ($row && $row['tipo'] === 'recibo') {
+                $facturaOrigenId = (int)$row['factura_origen_id'];
+            } else {
+                $facturaOrigenId = $facturaId;
+            }
+            return $this->getPagosByFacturaOrRecibos($facturaOrigenId);
         } catch (PDOException $e) {
             ApiResponse::error('Error al obtener pagos.', 500);
             return [];
         }
     }
 
-    public function cambiarEstado(int $facturaId, string $estado): bool
+    public function getFacturaById(int $facturaId): ?array
     {
         try {
-            $allowed = ['activa', 'cerrada', 'anulada'];
-            if (!in_array($estado, $allowed, true)) return false;
-            $stmt = $this->db->prepare("UPDATE facturas SET estado = :estado WHERE id = :id");
-            return $stmt->execute([':estado' => $estado, ':id' => $facturaId]);
+            $stmt = $this->db->prepare(
+                "SELECT id, cita_id AS citaId, costo_servicio AS costoServicio,
+                        total_factura AS totalFactura, notas_cuota AS notasCuota,
+                        created_by_name AS createdByName, descripcion_servicio AS descripcionServicio,
+                        plan_tipo AS planTipo, plan_cuotas_total AS planCuotasTotal,
+                        plan_monto_cuota_sugerido AS planMontoCuotaSugerido,
+                        tipo AS facturaTipo, factura_origen_id AS facturaOrigenId,
+                        estado, created_at AS createdAt
+                 FROM facturas WHERE id = :id"
+            );
+            $stmt->execute([':id' => $facturaId]);
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $data ?: null;
         } catch (PDOException $e) {
-            ApiResponse::error('Error al cambiar estado: ' . $e->getMessage(), 500);
-            return false;
+            return null;
+        }
+    }
+
+    public function getTotalPagadoVes(int $facturaId): float
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT COALESCE(SUM(p.monto * p.tasa_usada), 0)
+                 FROM pagos_factura p
+                 LEFT JOIN facturas r ON p.factura_id = r.id
+                 WHERE p.factura_id = :fid1
+                    OR r.factura_origen_id = :fid2"
+            );
+            $stmt->execute([':fid1' => $facturaId, ':fid2' => $facturaId]);
+            return (float)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+
+    public function cambiarEstado(int $facturaId, string $estado, ?int $changedBy = null, string $motivo = ''): bool
+    {
+        try {
+            $allowed = ['cerrada', 'anulada'];
+            if (!in_array($estado, $allowed, true)) return false;
+
+            $actual = $this->getFacturaById($facturaId);
+            if (!$actual) return false;
+            $estadoAnterior = $actual['estado'];
+            if ($estadoAnterior !== 'activa') return false;
+
+            $ownTx = !$this->db->inTransaction();
+            if ($ownTx) $this->db->beginTransaction();
+
+            $stmt = $this->db->prepare("UPDATE facturas SET estado = :estado WHERE id = :id AND estado = 'activa'");
+            $ok = $stmt->execute([':estado' => $estado, ':id' => $facturaId]);
+            if ($ok) {
+                $logStmt = $this->db->prepare(
+                    "INSERT INTO facturas_historial (factura_id, estado_anterior, estado_nuevo, changed_by, motivo)
+                     VALUES (:fid, :ea, :en, :uid, :mot)"
+                );
+                $logStmt->execute([
+                    ':fid' => $facturaId,
+                    ':ea'  => $estadoAnterior,
+                    ':en'  => $estado,
+                    ':uid' => $changedBy,
+                    ':mot' => $motivo ?: ($estado === 'anulada' ? 'Anulación de factura' : 'Cierre de factura')
+                ]);
+            }
+
+            if ($ownTx) {
+                $ok ? $this->db->commit() : $this->db->rollBack();
+            }
+            return $ok;
+        } catch (PDOException $e) {
+            if (isset($ownTx) && $ownTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
         }
     }
 
@@ -215,6 +330,154 @@ class FacturaRepository
             $data = $stmt->fetch(PDO::FETCH_ASSOC);
             return $data ?: null;
         } catch (PDOException $e) {
+            return null;
+        }
+    }
+
+    public function listFacturasByStatus(string $status): array
+    {
+        try {
+            switch ($status) {
+                case 'pendientes':
+                    // Citas en estado 'Pendiente' SIN factura principal
+                    $sql = "SELECT c.id AS citaId, NULL AS facturaId, NULL AS totalFactura,
+                                   'pendiente' AS estado, c.fecha_hora_inicio AS fechaCita,
+                                   CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                                   NULL AS totalPagadoVes, c.estado AS citaEstado
+                            FROM citas c
+                            JOIN customers cust ON c.cliente_id = cust.customer_id
+                            WHERE c.estado = 'Pendiente'
+                              AND NOT EXISTS (
+                                  SELECT 1 FROM facturas f
+                                  WHERE f.cita_id = c.id AND f.tipo = 'factura'
+                              )
+                            ORDER BY c.fecha_hora_inicio ASC";
+                    $stmt = $this->db->query($sql);
+                    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                case 'abiertas':
+                    // Facturas activas con saldo pendiente
+                    $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
+                                   f.estado, f.created_at AS createdAt,
+                                   CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                                   c.fecha_hora_inicio AS fechaCita
+                            FROM facturas f
+                            JOIN citas c ON f.cita_id = c.id
+                            JOIN customers cust ON c.cliente_id = cust.customer_id
+                            WHERE f.tipo = 'factura' AND f.estado = 'activa'
+                            ORDER BY f.created_at DESC";
+                    $stmt = $this->db->query($sql);
+                    $facturas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $result = [];
+                    foreach ($facturas as $f) {
+                        $totalPagado = $this->getTotalPagadoVes((int)$f['facturaId']);
+                        $totalFactura = (float)$f['totalFactura'];
+                        if ($totalPagado < $totalFactura - 0.01) {
+                            $f['totalPagadoVes'] = $totalPagado;
+                            $result[] = $f;
+                        }
+                    }
+                    return $result;
+
+                case 'pagadas':
+                    // Facturas cerradas (solo facturas principales, no recibos)
+                    $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
+                                   f.estado, f.created_at AS createdAt,
+                                   CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                                   c.fecha_hora_inicio AS fechaCita
+                            FROM facturas f
+                            JOIN citas c ON f.cita_id = c.id
+                            JOIN customers cust ON c.cliente_id = cust.customer_id
+                            WHERE f.tipo = 'factura' AND f.estado = 'cerrada'
+                            ORDER BY f.created_at DESC";
+                    $stmt = $this->db->query($sql);
+                    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                default:
+                    return [];
+            }
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function getDetalleByFacturaId(int $facturaId): ?array
+    {
+        try {
+            $sqlCita = "SELECT
+                            c.id AS citaId,
+                            c.estado AS citaEstado,
+                            CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                            cust.id_number AS clienteCedula,
+                            cust.phone AS clienteTelefono,
+                            c.fecha_hora_inicio AS fechaHoraInicio,
+                            c.fecha_hora_fin AS fechaHoraFin,
+                            c.ubicacion,
+                            COALESCE(et.name, '—') AS eventType,
+                            c.notas,
+                            f.id AS facturaId,
+                            f.tipo AS facturaTipo,
+                            f.costo_servicio AS costoServicio,
+                            f.total_factura AS totalFactura,
+                            f.notas_cuota AS notasCuota,
+                            f.created_by_name AS createdByName,
+                            f.descripcion_servicio AS descripcionServicio,
+                            f.plan_tipo AS planTipo,
+                            f.plan_cuotas_total AS planCuotasTotal,
+                            f.plan_monto_cuota_sugerido AS planMontoCuotaSugerido,
+                            f.estado AS facturaEstado,
+                            f.created_at AS facturaCreatedAt,
+                            f.factura_origen_id AS facturaOrigenId
+                        FROM facturas f
+                        JOIN citas c ON f.cita_id = c.id
+                        JOIN customers cust ON c.cliente_id = cust.customer_id
+                        LEFT JOIN event_types et ON c.event_type_id = et.id
+                        WHERE f.id = :factura_id";
+            $stmt = $this->db->prepare($sqlCita);
+            $stmt->execute([':factura_id' => $facturaId]);
+            $general = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$general) return null;
+
+            $sqlMat = "SELECT
+                           cm.material_id AS materialId,
+                           m.material_code AS codigo,
+                           m.name AS nombre,
+                           cm.cantidad_utilizada AS cantidad,
+                           COALESCE(cm.precio_unitario, m.price, 0) AS precioUnitario
+                       FROM cita_materiales cm
+                       JOIN materials m ON cm.material_id = m.material_id
+                       WHERE cm.cita_id = :cita_id
+                       ORDER BY m.name";
+            $stmt = $this->db->prepare($sqlMat);
+            $stmt->execute([':cita_id' => $general['citaId']]);
+            $materiales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Pagos: si es factura principal, traer pagos de ella y sus recibos
+            $facturaOrigenId = $general['facturaTipo'] === 'recibo' ? (int)$general['facturaOrigenId'] : $facturaId;
+            $pagos = $this->getPagosByFacturaOrRecibos($facturaOrigenId);
+
+            // Recibos: lista de recibos hijos (si es factura principal)
+            $recibos = [];
+            if ($general['facturaTipo'] === 'factura') {
+                $rStmt = $this->db->prepare(
+                    "SELECT id, total_factura AS totalFactura, created_at AS createdAt
+                     FROM facturas
+                     WHERE factura_origen_id = :fid AND tipo = 'recibo'
+                     ORDER BY created_at ASC"
+                );
+                $rStmt->execute([':fid' => $facturaId]);
+                $recibos = $rStmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            return [
+                'general'   => $general,
+                'materiales' => $materiales,
+                'pagos'     => $pagos,
+                'recibos'   => $recibos
+            ];
+        } catch (PDOException $e) {
+            ApiResponse::error('Error al obtener detalle de facturación: ' . $e->getMessage(), 500);
             return null;
         }
     }

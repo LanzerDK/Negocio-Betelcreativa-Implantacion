@@ -197,6 +197,10 @@
                             <i class="fas fa-cogs"></i>
                             <span>Sistema</span>
                         </button>
+                        <button class="config-tab" data-target="billing">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>Facturación</span>
+                        </button>
                         <button class="config-tab" data-target="users">
                             <i class="fas fa-users-cog"></i>
                             <span>Usuarios</span>
@@ -485,6 +489,32 @@
                                 </button>
                             </div>
                         </div>
+
+                        <!-- Sección: Facturación -->
+                        <div class="config-section" id="billing-section">
+                            <h3 style="margin-bottom: 25px; color: var(--primary);">Configuración de Facturación</h3>
+                            <p style="margin-bottom: 20px; color: var(--gray);">Administra los términos y condiciones que aparecerán en las facturas.</p>
+
+                            <div class="form-grid" style="grid-template-columns:1fr;">
+                                <div class="form-group">
+                                    <label for="set_terminos_condiciones"><i class="fas fa-file-contract"></i> Términos y Condiciones</label>
+                                    <p style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;">Escribe cada término en una línea separada. Se mostrarán como lista en la vista previa de la factura.</p>
+                                    <textarea id="set_terminos_condiciones" rows="10" placeholder="Ej: Los pagos se realizan en bolívares o divisas al tipo de cambio BCV vigente.&#10;Las reservas están sujetas a disponibilidad.&#10;El cliente es responsable de verificar los detalles del evento." style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:Poppins,sans-serif;font-size:0.9rem;resize:vertical;box-sizing:border-box;"></textarea>
+                                </div>
+                                <div class="form-group" style="margin-top:15px;">
+                                    <label for="set_metodos_pago"><i class="fas fa-credit-card"></i> Métodos de Pago</label>
+                                    <p style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;">Escribe cada método en una línea separada. Aparecerán como opciones en el módulo de facturación.</p>
+                                    <textarea id="set_metodos_pago" rows="5" placeholder="Efectivo&#10;PagoMóvil&#10;Divisas&#10;Transferencia&#10;Zelle&#10;Punto de Venta" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:Poppins,sans-serif;font-size:0.9rem;resize:vertical;box-sizing:border-box;"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-controls">
+                                <button class="btn btn-primary" id="saveBilling">
+                                    <i class="fas fa-save"></i> Guardar Configuración
+                                </button>
+                            </div>
+                        </div>
+
                         <!-- Sección: Usuarios (solo admin) -->
                         <?php if (in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin'])): ?>
                         <div class="config-section" id="users-section">

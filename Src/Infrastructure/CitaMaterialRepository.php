@@ -67,17 +67,7 @@ class CitaMaterialRepository
                 $oldByMat[(int)$row['materialId']] = (int)$row['cantidadUtilizada'];
             }
 
-            // 2. Liberar reservas viejas
-            $freeStmt = $this->db->prepare(
-                "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
-            );
-            foreach ($oldByMat as $mid => $oldCant) {
-                if ($oldCant > 0) {
-                    $freeStmt->execute([':cant' => $oldCant, ':id' => $mid]);
-                }
-            }
-
-            // 3. Normalizar nuevos materiales (agrupar por materialId por si vienen duplicados)
+            // 2. Normalizar nuevos materiales (agrupar por materialId por si vienen duplicados)
             $newByMat = [];
             foreach ($newMaterials as $nm) {
                 $mid = (int)($nm['materialId'] ?? $nm['material_id'] ?? 0);
@@ -87,23 +77,17 @@ class CitaMaterialRepository
                 }
             }
 
-            // Filter both arrays to ignore zero/empty values and check for differences
-            $oldActive = array_filter($oldByMat);
-            $newActive = array_filter($newByMat);
-            ksort($oldActive);
-            ksort($newActive);
-            $materialsChanged = ($oldActive !== $newActive);
-
-            // Orden ascendente para prevenir deadlocks en FOR UPDATE
+            // 3. Detectar cambios (comparación raw, sin array_filter — B2 fix)
             ksort($oldByMat);
             ksort($newByMat);
+            $materialsChanged = ($oldByMat !== $newByMat);
 
             if (!$materialsChanged) {
-                // If materials did not change, bypass all validations/updates and return true
+                // C1 fix: sin cambios → salir ANTES de tocar reservas
                 return true;
             }
 
-            // Check if there is an existing invoice for this appointment and verify its status
+            // 4. Verificar si existe factura cerrada (bloquea modificación)
             $checkFact = $this->db->prepare("SELECT id, estado, costo_servicio FROM facturas WHERE cita_id = :cid LIMIT 1");
             $checkFact->execute([':cid' => $citaId]);
             $factura = $checkFact->fetch(PDO::FETCH_ASSOC);
@@ -118,13 +102,26 @@ class CitaMaterialRepository
                 }
             }
 
-            // 4. Verificar stock disponible para cantidades adicionales
+            // 5. Bloquear TODOS los materiales involucrados (old + new) con FOR UPDATE,
+            //    ordenados asc para prevenir deadlocks (M4 fix)
+            $allIds = array_unique(array_merge(array_keys($oldByMat), array_keys($newByMat)));
+            sort($allIds);
+            $lockStmt = $this->db->prepare(
+                "SELECT reserved_stock FROM materials WHERE material_id = :id FOR UPDATE"
+            );
+            foreach ($allIds as $mid) {
+                $lockStmt->execute([':id' => $mid]);
+                $lockStmt->fetch();
+            }
+
+            // 6. Verificar stock disponible para cantidades adicionales
+            //    (después del lock global, antes de modificar reservas)
             foreach ($newByMat as $mid => $newCant) {
                 $oldCant = $oldByMat[$mid] ?? 0;
                 $extra = $newCant - $oldCant;
                 if ($extra > 0) {
                     $stmt = $this->db->prepare(
-                        "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS current_stock, reserved_stock FROM materials WHERE material_id = :id2 FOR UPDATE"
+                        "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS current_stock, reserved_stock FROM materials WHERE material_id = :id2"
                     );
                     $stmt->execute([':id' => $mid, ':id2' => $mid]);
                     $mat = $stmt->fetch();
@@ -133,6 +130,7 @@ class CitaMaterialRepository
                             $this->db->rollBack();
                         }
                         ApiResponse::error('Material no encontrado (ID: ' . $mid . ').', 500);
+                        return false;
                     }
                     $disponible = (int)$mat['current_stock'] - (int)$mat['reserved_stock'];
                     if ($extra > $disponible) {
@@ -140,11 +138,22 @@ class CitaMaterialRepository
                             $this->db->rollBack();
                         }
                         ApiResponse::error('Stock insuficiente para el material seleccionado.', 500);
+                        return false;
                     }
                 }
             }
 
-            // 5. Reservar nuevas cantidades
+            // 7. Liberar reservas viejas (protegido por FOR UPDATE — M4 fix)
+            $freeStmt = $this->db->prepare(
+                "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
+            );
+            foreach ($oldByMat as $mid => $oldCant) {
+                if ($oldCant > 0) {
+                    $freeStmt->execute([':cant' => $oldCant, ':id' => $mid]);
+                }
+            }
+
+            // 8. Reservar nuevas cantidades
             $reserveStmt = $this->db->prepare(
                 "UPDATE materials SET reserved_stock = reserved_stock + :cant WHERE material_id = :id"
             );
@@ -154,7 +163,7 @@ class CitaMaterialRepository
                 }
             }
 
-            // 6. Reemplazar registros en cita_materiales
+            // 9. Reemplazar registros en cita_materiales
             $delStmt = $this->db->prepare("DELETE FROM cita_materiales WHERE cita_id = :cid");
             $delStmt->execute([':cid' => $citaId]);
 
@@ -179,20 +188,18 @@ class CitaMaterialRepository
             // 6.5 Sincronizar total de factura si existe y está activa
             if ($factura && $factura['estado'] === 'activa') {
                 $costoServicio = (float)$factura['costo_servicio'];
-                $totalMateriales = 0;
-                foreach ($newByMat as $mid => $cant) {
-                    $priceStmt->execute([':mid' => $mid]);
-                    $precio = (float)($priceStmt->fetchColumn() ?: 0);
-                    $totalMateriales += $cant * $precio;
-                }
-                $totalFactura = $costoServicio + $totalMateriales;
+                $matTotStmt = $this->db->prepare(
+                    "SELECT COALESCE(SUM(cantidad_utilizada * precio_unitario), 0) FROM cita_materiales WHERE cita_id = :cid"
+                );
+                $matTotStmt->execute([':cid' => $citaId]);
+                $totalMateriales = (float)$matTotStmt->fetchColumn();
+                $totalFactura = round(($costoServicio + $totalMateriales) * (1 + IVA_RATE), 2);
 
                 $upd = $this->db->prepare("UPDATE facturas SET total_factura = :total WHERE id = :fid");
                 $upd->execute([':total' => $totalFactura, ':fid' => $factura['id']]);
             }
 
-            // 7. Registrar historial (solo materiales cuyo valor cambió)
-            $allIds = array_unique(array_merge(array_keys($oldByMat), array_keys($newByMat)));
+            // 10. Registrar historial (solo materiales cuyo valor cambió)
             foreach ($allIds as $mid) {
                 $oldCant = $oldByMat[$mid] ?? 0;
                 $newCant = $newByMat[$mid] ?? 0;
@@ -206,10 +213,10 @@ class CitaMaterialRepository
             }
             return true;
         } catch (PDOException $e) {
-            if ($manageTransaction) {
+            if ($this->db->inTransaction()) {
                 $this->db->rollBack();
-                ApiResponse::error('Error al sincronizar materiales: ' . $e->getMessage(), 500);
             }
+            ApiResponse::error('Error al sincronizar materiales: ' . $e->getMessage(), 500);
             return false;
         }
     }
@@ -224,6 +231,16 @@ class CitaMaterialRepository
             $this->db->beginTransaction();
 
             $materiales = $this->findByCitaId($citaId);
+
+            // Lock all materials with FOR UPDATE, sorted to prevent deadlocks
+            usort($materiales, fn($a, $b) => (int)$a['materialId'] - (int)$b['materialId']);
+            $lockStmt = $this->db->prepare(
+                "SELECT reserved_stock FROM materials WHERE material_id = :id FOR UPDATE"
+            );
+            foreach ($materiales as $mat) {
+                $lockStmt->execute([':id' => $mat['materialId']]);
+                $lockStmt->fetch();
+            }
 
             $freeStmt = $this->db->prepare(
                 "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
@@ -377,6 +394,97 @@ class CitaMaterialRepository
         } catch (PDOException $e) {
             $this->db->rollBack();
             ApiResponse::error('Error al ejecutar deducción: ' . $e->getMessage(), 500);
+            return false;
+        }
+    }
+
+    /**
+     * Revierte la deducción de stock cuando se anula una factura asociada
+     * a una cita Finalizada. Lee los movimientos Exit previos y crea Entry inversos.
+     */
+    public function reverseDeductionOnAnulacion(int $citaId, int $usuarioId, int $facturaId, bool $manageTransaction = true): bool
+    {
+        try {
+            $ownTx = $manageTransaction && !$this->db->inTransaction();
+            if ($ownTx) $this->db->beginTransaction();
+
+            $movStmt = $this->db->prepare(
+                "SELECT material_id, SUM(quantity) AS qty
+                 FROM inventory_movements
+                 WHERE tipo_referencia = 'cita'
+                   AND referencia_id = :cid
+                   AND action_type = 'Exit'
+                 GROUP BY material_id"
+            );
+            $movStmt->execute([':cid' => $citaId]);
+            $movements = $movStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (empty($movements)) {
+                if ($ownTx) $this->db->commit();
+                return true; // nada que revertir
+            }
+
+            $now = date('Y-m-d H:i:s');
+
+            $upsertStmt = $this->db->prepare(
+                "INSERT INTO material_stock_locations (material_id, location_id, quantity)
+                 VALUES (:mid, :lid, :qty)
+                 ON DUPLICATE KEY UPDATE quantity = quantity + :qty2"
+            );
+            $entryMovStmt = $this->db->prepare(
+                "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, tipo_referencia, referencia_id, movement_date)
+                 VALUES (:mid, :uid, 'Entry', :qty, :reason, 'cita', :ref_id, :date)"
+            );
+            $releaseStmt = $this->db->prepare(
+                "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
+            );
+
+            // Buscar ubicación por defecto válida (fallback: primera location existente)
+            $defaultLocStmt = $this->db->query("SELECT id FROM locations ORDER BY id ASC LIMIT 1");
+            $defaultLoc = (int)$defaultLocStmt->fetchColumn();
+            if ($defaultLoc <= 0) $defaultLoc = 1;
+
+            foreach ($movements as $m) {
+                $materialId = (int)$m['material_id'];
+                $qty = (int)$m['qty'];
+                if ($qty <= 0) continue;
+
+                // Devolver stock a la primera ubicación disponible del material
+                $locStmt = $this->db->prepare(
+                    "SELECT location_id FROM material_stock_locations WHERE material_id = :mid ORDER BY location_id ASC LIMIT 1"
+                );
+                $locStmt->execute([':mid' => $materialId]);
+                $loc = $locStmt->fetch(PDO::FETCH_ASSOC);
+
+                $locationId = $loc ? (int)$loc['location_id'] : $defaultLoc;
+
+                $upsertStmt->execute([
+                    ':mid'  => $materialId,
+                    ':lid'  => $locationId,
+                    ':qty'  => $qty,
+                    ':qty2' => $qty
+                ]);
+
+                $entryMovStmt->execute([
+                    ':mid'    => $materialId,
+                    ':uid'    => $usuarioId,
+                    ':qty'    => $qty,
+                    ':reason' => 'Reversión por anulación de Factura #' . $facturaId,
+                    ':ref_id' => $citaId,
+                    ':date'   => $now
+                ]);
+
+                // Liberar reserved_stock (pudo haber quedado)
+                $releaseStmt->execute([':cant' => $qty, ':id' => $materialId]);
+            }
+
+            if ($ownTx) $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            if (isset($ownTx) && $ownTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            ApiResponse::error('Error al revertir deducción: ' . $e->getMessage(), 500);
             return false;
         }
     }

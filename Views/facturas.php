@@ -5,16 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facturación - Bet-El Creativa</title>
-    
+
     <link rel="icon" type="image/png" href="<?php echo APP_URL; ?>Public/images/favicon.png">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/facturasStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
 </head>
 
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="app-header">
             <div class="logo-container">
                 <h1 class="logo-icon"><i class="fas fa-file-invoice-dollar"></i></h1>
@@ -46,7 +46,7 @@
                 </div>
             </div>
         </header>
-        <!-- Menú principal -->
+
         <nav class="main-menu">
             <a href="<?php echo APP_URL; ?>dashboard" class="menu-item">
                 <i class="fas fa-tachometer-alt"></i>
@@ -92,126 +92,193 @@
     <h1><i class="fas fa-file-invoice-dollar"></i> Facturación</h1>
 </div>
 
-<div class="factura-selector">
-    <label for="selectorCitas" class="form-label">Seleccionar Cita</label>
-    <select id="selectorCitas" class="form-select" required>
-        <option value="">— Seleccione una cita —</option>
-    </select>
-</div>
+<div class="factura-layout">
 
-<div id="facturaPanel" style="display:none;margin-top:20px;">
-    <div class="factura-grid">
-        <!-- Tarjeta 1: Información de la Cita -->
-        <div class="factura-card" id="card1">
-            <div class="factura-card-header">
-                <i class="fas fa-calendar-alt"></i> Información de la Cita
-                <span id="facturaEstadoBadge" style="display:none;margin-left:10px;"></span>
-            </div>
-            <div class="factura-card-body">
-                <div class="info-row"><span class="info-label">Cliente:</span><span id="card1-cliente" class="info-value">—</span></div>
-                <div class="info-row"><span class="info-label">Cédula:</span><span id="card1-cedula" class="info-value">—</span></div>
-                <div class="info-row"><span class="info-label">Teléfono:</span><span id="card1-telefono" class="info-value">—</span></div>
-                <div class="info-row"><span class="info-label">Fecha:</span><span id="card1-fecha" class="info-value">—</span></div>
-                <div class="info-row"><span class="info-label">Ubicación:</span><span id="card1-ubicacion" class="info-value">—</span></div>
-                <div class="info-row"><span class="info-label">Tipo Evento:</span><span id="card1-evento" class="info-value">—</span></div>
-                <div class="info-row"><span class="info-label">Estado Cita:</span><span id="card1-estado" class="info-value">—</span></div>
-            </div>
+    <!-- Sidebar -->
+    <div class="factura-sidebar">
+        <div class="sidebar-tabs">
+            <button class="sidebar-tab active" data-tab="abiertas">
+                <i class="fas fa-folder-open"></i>
+                <span>Abiertas</span>
+            </button>
+            <button class="sidebar-tab" data-tab="pendientes">
+                <i class="fas fa-clock"></i>
+                <span>Pendientes</span>
+            </button>
+            <button class="sidebar-tab" data-tab="pagadas">
+                <i class="fas fa-check-circle"></i>
+                <span>Pagadas</span>
+            </button>
+        </div>
+        <div class="sidebar-search">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="sidebarSearch" placeholder="Buscar factura...">
+        </div>
+        <div class="sidebar-list" id="sidebarList">
+            <div class="sidebar-empty">Cargando facturas...</div>
+        </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="factura-detail" id="facturaDetail">
+
+        <!-- Empty state -->
+        <div class="detail-empty" id="detailEmpty">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <h3>Selecciona una factura</h3>
+            <p>Elige una factura de la lista para ver sus detalles.</p>
         </div>
 
-        <!-- Tarjeta 2: Materiales -->
-        <div class="factura-card" id="card2">
-            <div class="factura-card-header">
-                <i class="fas fa-boxes"></i> Materiales
-            </div>
-            <div class="factura-card-body">
-                <table class="factura-table">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Material</th>
-                            <th class="text-right">Cant.</th>
-                            <th class="text-right">P. Unit. (Bs)</th>
-                            <th class="text-right">Total (Bs)</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-materiales">
-                        <tr><td colspan="5" class="text-center" style="color:var(--gray);padding:20px;">Seleccione una cita</td></tr>
-                    </tbody>
-                </table>
-                <div class="factura-total-section">
-                    <div class="total-row">
-                        <span>Total Materiales:</span>
-                        <span id="card2-total-materiales">0.00 Bs</span>
-                    </div>
-                    <div class="total-row">
-                        <span>Costo de Servicio:</span>
-                        <span id="card2-costo-servicio">0.00 Bs</span>
-                    </div>
-                    <div class="total-row">
-                        <span>I.V.A (16%):</span>
-                        <span id="card2-iva">0.00 Bs</span>
-                    </div>
-                    <div class="total-row total-final">
-                        <span><strong>TOTAL FACTURA:</strong></span>
-                        <span id="card2-total-valor"><strong>0.00 Bs</strong></span>
-                    </div>
-                </div>
-                <div class="factura-actions" id="facturaActions" style="margin-top:15px;display:flex;gap:10px;">
-                    <button type="button" class="btn btn-primary" id="btnGenerarFactura" style="flex:1;">
-                        <i class="fas fa-file-invoice"></i> Generar Factura
-                    </button>
-                </div>
-            </div>
-        </div>
+        <!-- Detail content (hidden initially) -->
+        <div id="detailContent" style="display:none;">
 
-        <!-- Tarjeta 3: Pagos -->
-        <div class="factura-card" id="card3">
-            <div class="factura-card-header">
-                <i class="fas fa-credit-card"></i> Pagos y Cuotas
-            </div>
-            <div class="factura-card-body">
-                <div class="pago-resumen">
-                    <div class="pago-item">
-                        <span class="pago-label">Total Factura</span>
-                        <span class="pago-monto" id="card3-total-ves">0.00 Bs</span>
+            <!-- Top Row -->
+            <div class="detail-grid">
+
+                <!-- Card 1: Detalles de Facturación y Cita -->
+                <div class="factura-card" id="card1">
+                    <div class="factura-card-header">
+                        <i class="fas fa-calendar-alt"></i> Detalles de Facturación y Cita
+                        <span id="facturaEstadoBadge" style="display:none;" class="estado-badge"></span>
                     </div>
-                    <div class="pago-item pendiente">
-                        <span class="pago-label">Saldo Pendiente</span>
-                        <span class="pago-monto" id="card3-pendiente-ves">0.00 Bs</span>
+                    <div class="factura-card-body">
+                        <div class="info-row"><span class="info-label">Cliente:</span><span id="card1-cliente" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Cédula:</span><span id="card1-cedula" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Teléfono:</span><span id="card1-telefono" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Fecha:</span><span id="card1-fecha" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Ubicación:</span><span id="card1-ubicacion" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Tipo Evento:</span><span id="card1-evento" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Estado Cita:</span><span id="card1-estado-cita" class="info-value">—</span></div>
+                        <div class="info-row atendido-row" id="card1-atendido-row" style="display:none;">
+                            <span class="info-label">Atendido por:</span>
+                            <span id="card1-atendido" class="info-value">—</span>
+                        </div>
                     </div>
                 </div>
-                <div class="pago-status" id="status-pago" style="margin:10px 0;padding:8px 12px;border-radius:6px;text-align:center;font-weight:600;"></div>
 
-                <h4 style="margin:15px 0 8px;font-size:0.9rem;color:var(--gray);">Historial de Abonos</h4>
-                <table class="factura-table historial-table">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th class="text-right">Monto (Bs)</th>
-                            <th>Método</th>
-                            <th class="text-right">Tasa</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-pagos">
-                        <tr><td colspan="4" class="text-center" style="color:var(--gray);padding:15px;">Sin pagos registrados</td></tr>
-                    </tbody>
-                </table>
+                <!-- Card 2: Detalle de Factura / Desglose -->
+                <div class="factura-card" id="card2">
+                    <div class="factura-card-header">
+                        <i class="fas fa-receipt"></i> Detalle de Factura / Desglose
+                    </div>
+                    <div class="factura-card-body">
+                        <table class="desglose-table">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Descripción</th>
+                                    <th class="text-right">Cant.</th>
+                                    <th class="text-right">P. Unit. (Bs)</th>
+                                    <th class="text-right">Total (Bs)</th>
+                                    <th class="text-right">IVA (16%)</th>
+                                    <th class="text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-desglose">
+                                <tr><td colspan="7" class="text-center" style="color:var(--gray);padding:20px;">Seleccione una factura</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="factura-total-section">
+                            <div class="total-row">
+                                <span>Total Materiales:</span>
+                                <span id="card2-total-materiales">0.00 Bs</span>
+                            </div>
+                            <div class="total-row">
+                                <span>Costo de Servicio:</span>
+                                <span id="card2-costo-servicio">0.00 Bs</span>
+                            </div>
+                            <div class="total-row">
+                                <span>I.V.A (16%):</span>
+                                <span id="card2-iva">0.00 Bs</span>
+                            </div>
+                            <div class="total-row total-final">
+                                <span><strong>TOTAL FACTURA:</strong></span>
+                                <span id="card2-total-valor"><strong>0.00 Bs</strong></span>
+                            </div>
+                        </div>
+                        <div class="factura-actions" id="facturaActions">
+                            <button type="button" class="btn btn-primary" id="btnGenerarFactura" style="flex:1;display:none;">
+                                <i class="fas fa-file-invoice"></i> Generar Factura
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                <div class="factura-actions" style="margin-top:15px;">
-                    <button type="button" class="btn btn-primary" id="btnRegistrarAbonoPagos" disabled style="flex:1;">
-                        <i class="fas fa-plus-circle"></i> Registrar Abono / Cuota
-                    </button>
-                    <button type="button" class="btn btn-outline" id="btnCerrarFactura" disabled style="flex:1;display:none;">
-                        <i class="fas fa-lock"></i> Cerrar Factura
-                    </button>
-                    <button type="button" class="btn btn-outline" id="btnAnularFactura" disabled style="flex:1;display:none;">
-                        <i class="fas fa-ban"></i> Anular
-                    </button>
+            </div>
+
+            <!-- Card 3: Historial de Pagos -->
+            <div class="factura-card" id="card3">
+                <div class="factura-card-header">
+                    <i class="fas fa-credit-card"></i> Historial de Pagos y Cuotas
+                </div>
+                <div class="factura-card-body">
+                    <div class="pago-resumen">
+                        <div class="pago-item">
+                            <span class="pago-label">Total Factura</span>
+                            <span class="pago-monto" id="card3-total-ves">0.00 Bs</span>
+                        </div>
+                        <div class="pago-item pendiente">
+                            <span class="pago-label">Saldo Pendiente</span>
+                            <span class="pago-monto" id="card3-pendiente-ves">0.00 Bs</span>
+                        </div>
+                    </div>
+
+                    <div class="pago-progress-container" id="pagoProgressContainer">
+                        <div class="pago-progress-bar">
+                            <div class="pago-progress-fill" id="pagoProgressFill" style="width:0%;"></div>
+                        </div>
+                        <div class="pago-progress-labels">
+                            <span id="pago-progress-pagado">Pagado: 0.00 Bs</span>
+                            <span id="pago-progress-pendiente">Pendiente: 0.00 Bs</span>
+                        </div>
+                    </div>
+
+                    <div class="pago-status" id="status-pago"></div>
+
+                    <h4 style="margin:15px 0 8px;font-size:0.9rem;color:var(--gray);">Historial de Abonos</h4>
+                    <table class="historial-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th class="text-right">Monto (Bs)</th>
+                                <th>Método</th>
+                                <th class="text-right">Tasa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-pagos">
+                            <tr><td colspan="4" class="text-center" style="color:var(--gray);padding:15px;">Sin pagos registrados</td></tr>
+                        </tbody>
+                    </table>
+
+                    <div class="factura-actions" id="pagoActions" style="margin-top:15px;display:none;">
+                        <button type="button" class="btn btn-primary" id="btnRegistrarAbonoPagos" style="flex:1;">
+                            <i class="fas fa-plus-circle"></i> Registrar Abono / Cuota
+                        </button>
+                        <button type="button" class="btn btn-outline" id="btnCerrarFactura" style="flex:1;display:none;">
+                            <i class="fas fa-lock"></i> Cerrar Factura
+                        </button>
+                        <button type="button" class="btn btn-outline" id="btnAnularFactura" style="flex:1;display:none;">
+                            <i class="fas fa-ban"></i> Anular
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <!-- Card 4: Términos y Condiciones -->
+            <div class="terms-section">
+                <div class="factura-card-header">
+                    <i class="fas fa-file-contract"></i> Términos y Condiciones (Vista Previa)
+                </div>
+                <div class="terms-body" id="termsBody">
+                    <p class="terms-placeholder">Cargando términos...</p>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
+
+<!-- Modales -->
 
 <!-- Modal: Registrar Abono -->
 <div class="modal" id="pagoModal">
@@ -274,7 +341,6 @@
                     <input type="text" class="form-input" id="genNotasCuota" placeholder="Ej: 50% de inicial para reservar">
                 </div>
 
-                <!-- Radio: Tipo de pago -->
                 <div class="form-group" style="margin-top:12px;">
                     <label class="form-label">Tipo de Pago</label>
                     <div class="radio-group" style="display:flex;gap:20px;margin-top:6px;">
@@ -287,7 +353,6 @@
                     </div>
                 </div>
 
-                <!-- Sección Pagar ahora (preview) -->
                 <div id="contadoPreview" style="margin-top:12px;padding:12px;background:#f9f9f9;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;">
                     <div style="text-align:center;font-weight:700;margin-bottom:6px;">— RECIBO DE PAGO —</div>
                     <div class="preview-line"><span>Sub-Total:</span><span class="pr" id="previewSubtotal">0.00 Bs</span></div>
@@ -312,7 +377,6 @@
                     </div>
                 </div>
 
-                <!-- Sección Cuotas -->
                 <div id="cuotasSection" style="display:none;margin-top:12px;">
                     <div class="form-group">
                         <label class="form-label">Número de Cuotas</label>
@@ -356,57 +420,40 @@
     </div>
 </div>
 
-        </div> <!-- /.main-content -->
-    </div> <!-- /.app-container -->
+        </div>
+    </div>
 
 <style>
-.factura-selector { max-width:500px; margin-bottom:10px; }
-.factura-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:start; }
-.factura-grid .factura-card:last-child { grid-column:1 / -1; }
-.factura-card { background:#fff; border-radius:10px; box-shadow:var(--shadow),0 2px 20px rgba(212,175,55,0.2); overflow:hidden; transition:var(--transition); display:flex; flex-direction:column; }
-.factura-card:hover { transform:translateY(-3px); box-shadow:0 8px 20px rgba(0,0,0,0.1),0 2px 20px rgba(212,175,55,0.25); }
-.factura-card-header { padding:14px 18px; font-weight:600; font-size:1rem; background:linear-gradient(to right,var(--primary),var(--secondary)); color:var(--gold-button); border-bottom:1px solid rgba(255,255,255,0.1); flex-shrink:0; }
-.factura-card-header i { margin-right:8px; }
-.factura-card-body { padding:16px 18px; flex:1; }
-.info-row { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #f0f0f0; font-size:0.9rem; }
-.info-label { color:var(--gray); font-weight:500; }
-.info-value { font-weight:600; text-align:right; }
-.factura-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
-.factura-table th { text-align:left; padding:6px 8px; border-bottom:2px solid #eee; color:var(--gray); font-weight:600; }
-.factura-table td { padding:6px 8px; border-bottom:1px solid #f0f0f0; }
-.factura-table .text-right { text-align:right; }
-.factura-table .text-center { text-align:center; }
-.factura-total-section { margin-top:12px; padding-top:10px; border-top:2px solid #eee; }
-.total-row { display:flex; justify-content:space-between; padding:4px 0; font-size:0.9rem; }
-.total-final { border-top:2px solid #333; margin-top:6px; padding-top:8px; font-size:1rem; }
-.pago-resumen { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.pago-item { background:#f8f9fa; border-radius:8px; padding:12px; text-align:center; transition:var(--transition); }
-.pago-item.pendiente { background:#fff3cd; }
-.pago-item:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.06); }
-.pago-label { display:block; font-size:0.8rem; color:var(--gray); margin-bottom:4px; }
-.pago-monto { display:block; font-size:1.1rem; font-weight:700; }
-.pago-status { border-radius:6px; padding:8px 12px; text-align:center; font-weight:600; }
-.pago-status.pagada { background:#d4edda; color:#155724; }
-.pago-status.pendiente-pago { background:#fff3cd; color:#856404; }
-.historial-table { font-size:0.8rem; }
-.historial-table th, .historial-table td { padding:4px 6px; }
-.factura-actions { display:flex; gap:10px; }
-.estado-badge { display:inline-block; padding:3px 10px; border-radius:10px; font-size:0.75rem; font-weight:600; }
-.estado-activa { background:#e8f4fd; color:#0066cc; }
-.estado-cerrada { background:#d4edda; color:#155724; }
-.estado-anulada { background:#f8d7da; color:#721c24; }
 .radio-label { font-size:0.9rem; user-select:none; }
 .radio-label input[type="radio"] { accent-color:var(--primary); }
 .preview-line { display:flex; justify-content:space-between; padding:1px 0; }
 .preview-line .pr { text-align:right; white-space:nowrap; }
-@media (max-width:900px) { .factura-grid { grid-template-columns:1fr; } .factura-grid .factura-card:last-child { grid-column:1; } .pago-resumen { grid-template-columns:1fr 1fr; } }
 </style>
 
 <script>
     const APP_URL = '<?php echo APP_URL; ?>';
     const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
+    const APP_CONFIG = {
+        ivaRate: <?php echo IVA_RATE; ?>,
+        bcvRate: <?php
+            try {
+                $tasaSvc = new \BetelCreativa\Services\ExchangeRateService();
+                echo $tasaSvc->getEffectiveRate();
+            } catch (\Throwable $e) {
+                echo 0;
+            }
+        ?>
+    };
 </script>
-
+<script>
+    document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
+        e.stopPropagation();
+        document.getElementById('settingsDropdown')?.classList.toggle('show');
+    });
+    document.addEventListener('click', function () {
+        document.getElementById('settingsDropdown')?.classList.remove('show');
+    });
+</script>
 <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
 <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>
 <script src="<?php echo APP_URL; ?>Public/js/facturas.js"></script>

@@ -9,6 +9,7 @@ if (!$facturaId): ?>
 <?php exit; endif;
 
 use BetelCreativa\Config\Database;
+use BetelCreativa\Helpers\FacturaCalculadora;
 
 $db = Database::getConnection();
 
@@ -30,6 +31,7 @@ $stmt = $db->prepare(
 $stmt->execute([':id' => $facturaId]);
 $f = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$f) { echo '<p style="text-align:center;margin-top:50px;color:red;">Factura no encontrada.</p>'; exit; }
+if ($f['estado'] === 'anulada') { echo '<p style="text-align:center;margin-top:50px;color:red;">Esta factura fue anulada.</p>'; exit; }
 
 $stmtMat = $db->prepare(
     "SELECT m.material_code AS codigo, m.name AS nombre, cm.cantidad_utilizada AS cantidad,
@@ -43,18 +45,19 @@ $stmtMat->execute([':id' => $facturaId]);
 $materiales = $stmtMat->fetchAll(PDO::FETCH_ASSOC);
 
 $stmtPagos = $db->prepare(
-    "SELECT monto, metodo_pago, tasa_usada, fecha FROM pagos_factura WHERE factura_id = :id ORDER BY fecha ASC"
+    "SELECT p.monto, p.metodo_pago, p.tasa_usada, p.fecha
+     FROM pagos_factura p
+     LEFT JOIN facturas r ON p.factura_id = r.id
+     WHERE p.factura_id = :id1 OR r.factura_origen_id = :id2
+     ORDER BY p.fecha ASC"
 );
-$stmtPagos->execute([':id' => $facturaId]);
+$stmtPagos->execute([':id1' => $facturaId, ':id2' => $facturaId]);
 $pagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
 
-$IVA_RATE = 0.16;
-$totalMateriales = 0;
-foreach ($materiales as $m) $totalMateriales += (float)$m['cantidad'] * (float)$m['precio_unitario'];
-$subtotal = $totalMateriales + (float)$f['costoServicio'];
-$ivaAmount = $subtotal * $IVA_RATE;
-$totalConIva = $subtotal + $ivaAmount;
-$totalFacturaAlmacenado = (float)$f['totalFactura'];
+$totales = FacturaCalculadora::calcularTotales((float)$f['costoServicio'], $materiales);
+$totalMateriales = $totales['totalMateriales'];
+$ivaAmount = $totales['iva'];
+$totalConIva = $totales['total'];
 
 $totalPagadoVes = 0;
 foreach ($pagos as $p) $totalPagadoVes += (float)$p['monto'] * (float)$p['tasa_usada'];
@@ -146,7 +149,7 @@ function line($l, $r) {
         <?= line('TOTAL:', fmt($totalMateriales) . ' Bs') ?>
         <?= line('Sub-Total:', fmt($totalMateriales) . ' Bs') ?>
         <?= line('Mano de obra (' . htmlspecialchars($f['descripcionServicio'] ?? 'Servicio') . '):', fmt((float)$f['costoServicio']) . ' Bs') ?>
-        <?= line('I.V.A (' . ($IVA_RATE * 100) . '%):', fmt($ivaAmount) . ' Bs') ?>
+        <?= line('I.V.A (' . (IVA_RATE * 100) . '%):', fmt($ivaAmount) . ' Bs') ?>
         <hr class="sep">
         <div class="l" style="font-weight:700;font-size:13px;"><span>TOTAL:</span><span><?= fmt($totalConIva) ?> Bs</span></div>
         <hr class="sep">
@@ -187,6 +190,22 @@ function line($l, $r) {
 
         <?php if ($f['notasCuota']): ?>
         <div style="margin-top:8px;font-size:11px;">Nota: <?= htmlspecialchars($f['notasCuota']) ?></div>
+        <?php endif; ?>
+
+        <?php
+        $termStmt = $db->prepare("SELECT `value` FROM settings WHERE `key` = 'terminos_condiciones'");
+        $termStmt->execute();
+        $terminosRaw = $termStmt->fetchColumn();
+        $terminos = $terminosRaw ? array_filter(array_map('trim', explode("\n", $terminosRaw))) : [];
+        if (!empty($terminos)):
+        ?>
+        <hr class="sep">
+        <div class="st">TÉRMINOS Y CONDICIONES:</div>
+        <ul style="margin:4px 0 0 16px;padding:0;font-size:10px;line-height:1.5;">
+            <?php foreach ($terminos as $t): ?>
+            <li><?= htmlspecialchars($t) ?></li>
+            <?php endforeach; ?>
+        </ul>
         <?php endif; ?>
 
         <div class="footer">

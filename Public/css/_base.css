@@ -920,8 +920,6 @@ body.modal-open { overflow: hidden; }
   transition: var(--transition);
   overflow: hidden;
   position: relative;
-  display: flex;
-  flex-direction: column;
 }
 
 .card::before {
@@ -950,17 +948,15 @@ body.modal-open { overflow: hidden; }
   font-weight: 600;
   display: flex;
   align-items: center;
-  flex-shrink: 0;
 }
 
 .card-header i {
   color: var(--gold-button);
 }
 
-/* Cuerpo de tarjeta que se expande */
+/* Cuerpo de tarjeta */
 .card-body {
   padding: 20px;
-  flex: 1;
 }
 
 /* ============================================
