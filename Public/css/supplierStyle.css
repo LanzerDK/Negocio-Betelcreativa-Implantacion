@@ -344,29 +344,7 @@
 }
 
 .supplier-modal {
-  max-width: 500px;
-}
-
-.supplier-modal .modal-header {
-  padding: 12px 18px;
-}
-
-.supplier-modal .modal-header h2 {
-  font-size: 1.1rem;
-}
-
-.supplier-modal .modal-body {
-  padding: 14px 18px;
-}
-
-.supplier-modal .modal-footer {
-  padding: 10px 18px;
-}
-
-.supplier-modal .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  max-width: 550px;
 }
 
 .supplier-select-wrap {

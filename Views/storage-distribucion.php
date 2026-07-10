@@ -47,23 +47,14 @@
         <a href="<?php echo APP_URL; ?>dashboard" class="menu-item">
             <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
         </a>
-        <a href="<?php echo APP_URL; ?>materials" class="menu-item">
-            <i class="fas fa-box-open"></i><span>Materiales</span>
-        </a>
-        <a href="<?php echo APP_URL; ?>quotes" class="menu-item">
-            <i class="fas fa-calendar-check"></i><span>Citas</span>
-        </a>
-        <a href="<?php echo APP_URL; ?>facturas" class="menu-item">
-            <i class="fas fa-file-invoice-dollar"></i><span>Facturación</span>
-        </a>
         <a href="<?php echo APP_URL; ?>category" class="menu-item">
             <i class="fas fa-layer-group"></i><span>Categoría</span>
         </a>
+        <a href="<?php echo APP_URL; ?>materials" class="menu-item">
+            <i class="fas fa-box-open"></i><span>Materiales</span>
+        </a>
         <a href="<?php echo APP_URL; ?>suppliers" class="menu-item">
             <i class="fas fa-truck"></i><span>Proveedores</span>
-        </a>
-        <a href="<?php echo APP_URL; ?>customers" class="menu-item">
-            <i class="fas fa-users"></i><span>Clientes</span>
         </a>
         <div class="menu-item-wrapper">
             <a href="<?php echo APP_URL; ?>storage" class="menu-item">
@@ -78,9 +69,20 @@
                 <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
             </div>
         </div>
+        <a href="<?php echo APP_URL; ?>customers" class="menu-item">
+            <i class="fas fa-users"></i><span>Clientes</span>
+        </a>
+        <a href="<?php echo APP_URL; ?>quotes" class="menu-item">
+            <i class="fas fa-calendar-check"></i><span>Citas</span>
+        </a>
+        <a href="<?php echo APP_URL; ?>facturas" class="menu-item">
+            <i class="fas fa-file-invoice-dollar"></i><span>Facturación</span>
+        </a>
+        <?php if (($_SESSION['user_role'] ?? '') === 'super_admin'): ?>
         <a href="<?php echo APP_URL; ?>reports" class="menu-item">
             <i class="fas fa-chart-line"></i><span>Reportes</span>
         </a>
+        <?php endif; ?>
     </nav>
 
     <div class="main-content">

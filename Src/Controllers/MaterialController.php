@@ -66,7 +66,8 @@ class MaterialController
                     'locationId' => $locationId,
                     'unidadCompra' => $input['unidad_compra'] ?? 'Unidad',
                     'unidadConsumo' => $input['unidad_consumo'] ?? 'Unidad',
-                    'factorConversion' => max(1, (int)($input['factor_conversion'] ?? 1))
+                    'factorConversion' => max(1, (int)($input['factor_conversion'] ?? 1)),
+                    'imageUrl' => $input['image_url'] ?? null
                 ]);
 
                 if (empty($material->getName()) || empty($material->getCode())) {
@@ -146,7 +147,8 @@ class MaterialController
                     'locationId' => $existing->getLocationId(),
                     'unidadCompra' => $input['unidad_compra'] ?? $existing->getUnidadCompra(),
                     'unidadConsumo' => $input['unidad_consumo'] ?? $existing->getUnidadConsumo(),
-                    'factorConversion' => array_key_exists('factor_conversion', $input) ? max(1, (int)$input['factor_conversion']) : $existing->getFactorConversion()
+                    'factorConversion' => array_key_exists('factor_conversion', $input) ? max(1, (int)$input['factor_conversion']) : $existing->getFactorConversion(),
+                    'imageUrl' => array_key_exists('image_url', $input) ? $input['image_url'] : $existing->getImageUrl()
                 ]);
 
                 if ($material->getPrice() < 0) {

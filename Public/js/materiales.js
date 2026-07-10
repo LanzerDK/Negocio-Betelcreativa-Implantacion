@@ -28,6 +28,14 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('guardarMaterialBtn')?.addEventListener('click', agregarNuevoMaterial);
   document.getElementById('guardarCambiosBtn')?.addEventListener('click', guardarEdicionMaterial);
 
+  // Image preview handlers
+  document.getElementById('nuevaImagen')?.addEventListener('change', function (e) {
+    mostrarPreview(e.target, 'nuevaImagenPreview');
+  });
+  document.getElementById('editImagen')?.addEventListener('change', function (e) {
+    mostrarPreview(e.target, 'editImagenPreview');
+  });
+
   const searchInput = document.querySelector('.search-box input');
   searchInput?.addEventListener('input', function () {
     FILTERS.search = this.value.toLowerCase();
@@ -332,7 +340,7 @@ function renderizarMateriales(materials) {
     card.innerHTML = `
       <div class="card-badge ${badgeClass}">${badgeText}</div>
       ${isInactive ? '<div class="inactive-badge"><i class="fas fa-ban"></i> Inhabilitado</div>' : ''}
-      <div class="material-image" style="background-image: url('${mat.imageUrl || 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect fill="#e0e0e0" width="600" height="400"/><text x="300" y="200" text-anchor="middle" dy=".3em" font-size="24" fill="#999" font-family="Arial">' + mat.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</text></svg>')}'); ${isInactive ? 'opacity:0.5;' : ''}"></div>
+      <div class="material-image${mat.imageUrl ? '' : ' no-image'}" style="${mat.imageUrl ? "background-image: url('" + mat.imageUrl + "')" : ''}${isInactive ? '; opacity:0.5' : ''}"></div>
       <div class="material-info">
         <div class="material-title">
           <h3>${escapeHtml(mat.name)}</h3>
@@ -423,6 +431,16 @@ function llenarFormularioEdicion(mat) {
   document.getElementById('editUnidadCompra').value = mat.unidad_compra || 'Paquete';
   document.getElementById('editUnidadConsumo').value = mat.unidad_consumo || 'Unidad';
   document.getElementById('editFactorConversion').value = mat.factor_conversion || 1;
+
+  // Show existing image preview
+  const editPreview = document.getElementById('editImagenPreview');
+  if (mat.imageUrl) {
+    editPreview.querySelector('img').src = mat.imageUrl;
+    editPreview.style.display = 'block';
+  } else {
+    editPreview.style.display = 'none';
+    editPreview.querySelector('img').src = '';
+  }
 }
 
 function ocultarModalYRefrescar(modalId) {
@@ -463,6 +481,12 @@ async function agregarNuevoMaterial() {
     price = unitPrice;
   }
 
+  let imageUrl = null;
+  const fileInput = document.getElementById('nuevaImagen');
+  if (fileInput?.files?.length > 0) {
+    imageUrl = await subirImagenMaterial(fileInput.files[0]);
+  }
+
   try {
     const res = await fetch(APP_URL + 'Public/api/materials.php', {
       method: 'POST',
@@ -475,7 +499,8 @@ async function agregarNuevoMaterial() {
         detalle_comodin: document.getElementById('nuevoDetalleComodin')?.value.trim() || null,
         unidad_compra: document.getElementById('nuevaUnidadCompra').value.trim() || 'Paquete',
         unidad_consumo: document.getElementById('nuevaUnidadConsumo').value.trim() || 'Unidad',
-        factor_conversion: parseInt(document.getElementById('nuevoFactorConversion').value) || 1
+        factor_conversion: parseInt(document.getElementById('nuevoFactorConversion').value) || 1,
+        image_url: imageUrl
       })
     });
     const data = await res.json();
@@ -484,6 +509,8 @@ async function agregarNuevoMaterial() {
       document.getElementById('nuevoMaterialForm').reset();
       document.getElementById('nuevoCodigo').value = '';
       document.getElementById('wholesaleQtyGroup').style.display = 'none';
+      document.getElementById('nuevaImagenPreview').style.display = 'none';
+      document.getElementById('nuevaImagenPreview').querySelector('img').src = '';
       ocultarModalYRefrescar('nuevoMaterialModal');
       toast(data.message, 'success');
     } else {
@@ -526,6 +553,12 @@ async function guardarEdicionMaterial() {
     price = unitPrice;
   }
 
+  let imageUrl = null;
+  const fileInput = document.getElementById('editImagen');
+  if (fileInput?.files?.length > 0) {
+    imageUrl = await subirImagenMaterial(fileInput.files[0]);
+  }
+
   try {
     const res = await fetch(APP_URL + 'Public/api/materials.php?id=' + editingMaterialId, {
       method: 'PUT',
@@ -537,13 +570,17 @@ async function guardarEdicionMaterial() {
         detalle_comodin: document.getElementById('editDetalleComodin')?.value.trim() || null,
         unidad_compra: document.getElementById('editUnidadCompra').value.trim(),
         unidad_consumo: document.getElementById('editUnidadConsumo').value.trim(),
-        factor_conversion: parseInt(document.getElementById('editFactorConversion').value) || 1
+        factor_conversion: parseInt(document.getElementById('editFactorConversion').value) || 1,
+        image_url: imageUrl
       })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Error del servidor');
     if (data.success) {
       editingMaterialId = null;
+      document.getElementById('editImagen').value = '';
+      document.getElementById('editImagenPreview').style.display = 'none';
+      document.getElementById('editImagenPreview').querySelector('img').src = '';
       ocultarModalYRefrescar('editarMaterialModal');
       toast(data.message, 'success');
     } else {
@@ -571,6 +608,35 @@ function showError(fieldId, message) {
 
 function clearErrors() {
   document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+}
+
+function mostrarPreview(input, previewId) {
+  const preview = document.getElementById(previewId);
+  const file = input.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      preview.querySelector('img').src = ev.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.style.display = 'none';
+    preview.querySelector('img').src = '';
+  }
+}
+
+async function subirImagenMaterial(file) {
+  const formData = new FormData();
+  formData.append('material_image', file);
+  const res = await fetch(APP_URL + 'Public/api/upload-material-image.php', {
+    method: 'POST',
+    headers: { 'X-CSRF-Token': CSRF_TOKEN },
+    body: formData
+  });
+  const data = await res.json();
+  if (!res.ok || !data.success) throw new Error(data.message || 'Error al subir imagen');
+  return data.data.url;
 }
 
 function guardarQuickSupplier() {

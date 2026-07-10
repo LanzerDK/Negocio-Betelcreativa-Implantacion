@@ -213,11 +213,19 @@
 /* Inputs y selects de filtros en reportes */
 .filter-select,
 .filter-input {
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: 1px solid var(--light-gray);
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 2px solid #ced4da;
   font-size: 1rem;
   background: white;
+  box-sizing: border-box;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #0d47a1;
+  box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
 .filter-actions {

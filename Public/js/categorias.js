@@ -1,4 +1,5 @@
 let editingCategoryId = null;
+let categoryImageUploadedUrl = null;
 
 document.addEventListener('DOMContentLoaded', function () {
     cargarCategorias();
@@ -12,10 +13,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('newCategoryBtn').addEventListener('click', function () {
         editingCategoryId = null;
+        categoryImageUploadedUrl = null;
         document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Nueva Categoría';
         document.getElementById('categoryName').value = '';
         document.getElementById('categoryDescription').value = '';
+        document.getElementById('categoryImage').value = '';
+        document.getElementById('categoryImagePreview').style.display = 'none';
+        document.getElementById('categoryImagePreview').querySelector('img').src = '';
         document.getElementById('categoryModal').style.display = 'flex';
+    });
+
+    document.getElementById('categoryImage')?.addEventListener('change', function (e) {
+        mostrarPreview(e.target, 'categoryImagePreview');
     });
 
     document.getElementById('closeModalBtn').addEventListener('click', function () {
@@ -87,37 +96,33 @@ function renderizarCategorias(categorias, materiales) {
 
     categorias.forEach(cat => {
         const card = document.createElement('div');
-        card.className = 'category-card' + (cat.status !== 'Active' ? ' inhabilitado' : '');
+        const isActive = cat.status === 'Active';
+        const isInactive = !isActive;
+        const matCount = matCountByCat[cat.id] || 0;
+        const safeName = escapeHtml(cat.name);
+
+        card.className = 'category-card' + (isInactive ? ' inhabilitado' : '');
         card.dataset.id = cat.id;
         card.dataset.name = cat.name;
-        card.dataset.description = cat.description;
         card.dataset.status = cat.status;
 
-        const isActive = cat.status === 'Active';
-        const matCount = matCountByCat[cat.id] || 0;
-
-        const safeName = escapeHtml(cat.name);
-        const svgFallback = 'data:image/svg+xml,' + encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">' +
-            '<rect fill="#e0e0e0" width="600" height="400"/>' +
-            '<text x="300" y="200" text-anchor="middle" dy=".3em" font-size="24" fill="#999" font-family="Arial">' +
-            safeName.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') +
-            '</text></svg>'
-        );
-
         card.innerHTML = `
-            <div class="category-image" style="background-image: url('${cat.imageUrl || svgFallback}');">
-                <div class="category-count">${matCount} materiales</div>
+            ${isInactive ? '<div class="inactive-badge"><i class="fas fa-ban"></i> Inhabilitada</div>' : ''}
+            <div class="category-image${cat.imageUrl ? '' : ' no-image'}" style="${cat.imageUrl ? "background-image: url('" + cat.imageUrl + "')" : ''}">
+                <div class="card-badge badge-stock">${matCount} materiales</div>
             </div>
             <div class="category-info">
                 <div class="category-title">
                     <h3>${safeName}</h3>
-                    <div class="category-status ${isActive ? 'status-active' : 'status-inactive'}">${isActive ? 'Activa' : 'Inactiva'}</div>
+                    <div class="material-price">${isActive ? 'Activa' : 'Inactiva'}</div>
                 </div>
-                <div class="category-description">${escapeHtml(cat.description)}</div>
-                <div class="category-actions">
+                <div class="material-details">
+                    <span><i class="fas fa-align-left"></i> ${escapeHtml(cat.description) || 'Sin descripción'}</span>
+                    <span><i class="fas fa-box"></i> ${matCount} materiales vinculados</span>
+                </div>
+                <div class="card-actions">
                     <button class="action-btn edit-btn"><i class="fas fa-edit"></i> Editar</button>
-                    <button class="action-btn toggle-btn">
+                    <button class="action-btn toggle-btn ${isInactive ? 'is-disabled' : ''}">
                         <i class="fas ${isActive ? 'fa-eye-slash' : 'fa-check-circle'}"></i> ${isActive ? 'Inhabilitar' : 'Habilitar'}
                     </button>
                 </div>
@@ -144,9 +149,20 @@ function renderizarCategorias(categorias, materiales) {
 
 function editarCategoria(cat) {
     editingCategoryId = cat.id;
+    categoryImageUploadedUrl = cat.imageUrl || null;
     document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
     document.getElementById('categoryName').value = cat.name;
     document.getElementById('categoryDescription').value = cat.description;
+    document.getElementById('categoryImage').value = '';
+    const preview = document.getElementById('categoryImagePreview');
+    const img = preview.querySelector('img');
+    if (cat.imageUrl) {
+        img.src = cat.imageUrl;
+        preview.style.display = 'block';
+    } else {
+        img.src = '';
+        preview.style.display = 'none';
+    }
     document.getElementById('categoryModal').style.display = 'flex';
 }
 
@@ -164,29 +180,81 @@ function guardarCategoria() {
         return;
     }
 
-    const url = APP_URL + 'Public/api/categories.php' + (editingCategoryId ? '?id=' + editingCategoryId : '');
-    const method = editingCategoryId ? 'PUT' : 'POST';
+    const fileInput = document.getElementById('categoryImage');
+    const body = { name, description, image_url: categoryImageUploadedUrl };
 
-    callApi(url, {
-        method: method,
+    const doSave = function () {
+        const url = APP_URL + 'Public/api/categories.php' + (editingCategoryId ? '?id=' + editingCategoryId : '');
+        const method = editingCategoryId ? 'PUT' : 'POST';
+
+        callApi(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': CSRF_TOKEN
+            },
+            body: JSON.stringify(body)
+        })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('categoryModal').style.display = 'none';
+                    cargarCategorias();
+                } else {
+                    toast(data.message, 'error');
+                }
+            })
+            .catch(err => {
+                toast(err.message, 'error');
+                console.error(err);
+            });
+    };
+
+    if (fileInput.files.length > 0) {
+        subirImagenCategoria(fileInput.files[0]).then(imgUrl => {
+            categoryImageUploadedUrl = imgUrl;
+            body.image_url = imgUrl;
+            doSave();
+        }).catch(err => {
+            toast(err.message || 'Error al subir la imagen', 'error');
+        });
+    } else {
+        doSave();
+    }
+}
+
+async function subirImagenCategoria(file) {
+    const formData = new FormData();
+    formData.append('category_image', file);
+    formData.append('csrf_token', CSRF_TOKEN);
+
+    const resp = await fetch(APP_URL + 'Public/api/upload-category-image.php', {
+        method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRF-Token': CSRF_TOKEN
         },
-        body: JSON.stringify({ name, description })
-    })
-        .then(data => {
-            if (data.success) {
-                document.getElementById('categoryModal').style.display = 'none';
-                cargarCategorias();
-            } else {
-                toast(data.message, 'error');
-            }
-        })
-        .catch(err => {
-            toast(err.message, 'error');
-            console.error(err);
-        });
+        body: formData
+    });
+    const data = await resp.json();
+    if (!data.success) {
+        throw new Error(data.message || 'Error al subir la imagen');
+    }
+    return data.data.url;
+}
+
+function mostrarPreview(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const img = preview.querySelector('img');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            img.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        img.src = '';
+        preview.style.display = 'none';
+    }
 }
 
 function toggleEstadoCategoria(id, currentStatus, card, button, matCount) {
@@ -210,10 +278,20 @@ function toggleEstadoCategoria(id, currentStatus, card, button, matCount) {
                 card.classList.toggle('inhabilitado');
                 const isActive = newStatus === 'Active';
                 button.innerHTML = `<i class="fas ${isActive ? 'fa-eye-slash' : 'fa-check-circle'}"></i> ${isActive ? 'Inhabilitar' : 'Habilitar'}`;
-                const badge = card.querySelector('.category-status');
+                button.classList.toggle('is-disabled', !isActive);
+                const badge = card.querySelector('.material-price');
                 badge.textContent = isActive ? 'Activa' : 'Inactiva';
-                badge.className = 'category-status ' + (isActive ? 'status-active' : 'status-inactive');
                 card.dataset.status = newStatus;
+
+                const existingBadge = card.querySelector('.inactive-badge');
+                if (!isActive && !existingBadge) {
+                    const div = document.createElement('div');
+                    div.className = 'inactive-badge';
+                    div.innerHTML = '<i class="fas fa-ban"></i> Inhabilitada';
+                    card.insertBefore(div, card.firstChild);
+                } else if (isActive && existingBadge) {
+                    existingBadge.remove();
+                }
 
                 const activasEl = document.querySelector('.stat-card:nth-child(3) .stat-value');
                 if (activasEl) {

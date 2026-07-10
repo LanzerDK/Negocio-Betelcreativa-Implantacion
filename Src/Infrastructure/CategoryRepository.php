@@ -70,12 +70,13 @@ class CategoryRepository
     public function save(CategoryModel $category): bool
     {
         try {
-            $sql = "INSERT INTO categories (name, description, status) VALUES (:name, :description, :status)";
+            $sql = "INSERT INTO categories (name, description, status, image_url) VALUES (:name, :description, :status, :image_url)";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':name' => $category->getName(),
                 ':description' => $category->getDescription(),
-                ':status' => $category->getStatus()
+                ':status' => $category->getStatus(),
+                ':image_url' => $category->getImageUrl()
             ]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);
@@ -86,13 +87,14 @@ class CategoryRepository
     public function update(CategoryModel $category): bool
     {
         try {
-            $sql = "UPDATE categories SET name = :name, description = :description, status = :status WHERE category_id = :id";
+            $sql = "UPDATE categories SET name = :name, description = :description, status = :status, image_url = :image_url WHERE category_id = :id";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':id' => $category->getId(),
                 ':name' => $category->getName(),
                 ':description' => $category->getDescription(),
-                ':status' => $category->getStatus()
+                ':status' => $category->getStatus(),
+                ':image_url' => $category->getImageUrl()
             ]);
         } catch (PDOException $e) {
             ApiResponse::error('Error de base de datos: ' . $e->getMessage(), 500);

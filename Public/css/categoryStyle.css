@@ -88,13 +88,15 @@
 }
 
 /* Grid de tarjetas de categorías responsive */
+/* Grid de tarjetas de categorías responsive */
 .categories-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  align-items: stretch;
 }
 
-/* Tarjeta de categoría con contenido adaptable */
+/* Tarjeta individual de categoría (mismo estilo que materiales) */
 .category-card {
   background: #ffffff;
   border-radius: 10px;
@@ -122,17 +124,19 @@
 
 .category-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
-/* Estado inhabilitado con overlay y escala */
-.category-card.inhabilitado::before {
-  display: none;
-}
-
+/* Estado inhabilitado */
 .category-card.inhabilitado {
   transform: scale(0.98);
   border: 2px solid var(--danger);
+  box-shadow: 0 4px 20px rgba(244, 67, 54, 0.35);
+  position: relative;
+}
+
+.category-card.inhabilitado::before {
+  display: none;
 }
 
 .category-card.inhabilitado::after {
@@ -145,32 +149,116 @@
   pointer-events: none;
 }
 
-.category-card.inhabilitado .category-actions {
+.category-card.inhabilitado:hover {
+  transform: scale(0.98);
+}
+
+.category-card.inhabilitado .card-actions {
   position: relative;
   z-index: 3;
 }
 
-/* Imagen de la categoría con altura fija */
-.category-image {
-  height: 180px;
-  background-size: cover;
-  background-position: center;
-  position: relative;
+.category-card.inhabilitado .edit-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* Contador de materiales flotante sobre la imagen */
-.category-count {
+.category-card.inhabilitado .toggle-btn.is-disabled {
+  background-color: var(--success);
+  color: white;
+}
+
+.category-card.inhabilitado .toggle-btn.is-disabled:hover {
+  background-color: #388e3c;
+  color: white;
+}
+
+/* Badge de "Inhabilitado" flotante sobre la imagen */
+.inactive-badge {
+  position: absolute;
+  top: 45px;
+  right: 15px;
+  background: var(--danger);
+  color: white;
+  padding: 5px 14px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+/* Badge genérico flotante en tarjeta */
+.card-badge {
   position: absolute;
   top: 15px;
   right: 15px;
-  background: rgba(255, 255, 255, 0.747);
   padding: 5px 15px;
   border-radius: 20px;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--primary);
 }
 
+.badge-stock {
+  background-color: var(--success);
+  color: white;
+}
+
+.badge-low {
+  background-color: var(--warning);
+  color: white;
+}
+
+.badge-out {
+  background-color: var(--danger);
+  color: white;
+}
+
+/* Imagen de la categoría */
+.category-image {
+  height: 180px;
+  max-height: 180px;
+  min-height: 120px;
+  background-size: cover;
+  background-position: center;
+  background-color: #e8eaed;
+}
+
+.category-image.no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-image.no-image::before {
+  content: '\f03e';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 2.5rem;
+  color: #b0b3b8;
+  opacity: 0.6;
+}
+
+/* Preview de imagen antes de subir */
+.category-image-preview {
+  display: none;
+  margin-top: 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #ced4da;
+  max-width: 200px;
+}
+
+.category-image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Información de la categoría */
 .category-info {
   padding: 20px;
   display: flex;
@@ -178,65 +266,82 @@
   flex: 1;
 }
 
-/* Título y estado de la categoría */
+/* Título y estado en fila */
 .category-title {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 12px;
+  gap: 10px;
 }
 
+/* Nombre de la categoría con límite de 2 líneas */
 .category-title h3 {
-  color: var(--primary);
+  color: #000;
   font-size: 1.1rem;
-  margin: 0;
-}
-
-/* Badge de estado de categoría */
-.category-status {
-  padding: 5px 15px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.status-active {
-  background-color: rgba(76, 175, 80, 0.15);
-  color: var(--success);
-}
-
-.status-inactive {
-  background-color: rgba(108, 117, 125, 0.15);
-  color: var(--gray);
-}
-
-/* Descripción de la categoría */
-.category-description {
-  color: var(--dark);
-  margin-bottom: 15px;
-  line-height: 1.5;
-  font-size: 0.9rem;
+  font-weight: 700;
+  min-height: 2.6em;
+  line-height: 1.3;
   flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-/* Metadatos de la categoría (fecha, etc) */
-.category-meta {
-  display: flex;
-  justify-content: space-between;
-  color: var(--dark);
+/* Estado como badge tipo precio */
+.material-price {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 700;
   font-size: 0.9rem;
-  border-top: 1px solid var(--light-gray);
-  padding-top: 15px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: fit-content;
+  box-shadow: 0 2px 8px rgba(13, 71, 161, 0.2);
+}
+
+/* Detalles en grid 2 columnas */
+.material-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 15px;
+  font-size: 0.85rem;
+  color: #000;
+  font-weight: 500;
+  padding: 10px 12px;
+  background: rgba(13, 71, 161, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(13, 71, 161, 0.08);
+}
+
+.material-details span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.material-details i {
+  color: var(--primary);
+  width: 16px;
+  flex-shrink: 0;
 }
 
 /* Acciones de la tarjeta */
-.category-actions {
+.card-actions {
   display: flex;
   gap: 10px;
   margin-top: auto;
   padding-top: 15px;
 }
 
+/* Botón de acción base */
 .action-btn {
   flex: 1;
   padding: 10px;
@@ -252,31 +357,32 @@
   font-size: 0.85rem;
 }
 
-/* Botón de editar en verde accent */
 .edit-btn {
   background-color: rgba(26, 188, 156, 0.1);
   color: var(--accent);
 }
 
-/* Botón de eliminar en rojo */
-.delete-btn {
-  background-color: rgba(244, 67, 54, 0.1);
-  color: var(--danger);
+.edit-btn:hover {
+  background-color: var(--accent);
+  color: white;
 }
 
-/* Botón de toggle en rojo (inhabilitado) */
 .toggle-btn {
   background-color: rgba(244, 67, 54, 0.1);
   color: var(--danger);
 }
 
-/* Botón "Habilitar" cuando la tarjeta está inhabilitada (verde sólido) */
-.category-card.inhabilitado .toggle-btn {
+.toggle-btn:hover {
+  background-color: var(--danger);
+  color: white;
+}
+
+.toggle-btn.is-disabled {
   background-color: var(--success);
   color: white;
 }
 
-.category-card.inhabilitado .toggle-btn:hover {
+.toggle-btn.is-disabled:hover {
   background-color: #388e3c;
   color: white;
 }
@@ -401,36 +507,7 @@
 
 /* Contenedor del modal de categorías - hereda .modal-content de _base.css */
 .category-modal {
-  max-width: 400px;
-}
-
-.category-modal .modal-header {
-  padding: 12px 18px;
-}
-
-.category-modal .modal-header h2 {
-  font-size: 1.1rem;
-}
-
-.category-modal .modal-body {
-  padding: 14px 18px;
-}
-
-.category-modal .modal-footer {
-  padding: 10px 18px;
-}
-
-.category-modal .form-row {
-  gap: 12px;
-}
-
-@media (max-width: 576px) {
-  .category-modal {
-    max-width: 95%;
-  }
-  .category-modal .modal-body {
-    padding: 12px 14px;
-  }
+  max-width: 500px;
 }
 
 /* Responsive específico */

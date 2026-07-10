@@ -69,10 +69,18 @@
 .filter-select {
   width: 100%;
   padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--light-gray);
+  border-radius: 10px;
+  border: 2px solid #ced4da;
   font-size: 0.95rem;
   background: white;
+  box-sizing: border-box;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+  outline: none;
+  border-color: #0d47a1;
+  box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
 .distribucion-table {

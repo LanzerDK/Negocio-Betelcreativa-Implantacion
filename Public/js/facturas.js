@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('genDescripcionServicio').value = '';
         document.getElementById('genMontoBs').value = '';
         document.getElementById('genMetodoPago').value = 'efectivo';
+        const genLabel = document.getElementById('genMontoLabel');
+        if (genLabel) genLabel.textContent = 'Monto a pagar ahora (Bs)';
+        document.getElementById('genMontoBs').placeholder = '0,00';
         document.getElementById('genConversionRow').style.display = 'none';
         document.getElementById('genErrorAnticipo').style.display = 'none';
         document.getElementById('genTasaBcv').value = TASA_BCV;
@@ -56,7 +59,20 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Conversión en vivo: método de pago en generar factura ──
-    document.getElementById('genMetodoPago')?.addEventListener('change', actualizarConversionGenerar);
+    document.getElementById('genMetodoPago')?.addEventListener('change', function () {
+        const label = document.getElementById('genMontoLabel');
+        const input = document.getElementById('genMontoBs');
+        if (this.value === 'divisas') {
+            label.textContent = 'Monto a pagar ahora ($)';
+            input.placeholder = '0.00';
+        } else {
+            label.textContent = 'Monto a pagar ahora (Bs)';
+            input.placeholder = '0,00';
+        }
+        input.value = '';
+        actualizarConversionGenerar();
+        validarAnticipo();
+    });
     document.getElementById('genMontoBs')?.addEventListener('input', function () {
         actualizarConversionGenerar();
         validarAnticipo();
@@ -64,21 +80,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function actualizarConversionGenerar() {
         const metodo = document.getElementById('genMetodoPago').value;
-        const montoBs = parseFloat(document.getElementById('genMontoBs').value) || 0;
+        const montoInput = parseFloat(document.getElementById('genMontoBs').value) || 0;
         const row = document.getElementById('genConversionRow');
         const text = document.getElementById('genConversionText');
-        if (!montoBs || montoBs <= 0 || !TASA_BCV || TASA_BCV <= 0) { row.style.display = 'none'; return; }
+        if (!montoInput || montoInput <= 0 || !TASA_BCV || TASA_BCV <= 0) { row.style.display = 'none'; return; }
         row.style.display = 'block';
-        const usd = montoBs / TASA_BCV;
         if (metodo === 'divisas') {
-            text.innerHTML = '<strong>$' + usd.toFixed(2) + ' USD</strong> a la tasa de <strong>1 $ = ' + TASA_BCV.toFixed(2) + ' Bs</strong>';
+            const bs = montoInput * TASA_BCV;
+            text.innerHTML = '<strong>$' + montoInput.toFixed(2) + '</strong> = <strong>' + bs.toFixed(2) + ' Bs</strong> (tasa: 1 $ = ' + TASA_BCV.toFixed(2) + ' Bs)';
         } else {
-            text.innerHTML = '<strong>' + montoBs.toFixed(2) + ' Bs</strong> ≈ <strong>$' + usd.toFixed(2) + ' USD</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
+            const usd = montoInput / TASA_BCV;
+            text.innerHTML = '<strong>' + montoInput.toFixed(2) + ' Bs</strong> ≈ <strong>$' + usd.toFixed(2) + ' USD</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
         }
     }
 
     function validarAnticipo() {
-        const montoBs = parseFloat(document.getElementById('genMontoBs').value) || 0;
+        const metodo = document.getElementById('genMetodoPago').value;
+        const montoInput = parseFloat(document.getElementById('genMontoBs').value) || 0;
+        const montoEnBs = metodo === 'divisas' ? montoInput * TASA_BCV : montoInput;
         const errEl = document.getElementById('genErrorAnticipo');
         const progressFill = document.getElementById('genProgressFill');
         const progressLabel = document.getElementById('genProgressLabel');
@@ -93,19 +112,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const minimo = totalCalculado * 0.50;
-        const pct = Math.min(100, (montoBs / totalCalculado) * 100);
+        const pct = Math.min(100, (montoEnBs / totalCalculado) * 100);
         progressFill.style.width = pct + '%';
         progressFill.className = 'pago-progress-fill ' + (pct >= 100 ? 'ok' : 'warning');
         progressLabel.textContent = pct.toFixed(0) + '%';
 
-        if (montoBs <= 0) {
+        if (montoEnBs <= 0) {
             errEl.style.display = 'none';
             btnSubmit.disabled = false;
             return;
         }
 
-        if (montoBs > totalCalculado + 0.01) {
-            const dev = (montoBs - totalCalculado).toFixed(2);
+        const esDivisas = metodo === 'divisas';
+
+        if (montoEnBs > totalCalculado + 0.01) {
+            const dev = (montoEnBs - totalCalculado).toFixed(2);
             errEl.textContent = 'Se generará una devolución de ' + dev + ' Bs por el excedente.';
             errEl.style.display = 'block';
             errEl.style.color = '#856404';
@@ -115,8 +136,9 @@ document.addEventListener('DOMContentLoaded', function () {
             errEl.style.color = '#dc3545';
         }
 
-        if (montoBs < minimo - 0.01) {
-            errEl.textContent = 'El anticipo mínimo es del 50% (' + minimo.toFixed(2) + ' Bs).';
+        if (montoEnBs < minimo - 0.01) {
+            const minStr = esDivisas ? (minimo / TASA_BCV).toFixed(2) + ' $' : minimo.toFixed(2) + ' Bs';
+            errEl.textContent = 'El anticipo mínimo es del 50% (' + minStr + ').';
             errEl.style.display = 'block';
             btnSubmit.disabled = true;
             return;
@@ -138,19 +160,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const citaId = parseInt(document.getElementById('genFacturaCitaId').value);
         const costoServicio = parseFloat(document.getElementById('genCostoServicio').value) || 0;
         const descripcionServicio = document.getElementById('genDescripcionServicio').value.trim();
-        const montoPagoBs = parseFloat(document.getElementById('genMontoBs').value) || 0;
+        const montoInput = parseFloat(document.getElementById('genMontoBs').value) || 0;
         const metodoPago = document.getElementById('genMetodoPago').value;
+        const montoPagoBs = metodoPago === 'divisas' ? montoInput * TASA_BCV : montoInput;
 
         if (!citaId) return toast('ID de cita requerido.', 'warning');
         if (!descripcionServicio) return toast('Describa el servicio prestado.', 'warning');
         if (!costoServicio || costoServicio <= 0) return toast('Especifique un costo de servicio válido.', 'warning');
         if (!materialesCache.length) return toast('La cita debe tener al menos un material asignado.', 'warning');
         if (!metodoPago) return toast('Seleccione un método de pago.', 'warning');
-        if (montoPagoBs <= 0) return toast('Debe especificar un monto de anticipo.', 'warning');
+        if (montoInput <= 0) return toast('Debe especificar un monto de anticipo.', 'warning');
 
         const minimo = totalCalculado * 0.50;
         if (montoPagoBs < minimo - 0.01) {
-            return toast('El anticipo mínimo obligatorio es del 50% (' + minimo.toFixed(2) + ' Bs).', 'warning');
+            const minStr = metodoPago === 'divisas' ? (minimo / TASA_BCV).toFixed(2) + ' $' : minimo.toFixed(2) + ' Bs';
+            return toast('El anticipo mínimo obligatorio es del 50% (' + minStr + ').', 'warning');
         }
 
         setLoading('btnGuardarFactura', true);

@@ -626,7 +626,7 @@
 }
 .form-input::placeholder,
 .form-textarea::placeholder {
-    color: #6c757d;
+    color: #555;
 }
 .form-textarea {
     min-height: 100px;

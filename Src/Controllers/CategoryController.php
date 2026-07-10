@@ -41,7 +41,8 @@ class CategoryController
                 $category = new CategoryModel([
                     'name' => trim($input['name'] ?? ''),
                     'description' => trim($input['description'] ?? ''),
-                    'status' => trim($input['status'] ?? 'Active')
+                    'status' => trim($input['status'] ?? 'Active'),
+                    'imageUrl' => $input['image_url'] ?? null
                 ]);
 
                 if (empty($category->getName())) {
@@ -89,7 +90,8 @@ class CategoryController
                     'id' => $id,
                     'name' => $newName,
                     'description' => trim($input['description'] ?? $existing->getDescription()),
-                    'status' => $newStatus
+                    'status' => $newStatus,
+                    'imageUrl' => array_key_exists('image_url', $input) ? $input['image_url'] : $existing->getImageUrl()
                 ]);
 
                 if ($repo->existsByName($newName, $id)) {

@@ -53,29 +53,17 @@
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="<?php echo APP_URL; ?>materials" class="menu-item">
-                <i class="fas fa-box-open"></i>
-                <span>Materiales</span>
-            </a>
-            <a href="<?php echo APP_URL; ?>quotes" class="menu-item">
-                <i class="fas fa-calendar-check"></i>
-                <span>Citas</span>
-            </a>
-            <a href="<?php echo APP_URL; ?>facturas" class="menu-item">
-                <i class="fas fa-file-invoice-dollar"></i>
-                <span>Facturación</span>
-            </a>
             <a href="<?php echo APP_URL; ?>category" class="menu-item">
                 <i class="fas fa-layer-group"></i>
                 <span>Categoría</span>
             </a>
+            <a href="<?php echo APP_URL; ?>materials" class="menu-item">
+                <i class="fas fa-box-open"></i>
+                <span>Materiales</span>
+            </a>
             <a href="<?php echo APP_URL; ?>suppliers" class="menu-item active">
                 <i class="fas fa-truck"></i>
                 <span>Proveedores</span>
-            </a>
-            <a href="<?php echo APP_URL; ?>customers" class="menu-item">
-                <i class="fas fa-users"></i>
-                <span>Clientes</span>
             </a>
             <div class="menu-item-wrapper">
                 <a href="<?php echo APP_URL; ?>storage" class="menu-item">
@@ -90,10 +78,24 @@
                     <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
                 </div>
             </div>
+            <a href="<?php echo APP_URL; ?>customers" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span>Clientes</span>
+            </a>
+            <a href="<?php echo APP_URL; ?>quotes" class="menu-item">
+                <i class="fas fa-calendar-check"></i>
+                <span>Citas</span>
+            </a>
+            <a href="<?php echo APP_URL; ?>facturas" class="menu-item">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Facturación</span>
+            </a>
+            <?php if (($_SESSION['user_role'] ?? '') === 'super_admin'): ?>
             <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
                 <span>Reportes</span>
             </a>
+            <?php endif; ?>
         </nav>
 
         <div class="main-content">
@@ -156,12 +158,12 @@
 
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="supplierCompany">Nombre de la Empresa</label>
+                        <label for="supplierCompany" class="form-label">Nombre de la Empresa</label>
                         <input type="text" id="supplierCompany" class="form-control" placeholder="Ej: Proveedora de Globos C.A.">
                     </div>
 
                     <div class="form-group">
-                        <label for="supplierType">Tipo de Proveedor</label>
+                        <label for="supplierType" class="form-label">Tipo de Proveedor</label>
                         <select id="supplierType" class="form-control">
                             <option value="fijo">Fijo</option>
                             <option value="comodin">Comodín</option>
@@ -170,30 +172,30 @@
 
                     <div id="fijoFields">
                         <div class="form-group">
-                            <label for="supplierContact">Persona de Contacto</label>
+                            <label for="supplierContact" class="form-label">Persona de Contacto</label>
                             <input type="text" id="supplierContact" class="form-control" placeholder="Ej: María Pérez">
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="supplierPhone">Teléfono</label>
+                                <label for="supplierPhone" class="form-label">Teléfono</label>
                                 <input type="text" id="supplierPhone" class="form-control" placeholder="Ej: 0412-1234567">
                             </div>
                             <div class="form-group">
-                                <label for="supplierEmail">Correo Electrónico</label>
+                                <label for="supplierEmail" class="form-label">Correo Electrónico</label>
                                 <input type="email" id="supplierEmail" class="form-control" placeholder="Ej: contacto@proveedora.com">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="supplierAddress">Dirección</label>
+                            <label for="supplierAddress" class="form-label">Dirección</label>
                             <textarea id="supplierAddress" class="form-control" rows="2" placeholder="Dirección física del proveedor..."></textarea>
                         </div>
                     </div>
 
                     <div id="comodinFields" style="display:none;">
                         <div class="form-group">
-                            <label for="supplierSubtype">Subtipo</label>
+                            <label for="supplierSubtype" class="form-label">Subtipo</label>
                             <select id="supplierSubtype" class="form-control">
                                 <option value="">Seleccionar subtipo</option>
                                 <option value="Compras al Detal">Compras al Detal</option>
@@ -203,7 +205,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="supplierNotes">Nota</label>
+                            <label for="supplierNotes" class="form-label">Nota</label>
                             <textarea id="supplierNotes" class="form-control" rows="2" placeholder="Nota sobre este proveedor comodín..."></textarea>
                         </div>
                     </div>

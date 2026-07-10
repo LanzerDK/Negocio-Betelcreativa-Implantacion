@@ -108,8 +108,8 @@ class MaterialRepository
         try {
             $this->db->beginTransaction();
 
-            $sql = "INSERT INTO materials (material_code, name, price, cost_type, wholesale_qty, category_id, material_type, supplier_id, detalle_comodin, current_location_id, unidad_compra, unidad_consumo, factor_conversion) 
-                    VALUES (:code, :name, :price, :cost_type, :wholesale_qty, :category_id, :material_type, :supplier_id, :detalle_comodin, :location_id, :unidad_compra, :unidad_consumo, :factor_conversion)";
+            $sql = "INSERT INTO materials (material_code, name, price, cost_type, wholesale_qty, category_id, material_type, supplier_id, detalle_comodin, current_location_id, unidad_compra, unidad_consumo, factor_conversion, image_url) 
+                    VALUES (:code, :name, :price, :cost_type, :wholesale_qty, :category_id, :material_type, :supplier_id, :detalle_comodin, :location_id, :unidad_compra, :unidad_consumo, :factor_conversion, :image_url)";
             $stmt = $this->db->prepare($sql);
             $ok = $stmt->execute([
                 ':code' => $material->getCode(),
@@ -124,7 +124,8 @@ class MaterialRepository
                 ':location_id' => $material->getLocationId(),
                 ':unidad_compra' => $material->getUnidadCompra(),
                 ':unidad_consumo' => $material->getUnidadConsumo(),
-                ':factor_conversion' => $material->getFactorConversion()
+                ':factor_conversion' => $material->getFactorConversion(),
+                ':image_url' => $material->getImageUrl()
             ]);
 
             if ($ok && $material->getStock() > 0 && $material->getLocationId()) {
@@ -159,7 +160,7 @@ class MaterialRepository
             $stmtOld->execute([':id' => $material->getId()]);
             $old = $stmtOld->fetch();
 
-            $sql = "UPDATE materials SET material_code = :code, name = :name, price = :price, cost_type = :cost_type, wholesale_qty = :wholesale_qty, category_id = :category_id, material_type = :material_type, supplier_id = :supplier_id, detalle_comodin = :detalle_comodin, current_location_id = :location_id, is_active = :is_active, unidad_compra = :unidad_compra, unidad_consumo = :unidad_consumo, factor_conversion = :factor_conversion WHERE material_id = :id";
+            $sql = "UPDATE materials SET material_code = :code, name = :name, price = :price, cost_type = :cost_type, wholesale_qty = :wholesale_qty, category_id = :category_id, material_type = :material_type, supplier_id = :supplier_id, detalle_comodin = :detalle_comodin, current_location_id = :location_id, is_active = :is_active, unidad_compra = :unidad_compra, unidad_consumo = :unidad_consumo, factor_conversion = :factor_conversion, image_url = :image_url WHERE material_id = :id";
             $stmt = $this->db->prepare($sql);
             $ok = $stmt->execute([
                 ':id' => $material->getId(),
@@ -176,7 +177,8 @@ class MaterialRepository
                 ':is_active' => $material->getIsActive() ? 1 : 0,
                 ':unidad_compra' => $material->getUnidadCompra(),
                 ':unidad_consumo' => $material->getUnidadConsumo(),
-                ':factor_conversion' => $material->getFactorConversion()
+                ':factor_conversion' => $material->getFactorConversion(),
+                ':image_url' => $material->getImageUrl()
             ]);
 
             if ($ok) {

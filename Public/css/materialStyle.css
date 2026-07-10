@@ -146,6 +146,22 @@
 }
 
 /* Los botones dentro de tarjeta inhabilitada se mantienen visibles */
+/* Preview de imagen antes de subir */
+.material-image-preview {
+  display: none;
+  margin-top: 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #ced4da;
+  max-width: 200px;
+}
+
+.material-image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .material-card.inhabilitado .card-actions {
   position: relative;
   z-index: 3;
@@ -210,11 +226,29 @@
   color: white;
 }
 
-/* Imagen del material con altura fija */
+/* Imagen del material con altura adaptable */
 .material-image {
   height: 180px;
+  max-height: 180px;
+  min-height: 120px;
   background-size: cover;
   background-position: center;
+  background-color: #e8eaed;
+}
+
+.material-image.no-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.material-image.no-image::before {
+  content: '\f03e';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 2.5rem;
+  color: #b0b3b8;
+  opacity: 0.6;
 }
 
 /* Información del material con flex para llenar espacio */
@@ -262,12 +296,13 @@
   box-shadow: 0 2px 8px rgba(13, 71, 161, 0.2);
 }
 
-/* Detalles del material (código y etiqueta) en fila con fondo sutil */
+/* Detalles del material en grid 2 columnas con fondo sutil */
 .material-details {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
   margin-bottom: 15px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #000;
   font-weight: 500;
   padding: 10px 12px;
@@ -277,20 +312,18 @@
 }
 
 .material-details span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
 }
 
 .material-details i {
   color: var(--primary);
   width: 16px;
-}
-
-/* Último span resaltado en color primary */
-.material-details span:last-child {
-  color: var(--primary);
-  font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* Información de stock con barra de progreso */
@@ -462,10 +495,21 @@
   .materials-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
+  .material-image {
+    height: 150px;
+    min-height: 100px;
+  }
 }
 
 @media (max-width: 480px) {
   .materials-grid {
+    grid-template-columns: 1fr;
+  }
+  .material-image {
+    height: 140px;
+    min-height: 100px;
+  }
+  .material-details {
     grid-template-columns: 1fr;
   }
 }
