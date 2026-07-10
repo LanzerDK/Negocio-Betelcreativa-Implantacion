@@ -11,6 +11,7 @@ use BetelCreativa\Infrastructure\FacturaRepository;
 use BetelCreativa\Infrastructure\CitaMaterialRepository;
 use BetelCreativa\Infrastructure\AppointmentRepository;
 use BetelCreativa\Services\ExchangeRateService;
+use PDO;
 
 class FacturaController
 {
@@ -26,8 +27,8 @@ class FacturaController
 
                 if ($action === 'list' && isset($_GET['status'])) {
                     $status = $_GET['status'];
-                    if (!in_array($status, ['abiertas', 'pendientes', 'pagadas'], true)) {
-                        ApiResponse::error('Estado no válido. Use abiertas, pendientes o pagadas.');
+                    if (!in_array($status, ['abiertas', 'canceladas', 'pendientes', 'pagadas'], true)) {
+                        ApiResponse::error('Estado no válido. Use abiertas, canceladas, pendientes o pagadas.');
                         return;
                     }
                     $facturas = $repo->listFacturasByStatus($status);
@@ -55,7 +56,7 @@ class FacturaController
 
                 } elseif ($action === 'terminos') {
                     $stmt = \BetelCreativa\Config\Database::getConnection()->prepare(
-                        "SELECT `value` FROM settings WHERE `key` = 'terminos_condiciones'"
+                        "SELECT setting_value FROM settings WHERE setting_key = 'terminos_condiciones'"
                     );
                     $stmt->execute();
                     $terminos = $stmt->fetchColumn();
@@ -66,8 +67,8 @@ class FacturaController
                     ApiResponse::success(['tasa' => $tasaService->getEffectiveRate()]);
 
                 } elseif ($action === 'metodos-pago') {
-                    $stmt = \Betelcreativa\Config\Database::getConnection()->prepare(
-                        "SELECT `value` FROM settings WHERE `key` = 'metodos_pago'"
+                    $stmt = \BetelCreativa\Config\Database::getConnection()->prepare(
+                        "SELECT setting_value FROM settings WHERE setting_key = 'metodos_pago'"
                     );
                     $stmt->execute();
                     $raw = $stmt->fetchColumn();
@@ -80,25 +81,23 @@ class FacturaController
                 break;
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
                 $action = $input['action'] ?? '';
 
                 if ($action === 'crear') {
                     $citaId = (int)($input['cita_id'] ?? 0);
                     $costoServicio = (float)($input['costo_servicio'] ?? 0);
                     $descripcionServicio = trim($input['descripcion_servicio'] ?? '') ?: null;
-                    $planTipo = $input['plan_tipo'] ?? 'contado';
-                    $planCuotasTotal = isset($input['plan_cuotas_total']) ? (int)$input['plan_cuotas_total'] : null;
                     $createdByName = $_SESSION['user_name'] ?? 'Usuario';
+                    $metodoPago = trim($input['metodo_pago'] ?? 'efectivo');
+                    $tasa = (float)($input['tasa_usada'] ?? 0);
 
                     if (!$citaId) {
                         ApiResponse::error('ID de cita requerido.');
-                        return;
-                    }
-
-                    if (!in_array($planTipo, ['contado', 'cuotas'], true)) {
-                        ApiResponse::error('Tipo de plan no válido.');
                         return;
                     }
 
@@ -119,67 +118,82 @@ class FacturaController
                         return;
                     }
 
-                    $planMontoCuotaSugerido = null;
-                    if ($planTipo === 'cuotas') {
-                        if (!$planCuotasTotal || $planCuotasTotal < 2) {
-                            ApiResponse::error('Indique el número de cuotas (mínimo 2).');
-                            return;
-                        }
-                        $totales = FacturaCalculadora::calcularTotales($costoServicio, $detalle['materiales'] ?? []);
-                        $planMontoCuotaSugerido = round($totales['total'] / $planCuotasTotal, 2);
+                    $totales = FacturaCalculadora::calcularTotales($costoServicio, $detalle['materiales'] ?? []);
+                    $totalFacturaCalculado = $totales['total'];
+
+                    // Obtener el monto a pagar (siempre en Bs)
+                    $montoPagoBs = (float)($input['monto_pago_bs'] ?? 0);
+                    if ($montoPagoBs <= 0) {
+                        ApiResponse::error('Debe especificar un monto de pago.');
+                        return;
                     }
+
+                    // Validar mínimo 50%
+                    $minimo = $totalFacturaCalculado * 0.50;
+                    if ($montoPagoBs < $minimo - 0.01) {
+                        ApiResponse::error("El anticipo mínimo obligatorio es del 50% ({$minimo} Bs).");
+                        return;
+                    }
+
+                    // Tasa BCV
+                    if ($tasa <= 0) {
+                        $tasaService = new ExchangeRateService();
+                        $tasa = $tasaService->getEffectiveRate();
+                    }
+                    if ($tasa <= 0) {
+                        ApiResponse::error('Tasa BCV no disponible. Intente de nuevo o especifique una tasa manualmente.');
+                        return;
+                    }
+
+                    // Determinar si es pago completo o parcial
+                    $esPagoCompleto = $montoPagoBs >= $totalFacturaCalculado - 0.01;
+                    $planTipo = $esPagoCompleto ? 'contado' : 'cuotas';
+                    $planMontoCuotaSugerido = $esPagoCompleto ? null : round($totalFacturaCalculado / 2, 2);
 
                     $db = Database::getConnection();
                     $db->beginTransaction();
                     try {
-                        // #2: check for existing factura INSIDE transaction with FOR UPDATE
+                        // Check for existing factura with FOR UPDATE
                         $lockStmt = $db->prepare("SELECT id FROM facturas WHERE cita_id = :cid FOR UPDATE");
                         $lockStmt->execute([':cid' => $citaId]);
                         if ($lockStmt->fetch()) {
                             throw new \RuntimeException('La cita ya tiene una factura.');
                         }
 
-                        $id = $repo->crearFactura($citaId, $costoServicio, '', $createdByName, $descripcionServicio, $planTipo, $planCuotasTotal, $planMontoCuotaSugerido, (int)($_SESSION['user_id'] ?? 0));
+                        $id = $repo->crearFactura($citaId, $costoServicio, '', $createdByName, $descripcionServicio, $planTipo, null, $planMontoCuotaSugerido, (int)($_SESSION['user_id'] ?? 0));
 
-                        if ($planTipo === 'contado') {
-                            $metodoPago = trim($input['metodo_pago'] ?? 'Efectivo');
-                            if ($metodoPago === '') $metodoPago = 'Efectivo';
-                            $esDivisa = stripos($metodoPago, 'divisa') !== false || (float)($input['monto_usd'] ?? 0) > 0;
-                            $tasa = (float)($input['tasa_usada'] ?? 0);
-                            if ($tasa <= 0) {
-                                $tasaService = new ExchangeRateService();
-                                $tasa = $tasaService->getEffectiveRate();
-                            }
-                            if ($tasa <= 0) {
-                                throw new \RuntimeException('Tasa BCV no disponible. Intente de nuevo o especifique una tasa manualmente.');
-                            }
-                            // Re-read factura with lock to get exact total
-                            $fLock = $db->prepare("SELECT total_factura AS totalFactura FROM facturas WHERE id = :fid FOR UPDATE");
-                            $fLock->execute([':fid' => $id]);
-                            $fRow = $fLock->fetch();
-                            $montoTotal = $fRow ? (float)$fRow['totalFactura'] : 0;
-                            if ($esDivisa) {
-                                $montoUsd = (float)($input['monto_usd'] ?? 0);
-                                if ($montoUsd <= 0) {
-                                    throw new \RuntimeException('Debe especificar un monto en USD mayor a cero para pagos en divisas.');
-                                }
-                            } else {
-                                $montoUsd = $tasa > 0 ? $montoTotal / $tasa : $montoTotal;
-                            }
-                            if ($montoUsd * $tasa > $montoTotal + 0.01) {
-                                throw new \RuntimeException('El monto del pago supera el total de la factura.');
-                            }
-                            // manageTransaction=false — outer transaction handles commit/rollback
-                            $reciboId = $repo->registrarPago($id, $montoUsd, $metodoPago, $tasa, false);
+                        // Re-read factura to get exact total from DB
+                        $fLock = $db->prepare("SELECT total_factura AS totalFactura FROM facturas WHERE id = :fid FOR UPDATE");
+                        $fLock->execute([':fid' => $id]);
+                        $fRow = $fLock->fetch();
+                        $montoTotal = $fRow ? (float)$fRow['totalFactura'] : $totalFacturaCalculado;
+
+                        // Registrar el pago
+                        $esDivisa = stripos($metodoPago, 'divisa') !== false || stripos($metodoPago, 'dolar') !== false || stripos($metodoPago, '$') !== false;
+                        if ($esDivisa) {
+                            $montoUsd = $montoPagoBs / $tasa;
+                        } else {
+                            $montoUsd = $montoPagoBs / $tasa;
+                        }
+
+                        $reciboId = $repo->registrarPago($id, $montoUsd, $metodoPago, $tasa, false);
+
+                        if ($esPagoCompleto) {
                             $repo->cambiarEstado($id, 'cerrada', (int)($_SESSION['user_id'] ?? 0));
                         }
 
                         $db->commit();
 
-                        if ($planTipo === 'contado') {
+                        if ($esPagoCompleto) {
                             ApiResponse::success(['id' => $id, 'planTipo' => 'contado', 'reciboId' => $reciboId], 'Factura creada y pagada exitosamente.');
                         } else {
-                            ApiResponse::success(['id' => $id, 'planTipo' => 'cuotas', 'planCuotasTotal' => $planCuotasTotal, 'planMontoCuotaSugerido' => $planMontoCuotaSugerido], 'Plan de cuotas creado exitosamente.');
+                            $saldoPendiente = round($totalFacturaCalculado - $montoPagoBs, 2);
+                            ApiResponse::success([
+                                'id' => $id,
+                                'planTipo' => 'cuotas',
+                                'planMontoCuotaSugerido' => $planMontoCuotaSugerido,
+                                'saldoPendiente' => $saldoPendiente
+                            ], "Anticipo del " . round($montoPagoBs / $totalFacturaCalculado * 100) . "% registrado. Saldo pendiente: {$saldoPendiente} Bs.");
                         }
                     } catch (\Throwable $e) {
                         $db->rollBack();
@@ -226,11 +240,6 @@ class FacturaController
                             throw new \RuntimeException('No se pueden registrar pagos en una factura ' . $factura['estado'] . '.');
                         }
 
-                        $totalPagadoVes = $repo->getTotalPagadoVes($facturaId);
-                        if ($totalPagadoVes + ($monto * $tasaUsada) > (float)$factura['totalFactura'] + 0.01) {
-                            throw new \RuntimeException('El monto del pago supera el saldo pendiente de la factura.');
-                        }
-
                         $reciboId = $repo->registrarPago($facturaId, $monto, $metodoPago, $tasaUsada, false);
                         $db->commit();
 
@@ -272,6 +281,7 @@ class FacturaController
                         }
 
                         $nuevoEstado = $action === 'cerrar' ? 'cerrada' : 'anulada';
+                        $motivo = '';
 
                         if ($action === 'cerrar') {
                             $totalPagadoVes = $repo->getTotalPagadoVes($facturaId);
@@ -279,7 +289,24 @@ class FacturaController
                                 throw new \RuntimeException('No se puede cerrar una factura con saldo pendiente.');
                             }
                         } else {
-                            // anular: revertir stock si la cita estaba Finalizada
+                            // anular: validar motivo obligatorio
+                            $motivo = trim($input['motivo'] ?? '');
+                            if (empty($motivo)) {
+                                throw new \RuntimeException('Debe indicar el motivo de anulación.');
+                            }
+
+                            // Verificar pagos: bloquear si hay pagos y la cita no está cancelada
+                            $totalPagadoVes = $repo->getTotalPagadoVes($facturaId);
+                            if ($totalPagadoVes > 0.01) {
+                                $citaRepo = new \BetelCreativa\Infrastructure\AppointmentRepository();
+                                $cita = $citaRepo->findById((int)$factura['citaId']);
+                                $citaEstado = $cita['estado'] ?? '';
+                                if ($citaEstado !== 'Cancelado') {
+                                    throw new \RuntimeException('No se puede anular una factura con pagos. Debe cancelar la cita primero.');
+                                }
+                            }
+
+                            // revertir stock si la cita estaba Finalizada
                             $citaRepo = new \BetelCreativa\Infrastructure\AppointmentRepository();
                             $cita = $citaRepo->findById((int)$factura['citaId']);
                             if ($cita && $cita['estado'] === 'Finalizada') {
@@ -288,7 +315,7 @@ class FacturaController
                             }
                         }
 
-                        $repo->cambiarEstado($facturaId, $nuevoEstado, (int)($_SESSION['user_id'] ?? 0));
+                        $repo->cambiarEstado($facturaId, $nuevoEstado, (int)($_SESSION['user_id'] ?? 0), $motivo ?? '');
                         $db->commit();
                         ApiResponse::success(null, 'Factura ' . ($action === 'cerrar' ? 'cerrada' : 'anulada') . ' exitosamente.');
                     } catch (\Throwable $e) {

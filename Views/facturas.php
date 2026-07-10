@@ -97,17 +97,21 @@
     <!-- Sidebar -->
     <div class="factura-sidebar">
         <div class="sidebar-tabs">
-            <button class="sidebar-tab active" data-tab="abiertas">
+            <button class="sidebar-tab active" data-tab="pendientes">
+                <i class="fas fa-clock"></i>
+                <span>Pendiente</span>
+            </button>
+            <button class="sidebar-tab" data-tab="abiertas">
                 <i class="fas fa-folder-open"></i>
                 <span>Abiertas</span>
-            </button>
-            <button class="sidebar-tab" data-tab="pendientes">
-                <i class="fas fa-clock"></i>
-                <span>Pendientes</span>
             </button>
             <button class="sidebar-tab" data-tab="pagadas">
                 <i class="fas fa-check-circle"></i>
                 <span>Pagadas</span>
+            </button>
+            <button class="sidebar-tab" data-tab="canceladas">
+                <i class="fas fa-ban"></i>
+                <span>Canceladas</span>
             </button>
         </div>
         <div class="sidebar-search">
@@ -180,10 +184,6 @@
                         </table>
                         <div class="factura-total-section">
                             <div class="total-row">
-                                <span>Total Materiales:</span>
-                                <span id="card2-total-materiales">0.00 Bs</span>
-                            </div>
-                            <div class="total-row">
                                 <span>Costo de Servicio:</span>
                                 <span id="card2-costo-servicio">0.00 Bs</span>
                             </div>
@@ -192,7 +192,7 @@
                                 <span id="card2-iva">0.00 Bs</span>
                             </div>
                             <div class="total-row total-final">
-                                <span><strong>TOTAL FACTURA:</strong></span>
+                                <span><strong>TOTAL MATERIALES:</strong></span>
                                 <span id="card2-total-valor"><strong>0.00 Bs</strong></span>
                             </div>
                         </div>
@@ -261,6 +261,14 @@
                             <i class="fas fa-ban"></i> Anular
                         </button>
                     </div>
+                    <div class="factura-actions" id="pagoActionsReadOnly" style="margin-top:15px;display:none;">
+                        <button type="button" class="btn btn-outline" id="btnImprimirOriginal" style="flex:1;">
+                            <i class="fas fa-print"></i> Imprimir Recibo
+                        </button>
+                        <button type="button" class="btn btn-outline" id="btnImprimirCopia" style="flex:1;">
+                            <i class="fas fa-copy"></i> Imprimir Copia
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -275,6 +283,35 @@
             </div>
 
         </div>
+
+        <!-- Cancelada Detail (hidden initially) -->
+        <div id="detailCancelada" style="display:none;">
+            <div class="factura-card" style="border-left:4px solid #dc3545;">
+                <div class="factura-card-header" style="color:#dc3545;">
+                    <i class="fas fa-ban"></i> Factura Cancelada
+                    <span class="estado-badge estado-anulada" id="canceladaBadge" style="display:inline-block;">Cancelada</span>
+                </div>
+                <div class="factura-card-body">
+                    <div class="cancelada-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="info-row"><span class="info-label">Cliente:</span><span id="can-cliente" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Cédula:</span><span id="can-cedula" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Fecha / Hora Cita:</span><span id="can-fechaCita" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Fecha / Hora Factura:</span><span id="can-fechaFactura" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Código de Factura:</span><span id="can-codigo" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Motivo Cancelación:</span><span id="can-motivo" class="info-value">—</span></div>
+                        <div class="info-row" style="grid-column:1/-1;border-top:1px solid #eee;padding-top:10px;">
+                            <span class="info-label" style="color:#dc3545;font-weight:700;">Monto Pagado:</span>
+                            <span id="can-montoPagado" class="info-value" style="color:#28a745;font-weight:700;">0.00 Bs</span>
+                        </div>
+                        <div class="info-row" style="grid-column:1/-1;">
+                            <span class="info-label">Monto Total (debía pagar):</span>
+                            <span id="can-montoTotal" class="info-value">0.00 Bs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -293,21 +330,20 @@
                 <div class="form-group">
                     <label class="form-label">Método de Pago</label>
                     <select class="form-select" id="pagoMetodo" required>
-                        <option value="divisas">Divisas ($)</option>
                         <option value="efectivo">Efectivo (Bs)</option>
-                        <option value="pagomovil">PagoMóvil</option>
+                        <option value="pagomovil">Pago Móvil</option>
+                        <option value="divisas">Dólar $</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Monto (Bs)</label>
+                    <label class="form-label">Monto</label>
                     <input type="number" step="0.01" min="0" class="form-input" id="pagoMontoVes" placeholder="0.00">
+                    <small style="color:var(--gray);" id="pagoInputHint">Ingrese el monto en Bolívares</small>
                 </div>
-                <div class="form-group" id="divisaGroup" style="display:none;">
-                    <label class="form-label">Equivalencia en Dólares ($)</label>
-                    <input type="number" step="0.01" min="0" class="form-input" id="pagoMontoUsd" placeholder="0.00" readonly style="background:#f5f5f5;">
-                    <small style="color:var(--gray);">1 $ = <span id="pagoTasaDisplay">0.00</span> Bs</small>
+                <div id="pagoConversionRow" style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:6px;font-size:0.85rem;display:none;">
+                    <span id="pagoConversionText"></span>
                 </div>
-                <input type="hidden" id="pagoTasa">
+                <input type="hidden" id="pagoTasa" value="0">
                 <div class="form-actions">
                     <button type="button" class="btn btn-outline" id="cancelPago">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="btnGuardarPago">Registrar Pago</button>
@@ -321,7 +357,7 @@
 <div class="modal" id="generarFacturaModal">
     <div class="modal-content" style="max-width:560px;">
         <div class="modal-header">
-            <h3 class="modal-title">Generar Factura</h3>
+            <h3 class="modal-title"><i class="fas fa-file-invoice"></i> Generar Factura</h3>
             <span class="close-modal">&times;</span>
         </div>
         <div class="modal-body">
@@ -334,69 +370,55 @@
                 <div class="form-group">
                     <label class="form-label">Costo de Servicio (Bs)</label>
                     <input type="number" step="0.01" min="0" class="form-input" id="genCostoServicio" placeholder="0.00" required>
-                    <small style="color:var(--gray);">Mano de obra / honorarios de decoración</small>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Notas de Cuota</label>
-                    <input type="text" class="form-input" id="genNotasCuota" placeholder="Ej: 50% de inicial para reservar">
+                    <small class="form-help">Mano de obra / honorarios de decoración</small>
                 </div>
 
-                <div class="form-group" style="margin-top:12px;">
-                    <label class="form-label">Tipo de Pago</label>
-                    <div class="radio-group" style="display:flex;gap:20px;margin-top:6px;">
-                        <label class="radio-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                            <input type="radio" name="planTipo" value="contado" checked> Pagar ahora
-                        </label>
-                        <label class="radio-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                            <input type="radio" name="planTipo" value="cuotas"> Pagar por Cuotas
-                        </label>
-                    </div>
+                <!-- Preview del total -->
+                <div class="gen-preview">
+                    <div class="gen-preview-title"><i class="fas fa-receipt"></i> Resumen de Factura</div>
+                    <div class="gen-preview-row"><span>Sub-Total:</span><span id="previewSubtotal">0,00 Bs</span></div>
+                    <div class="gen-preview-row"><span>I.V.A (16%):</span><span id="previewIva">0,00 Bs</span></div>
+                    <div class="gen-preview-row gen-preview-total"><span>TOTAL:</span><span id="previewTotal">0,00 Bs</span></div>
+                    <div class="gen-preview-row gen-preview-min"><span>Anticipo mínimo (50%):</span><span id="previewMinimo">0,00 Bs</span></div>
                 </div>
 
-                <div id="contadoPreview" style="margin-top:12px;padding:12px;background:#f9f9f9;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;">
-                    <div style="text-align:center;font-weight:700;margin-bottom:6px;">— RECIBO DE PAGO —</div>
-                    <div class="preview-line"><span>Sub-Total:</span><span class="pr" id="previewSubtotal">0.00 Bs</span></div>
-                    <div class="preview-line"><span>I.V.A (16%):</span><span class="pr" id="previewIva">0.00 Bs</span></div>
-                    <div class="preview-line" style="border-top:1px solid #000;padding-top:4px;font-weight:700;"><span>TOTAL:</span><span class="pr" id="previewTotal">0.00 Bs</span></div>
-                    <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #ccc;">
-                        <div class="form-group" style="margin-bottom:6px;">
-                            <label style="font-family:inherit;font-size:11px;font-weight:600;display:block;margin-bottom:2px;">Método de Pago</label>
-                            <select class="form-select" id="genMetodoPago" style="font-size:11px;padding:4px 6px;">
+                <!-- Anticipo -->
+                <div class="gen-anticipo">
+                    <label class="gen-anticipo-label"><i class="fas fa-hand-holding-usd"></i> Anticipo (mín. 50%)</label>
+                    <div class="gen-anticipo-row">
+                        <div class="form-group" style="flex:1;min-width:160px;">
+                            <label class="form-label">Monto a pagar ahora (Bs)</label>
+                            <input type="number" step="0.01" min="0" class="form-input" id="genMontoBs" placeholder="0,00" required>
+                        </div>
+                        <div class="form-group" style="flex:1;min-width:140px;">
+                            <label class="form-label">Método de Pago</label>
+                            <select class="form-select" id="genMetodoPago">
                                 <option value="efectivo">Efectivo (Bs)</option>
-                                <option value="pagomovil">PagoMóvil</option>
-                                <option value="divisas">Divisas ($)</option>
+                                <option value="pagomovil">Pago Móvil</option>
+                                <option value="divisas">Dólar $</option>
                             </select>
                         </div>
-                        <div id="genDivisaSection" style="display:none;">
-                            <div class="form-group" style="margin-bottom:2px;">
-                                <label style="font-family:inherit;font-size:11px;font-weight:600;display:block;margin-bottom:2px;">Monto en Dólares ($)</label>
-                                <input type="number" step="0.01" min="0" class="form-input" id="genMontoUsd" placeholder="0.00" style="font-size:11px;padding:4px 6px;">
-                            </div>
-                            <small style="color:var(--gray);">1 $ = <span id="genTasaBcv">0.00</span> Bs</small>
+                    </div>
+                    <div id="genConversionRow" class="gen-conversion" style="display:none;">
+                        <span id="genConversionText"></span>
+                    </div>
+                    <div id="genErrorAnticipo" class="gen-error"></div>
+                    <div class="gen-progress-wrap">
+                        <div class="pago-progress-bar">
+                            <div class="pago-progress-fill warning" id="genProgressFill" style="width:0%;"></div>
+                        </div>
+                        <div class="gen-progress-labels">
+                            <span id="genProgressLabel">0%</span>
+                            <span>100%</span>
                         </div>
                     </div>
                 </div>
 
-                <div id="cuotasSection" style="display:none;margin-top:12px;">
-                    <div class="form-group">
-                        <label class="form-label">Número de Cuotas</label>
-                        <select class="form-select" id="genNumCuotas">
-                            <option value="2">2 cuotas</option>
-                            <option value="3">3 cuotas</option>
-                            <option value="6">6 cuotas</option>
-                        </select>
-                    </div>
-                    <div style="padding:12px;background:#f9f9f9;border-radius:8px;font-family:'Courier New',monospace;font-size:12px;line-height:1.6;">
-                        <div class="preview-line"><span>Sub-Total:</span><span class="pr" id="cuotaPreviewSubtotal">0.00 Bs</span></div>
-                        <div class="preview-line"><span>I.V.A (16%):</span><span class="pr" id="cuotaPreviewIva">0.00 Bs</span></div>
-                        <div class="preview-line" style="border-top:1px solid #000;padding-top:4px;font-weight:700;"><span>TOTAL:</span><span class="pr" id="cuotaPreviewTotal">0.00 Bs</span></div>
-                        <div class="preview-line" style="border-top:1px dashed #000;margin-top:4px;padding-top:4px;"><span>Cuotas:</span><span class="pr" id="cuotaPreviewCuota">—</span></div>
-                    </div>
-                </div>
+                <input type="hidden" id="genTasaBcv" value="0">
 
-                <div class="form-actions" style="margin-top:16px;">
+                <div class="form-actions">
                     <button type="button" class="btn btn-outline" id="cancelGenFactura">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btnGuardarFactura">Confirmar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarFactura">Confirmar y Pagar</button>
                 </div>
             </form>
         </div>
@@ -416,6 +438,29 @@
                 <button type="button" class="btn btn-outline" id="cancelCerrarFactura">Cancelar</button>
                 <button type="button" class="btn btn-primary" id="btnConfirmarCerrar">Cerrar Factura</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Anular Factura -->
+<div class="modal" id="anularFacturaModal">
+    <div class="modal-content" style="max-width:440px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Anular Factura</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="anularFacturaForm">
+                <p style="margin-bottom:15px;">¿Está seguro de anular esta factura? Esta acción no se puede deshacer.</p>
+                <div class="form-group">
+                    <label class="form-label">Motivo de Anulación <span style="color:#dc3545;">*</span></label>
+                    <textarea class="form-textarea" id="anularMotivo" rows="3" placeholder="Indique el motivo de la anulación..." required></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancelAnularFactura">Cancelar</button>
+                    <button type="submit" class="btn btn-danger" id="btnConfirmarAnular">Anular Factura</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

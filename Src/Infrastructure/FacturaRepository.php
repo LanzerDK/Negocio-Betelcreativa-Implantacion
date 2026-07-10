@@ -131,12 +131,16 @@ class FacturaRepository
             ]);
             $facturaId = (int)$this->db->lastInsertId();
 
-            // M6: log de creación
-            $logStmt = $this->db->prepare(
-                "INSERT INTO facturas_historial (factura_id, estado_anterior, estado_nuevo, changed_by, motivo)
-                 VALUES (:fid, '', 'activa', :uid, 'Creación de factura')"
-            );
-            $logStmt->execute([':fid' => $facturaId, ':uid' => $changedBy]);
+            // M6: log de creación (no-blocking si tabla no existe)
+            try {
+                $logStmt = $this->db->prepare(
+                    "INSERT INTO facturas_historial (factura_id, estado_anterior, estado_nuevo, changed_by, motivo)
+                     VALUES (:fid, '', 'activa', :uid, 'Creación de factura')"
+                );
+                $logStmt->execute([':fid' => $facturaId, ':uid' => $changedBy]);
+            } catch (PDOException $e) {
+                \BetelCreativa\Helpers\Logger::error('No se pudo registrar historial de factura', ['factura_id' => $facturaId, 'error' => $e->getMessage()]);
+            }
 
             return $facturaId;
         } catch (PDOException $e) {
@@ -152,20 +156,28 @@ class FacturaRepository
 
             // Crear un recibo (tipo='recibo') con su propio ID correlativo
             $montoVes = round($monto * $tasaUsada, 2);
+
+            // Pre-fetch para evitar MySQL 1093 (no se permite subconsulta a la tabla destino)
+            $srcStmt = $this->db->prepare(
+                "SELECT cita_id, created_by_name FROM facturas WHERE id = :fid"
+            );
+            $srcStmt->execute([':fid' => $facturaId]);
+            $srcRow = $srcStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$srcRow) {
+                throw new \RuntimeException('Factura origen no encontrada.');
+            }
+            $citaId = (int)$srcRow['cita_id'];
+            $createdByName = $srcRow['created_by_name'];
+
             $reciboStmt = $this->db->prepare(
                 "INSERT INTO facturas (cita_id, costo_servicio, total_factura, tipo, factura_origen_id, created_by_name, estado)
-                 VALUES (
-                     (SELECT cita_id FROM facturas WHERE id = :fid),
-                     0, :monto_ves, 'recibo', :fid2,
-                     (SELECT created_by_name FROM facturas WHERE id = :fid3),
-                     'cerrada'
-                 )"
+                 VALUES (:cita_id, 0, :monto_ves, 'recibo', :fid2, :created_by_name, 'cerrada')"
             );
             $reciboStmt->execute([
-                ':fid'       => $facturaId,
-                ':monto_ves' => $montoVes,
-                ':fid2'      => $facturaId,
-                ':fid3'      => $facturaId
+                ':cita_id'        => $citaId,
+                ':monto_ves'      => $montoVes,
+                ':fid2'           => $facturaId,
+                ':created_by_name'=> $createdByName,
             ]);
             $reciboId = (int)$this->db->lastInsertId();
 
@@ -289,17 +301,21 @@ class FacturaRepository
             $stmt = $this->db->prepare("UPDATE facturas SET estado = :estado WHERE id = :id AND estado = 'activa'");
             $ok = $stmt->execute([':estado' => $estado, ':id' => $facturaId]);
             if ($ok) {
-                $logStmt = $this->db->prepare(
-                    "INSERT INTO facturas_historial (factura_id, estado_anterior, estado_nuevo, changed_by, motivo)
-                     VALUES (:fid, :ea, :en, :uid, :mot)"
-                );
-                $logStmt->execute([
-                    ':fid' => $facturaId,
-                    ':ea'  => $estadoAnterior,
-                    ':en'  => $estado,
-                    ':uid' => $changedBy,
-                    ':mot' => $motivo ?: ($estado === 'anulada' ? 'Anulación de factura' : 'Cierre de factura')
-                ]);
+                try {
+                    $logStmt = $this->db->prepare(
+                        "INSERT INTO facturas_historial (factura_id, estado_anterior, estado_nuevo, changed_by, motivo)
+                         VALUES (:fid, :ea, :en, :uid, :mot)"
+                    );
+                    $logStmt->execute([
+                        ':fid' => $facturaId,
+                        ':ea'  => $estadoAnterior,
+                        ':en'  => $estado,
+                        ':uid' => $changedBy,
+                        ':mot' => $motivo ?: ($estado === 'anulada' ? 'Anulación de factura' : 'Cierre de factura')
+                    ]);
+                } catch (PDOException $e) {
+                    \BetelCreativa\Helpers\Logger::error('No se pudo registrar historial de cambio de estado', ['factura_id' => $facturaId, 'error' => $e->getMessage()]);
+                }
             }
 
             if ($ownTx) {
@@ -339,32 +355,32 @@ class FacturaRepository
         try {
             switch ($status) {
                 case 'pendientes':
-                    // Citas en estado 'Pendiente' SIN factura principal
-                    $sql = "SELECT c.id AS citaId, NULL AS facturaId, NULL AS totalFactura,
-                                   'pendiente' AS estado, c.fecha_hora_inicio AS fechaCita,
-                                   CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
-                                   NULL AS totalPagadoVes, c.estado AS citaEstado
+                    // Todas las citas en estado 'Pendiente' (con o sin factura)
+                    $sql = "SELECT c.id AS citaId, f.id AS facturaId, f.total_factura AS totalFactura,
+                                   COALESCE(f.estado, 'pendiente') AS estado, c.fecha_hora_inicio AS fechaCita,
+                                    CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                                    cust.id_number AS clienteCedula,
+                                    NULL AS totalPagadoVes, c.estado AS citaEstado
                             FROM citas c
                             JOIN customers cust ON c.cliente_id = cust.customer_id
+                            LEFT JOIN facturas f ON c.id = f.cita_id AND f.tipo = 'factura'
                             WHERE c.estado = 'Pendiente'
-                              AND NOT EXISTS (
-                                  SELECT 1 FROM facturas f
-                                  WHERE f.cita_id = c.id AND f.tipo = 'factura'
-                              )
                             ORDER BY c.fecha_hora_inicio ASC";
                     $stmt = $this->db->query($sql);
                     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 case 'abiertas':
-                    // Facturas activas con saldo pendiente
+                    // Facturas activas con saldo pendiente, solo citas En Proceso / En Progreso
                     $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
                                    f.estado, f.created_at AS createdAt,
                                    CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                                   cust.id_number AS clienteCedula,
                                    c.fecha_hora_inicio AS fechaCita
                             FROM facturas f
                             JOIN citas c ON f.cita_id = c.id
                             JOIN customers cust ON c.cliente_id = cust.customer_id
                             WHERE f.tipo = 'factura' AND f.estado = 'activa'
+                              AND c.estado IN ('En Proceso','En Progreso')
                             ORDER BY f.created_at DESC";
                     $stmt = $this->db->query($sql);
                     $facturas = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -385,6 +401,7 @@ class FacturaRepository
                     $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
                                    f.estado, f.created_at AS createdAt,
                                    CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                                   cust.id_number AS clienteCedula,
                                    c.fecha_hora_inicio AS fechaCita
                             FROM facturas f
                             JOIN citas c ON f.cita_id = c.id
@@ -394,10 +411,34 @@ class FacturaRepository
                     $stmt = $this->db->query($sql);
                     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                case 'canceladas':
+                    // Facturas de citas canceladas
+                    $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
+                                   f.estado, f.created_at AS fechaFactura,
+                                   CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
+                                   cust.id_number AS clienteCedula,
+                                   c.fecha_hora_inicio AS fechaCita,
+                                   c.estado AS citaEstado,
+                                   c.motivo_cancelacion AS motivoCancelacion
+                            FROM facturas f
+                            JOIN citas c ON f.cita_id = c.id
+                            JOIN customers cust ON c.cliente_id = cust.customer_id
+                            WHERE f.tipo = 'factura' AND c.estado = 'Cancelado'
+                            ORDER BY c.fecha_hora_cancelacion DESC";
+                    $stmt = $this->db->query($sql);
+                    $filas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($filas as &$f) {
+                        $f['totalPagadoVes'] = $this->getTotalPagadoVes((int)$f['facturaId']);
+                    }
+                    unset($f);
+                    return $filas;
+
                 default:
                     return [];
             }
         } catch (PDOException $e) {
+            \BetelCreativa\Helpers\Logger::error('listFacturasByStatus falló', ['status' => $status, 'error' => $e->getMessage()]);
             return [];
         }
     }
@@ -416,6 +457,7 @@ class FacturaRepository
                             c.ubicacion,
                             COALESCE(et.name, '—') AS eventType,
                             c.notas,
+                            c.motivo_cancelacion AS motivoCancelacion,
                             f.id AS facturaId,
                             f.tipo AS facturaTipo,
                             f.costo_servicio AS costoServicio,

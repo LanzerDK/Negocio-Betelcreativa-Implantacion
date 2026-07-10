@@ -27,8 +27,11 @@ class TaskController
                 break;
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true);
                 $title = trim($input['title'] ?? '');
                 $priority = $input['priority'] ?? 'medium';
 
@@ -56,6 +59,10 @@ class TaskController
                 break;
 
             case 'PUT':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
                 $id = (int)($_GET['id'] ?? 0);
                 if (!$id) {
@@ -67,7 +74,6 @@ class TaskController
                     ApiResponse::error('Tarea no encontrada.', 404);
                 }
 
-                $input = json_decode(file_get_contents('php://input'), true);
                 $newStatus = $input['status'] ?? $existing->getStatus();
 
                 if (!in_array($newStatus, ['pending', 'completed'])) {

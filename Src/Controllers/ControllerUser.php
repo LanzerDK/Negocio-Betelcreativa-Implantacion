@@ -54,10 +54,13 @@ class ControllerUser
     public static function updateProfile(): void
     {
         SessionHelpers::requireAuth();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
         $userId = (int)SessionHelpers::get('user_id');
-        $input = json_decode(file_get_contents('php://input'), true);
 
         $name     = trim($input['name'] ?? '');
         $lastName = trim($input['last_name'] ?? '');
@@ -113,10 +116,13 @@ class ControllerUser
     public static function changePassword(): void
     {
         SessionHelpers::requireAuth();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
         $userId = (int)SessionHelpers::get('user_id');
-        $input = json_decode(file_get_contents('php://input'), true);
 
         $currentPassword = $input['current_password'] ?? '';
         $newPassword     = $input['new_password'] ?? '';
@@ -176,10 +182,13 @@ class ControllerUser
     public static function savePreferences(): void
     {
         SessionHelpers::requireAuth();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
         $userId = (int)SessionHelpers::get('user_id');
-        $input = json_decode(file_get_contents('php://input'), true);
 
         $prefs = [
             'notify_low_stock'   => !empty($input['notify_low_stock']) ? 1 : 0,

@@ -32,8 +32,11 @@ class SupplierController
                 break;
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
                 $supplierType = $input['supplier_type'] ?? 'fijo';
                 $supplier = new SupplierModel([
@@ -63,8 +66,11 @@ class SupplierController
                 break;
 
             case 'PUT':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
                 $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
 
                 if (!$id) {

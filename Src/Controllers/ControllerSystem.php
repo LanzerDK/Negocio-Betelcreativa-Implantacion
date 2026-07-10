@@ -75,13 +75,16 @@ class ControllerSystem
     public static function update(): void
     {
         SessionHelpers::requireAuth();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
         if (!in_array(SessionHelpers::get('user_role'), ['super_admin', 'admin'])) {
             ApiResponse::error('Solo los administradores pueden modificar la configuración del sistema.', 403);
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
         $key   = trim($input['key'] ?? '');
         $value = trim((string)($input['value'] ?? ''));
         $desc  = isset($input['description']) ? trim($input['description']) : null;
@@ -106,13 +109,16 @@ class ControllerSystem
     public static function batchUpdate(): void
     {
         SessionHelpers::requireAuth();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
         if (!in_array(SessionHelpers::get('user_role'), ['super_admin', 'admin'])) {
             ApiResponse::error('Solo los administradores pueden modificar la configuración del sistema.', 403);
         }
 
-        $input = json_decode(file_get_contents('php://input'), true);
         $settings = $input['settings'] ?? [];
 
         if (empty($settings) || !is_array($settings)) {

@@ -63,6 +63,7 @@ $totalPagadoVes = 0;
 foreach ($pagos as $p) $totalPagadoVes += (float)$p['monto'] * (float)$p['tasa_usada'];
 $saldoPendienteVes = $totalConIva - $totalPagadoVes;
 $cambio = $totalPagadoVes > $totalConIva ? $totalPagadoVes - $totalConIva : 0;
+$esCopia = !empty($_GET['copia']);
 
 function fmt($v) { return number_format($v, 2, ',', '.'); }
 function line($l, $r) {
@@ -81,11 +82,10 @@ function line($l, $r) {
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Courier New',Courier,monospace; background:#fff; padding:30px; color:#000; font-size:12px; line-height:1.5; }
         .recibo { max-width:680px; margin:0 auto; }
-        .hdr { text-align:center; margin-bottom:14px; }
-        .hdr .e { font-size:16px; font-weight:700; letter-spacing:1px; }
-        .hdr .r { font-size:13px; }
-        .hdr .d { font-size:11px; line-height:1.3; }
-        .hdr .t { margin-top:5px; border-top:2px solid #000; padding-top:5px; font-weight:700; font-size:13px; }
+        .hdr { display:flex; align-items:center; justify-content:center; gap:24px; margin-bottom:14px; }
+        .logo-recibo { max-width:110px; height:auto; }
+        .hdr-right { text-align:center; }
+        .hdr .t { font-weight:800; font-size:20px; margin-bottom:10px; }
         .sep { border:none; border-top:2px solid #000; margin:8px 0; }
         .l { display:flex; justify-content:space-between; width:100%; padding:1px 0; }
         .ll { white-space:nowrap; }
@@ -99,6 +99,8 @@ function line($l, $r) {
         .no-print button { padding:8px 20px; background:#000; color:#fff; border:none; font-family:inherit; font-size:12px; cursor:pointer; margin:0 4px; }
         .no-print button:hover { background:#333; }
         .cambio-line { border-top:2px solid #000; margin-top:4px; padding-top:4px; font-weight:700; font-size:13px; }
+        .copia-watermark { text-align:center; margin-top:20px; font-size:28px; font-weight:700; color:#dc3545; border:3px solid #dc3545; padding:10px 20px; display:inline-block; letter-spacing:8px; opacity:0.7; }
+        .copia-wrapper { text-align:center; }
         @media print { .no-print { display:none; } body { padding:15px; } }
     </style>
 </head>
@@ -111,11 +113,16 @@ function line($l, $r) {
     <div class="recibo">
 
         <div class="hdr">
-            <div class="e">Negocio BetEl-Creativa 2020</div>
-            <div class="r">V-173970451</div>
-            <div class="d">Avenida 86 Porto Carrero, Casa NRO 175</div>
-            <div class="d">Valencia, Carabobo Zona postal 2001</div>
-            <div class="t">RECIBO DE PAGO</div>
+            <img src="<?php echo (defined('APP_URL') ? APP_URL : '../') . 'Public/images/logoBN.png'; ?>" alt="Bet-El Creativa" class="logo-recibo">
+            <div class="hdr-right">
+                <div class="t">Factura</div>
+                <div style="font-size:11px;line-height:1.6;">
+                    <strong>Negocio BetEl-Creativa 2020</strong><br>
+                    V-173970451<br>
+                    Avenida 86 Porto Carrero, Casa NRO 175<br>
+                    Valencia, Carabobo Zona postal 2001.
+                </div>
+            </div>
         </div>
         <hr class="sep">
 
@@ -123,8 +130,11 @@ function line($l, $r) {
         <div><?= line('Fecha:', date('d/m/Y', strtotime($f['createdAt']))) ?></div>
         <div><?= line('Atendido por:', htmlspecialchars($f['createdByName'] ?? '—')) ?></div>
         <div><?= line('Cliente:', htmlspecialchars($f['clienteNombre'])) ?></div>
+        <div><?= line('C.I:', htmlspecialchars($f['clienteCedula'] ?? '—')) ?></div>
+        <div><?= line('Teléfono:', htmlspecialchars($f['clienteTelefono'] ?? '—')) ?></div>
         <div><?= line('Fecha Evento:', date('d/m/Y', strtotime($f['fechaCita']))) ?></div>
-        <div><?= line('Tipo Evento:', htmlspecialchars($f['eventType'])) ?></div>
+        <div><?= line('Ubicación:', htmlspecialchars($f['ubicacion'] ?? '—')) ?></div>
+        <div><?= line('Evento:', htmlspecialchars($f['eventType'])) ?></div>
         <hr class="sep">
 
         <div class="st">MATERIALES:</div>
@@ -139,14 +149,16 @@ function line($l, $r) {
                 <div class="v"><span>Valor Original: <?= fmt($precio) ?> Bs</span><span><?= fmt($total) ?> Bs</span></div>
             </div>
             <?php endforeach; ?>
-            <div style="margin-top:2px;">Cantidad Total de Materiales: <?= count($materiales) ?></div>
+           
+            <div style="margin-top:2px;">Cantidad de Materiales: <?= count($materiales) ?> 
+            </div>
         <?php else: ?>
             <div>Sin materiales asignados</div>
         <?php endif; ?>
         <hr class="sep">
 
-        <div class="st">TOTALES:</div>
-        <?= line('TOTAL:', fmt($totalMateriales) . ' Bs') ?>
+        <div class="st"></div>
+        
         <?= line('Sub-Total:', fmt($totalMateriales) . ' Bs') ?>
         <?= line('Mano de obra (' . htmlspecialchars($f['descripcionServicio'] ?? 'Servicio') . '):', fmt((float)$f['costoServicio']) . ' Bs') ?>
         <?= line('I.V.A (' . (IVA_RATE * 100) . '%):', fmt($ivaAmount) . ' Bs') ?>
@@ -178,7 +190,7 @@ function line($l, $r) {
             <hr class="sep">
             <?= line('Total Pagado:', fmt($totalPagadoVes) . ' Bs') ?>
             <?php if ($cambio > 0): ?>
-                <?= line('Cambio:', fmt($cambio) . ' Bs') ?>
+                <?= line('Devolución:', fmt($cambio) . ' Bs') ?>
             <?php endif; ?>
             <?php if ($saldoPendienteVes > 0.01): ?>
                 <?= line('Saldo Pendiente:', fmt($saldoPendienteVes) . ' Bs') ?>
@@ -193,7 +205,7 @@ function line($l, $r) {
         <?php endif; ?>
 
         <?php
-        $termStmt = $db->prepare("SELECT `value` FROM settings WHERE `key` = 'terminos_condiciones'");
+        $termStmt = $db->prepare("SELECT setting_value FROM settings WHERE setting_key = 'terminos_condiciones'");
         $termStmt->execute();
         $terminosRaw = $termStmt->fetchColumn();
         $terminos = $terminosRaw ? array_filter(array_map('trim', explode("\n", $terminosRaw))) : [];
@@ -206,6 +218,12 @@ function line($l, $r) {
             <li><?= htmlspecialchars($t) ?></li>
             <?php endforeach; ?>
         </ul>
+        <?php endif; ?>
+
+        <?php if ($esCopia): ?>
+        <div class="copia-wrapper">
+            <div class="copia-watermark">C O P I A</div>
+        </div>
         <?php endif; ?>
 
         <div class="footer">

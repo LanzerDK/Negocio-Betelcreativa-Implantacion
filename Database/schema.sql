@@ -355,12 +355,14 @@ CREATE TABLE IF NOT EXISTS facturas (
     total_factura DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '(costo_servicio + suma materiales) * 1.16 (IVA incluido)',
     notas_cuota VARCHAR(255) DEFAULT NULL,
     created_by_name VARCHAR(200) DEFAULT NULL COMMENT 'Nombre de quien creó la factura',
+    tipo ENUM('factura','recibo') NOT NULL DEFAULT 'factura' COMMENT 'Tipo de documento: factura (principal) o recibo',
+    factura_origen_id INT DEFAULT NULL COMMENT 'Si es recibo, apunta a la factura principal',
     descripcion_servicio VARCHAR(255) DEFAULT NULL COMMENT 'Descripción del servicio prestado',
+    estado ENUM('activa','cerrada','anulada') NOT NULL DEFAULT 'activa',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     plan_tipo ENUM('contado','cuotas') NOT NULL DEFAULT 'contado',
     plan_cuotas_total TINYINT DEFAULT NULL COMMENT 'Total de cuotas si plan_tipo=cuotas',
     plan_monto_cuota_sugerido DECIMAL(12,2) DEFAULT NULL COMMENT 'Monto sugerido por cuota',
-    estado ENUM('activa','cerrada','anulada') NOT NULL DEFAULT 'activa',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_facturas_cita FOREIGN KEY (cita_id) REFERENCES citas(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 

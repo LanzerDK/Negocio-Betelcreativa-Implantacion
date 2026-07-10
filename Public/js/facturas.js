@@ -2,10 +2,11 @@ let TASA_BCV = APP_CONFIG?.bcvRate || 0;
 let facturaId = null;
 let facturaEstado = null;
 let facturaCitaId = null;
-let currentTab = 'abiertas';
+let currentTab = 'pendientes';
 let materialesCache = [];
 let allFacturas = [];
 let selectedFacturaId = null;
+let totalCalculado = 0;
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -31,18 +32,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ── Abrir modal generar factura ──────────────────────
     document.getElementById('btnGenerarFactura')?.addEventListener('click', function () {
-        if (!facturaCitaId) return toast('Seleccione una factura primero.', 'warning');
+        if (!facturaCitaId) return toast('Seleccione una cita primero.', 'warning');
         document.getElementById('genFacturaCitaId').value = facturaCitaId;
         document.getElementById('genCostoServicio').value = '';
         document.getElementById('genDescripcionServicio').value = '';
-        document.getElementById('genNotasCuota').value = '';
-        document.querySelector('input[name="planTipo"][value="contado"]').checked = true;
-        document.getElementById('cuotasSection').style.display = 'none';
-        document.getElementById('contadoPreview').style.display = 'block';
+        document.getElementById('genMontoBs').value = '';
         document.getElementById('genMetodoPago').value = 'efectivo';
-        document.getElementById('genDivisaSection').style.display = 'none';
-        document.getElementById('genMontoUsd').value = '';
-        document.getElementById('genTasaBcv').textContent = TASA_BCV.toFixed(2);
+        document.getElementById('genConversionRow').style.display = 'none';
+        document.getElementById('genErrorAnticipo').style.display = 'none';
+        document.getElementById('genTasaBcv').value = TASA_BCV;
+        document.getElementById('genProgressFill').style.width = '0%';
+        document.getElementById('genProgressLabel').textContent = '0%';
+        totalCalculado = 0;
         actualizarPreviews(facturaCitaId);
         document.getElementById('generarFacturaModal').style.display = 'flex';
     });
@@ -54,27 +55,79 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('pagoModal').style.display = 'none';
     });
 
-    // ── Radio planTipo toggle ────────────────────────────
-    document.querySelectorAll('input[name="planTipo"]').forEach(el => {
-        el.addEventListener('change', function () {
-            const isCuotas = this.value === 'cuotas';
-            document.getElementById('cuotasSection').style.display = isCuotas ? 'block' : 'none';
-            document.getElementById('contadoPreview').style.display = isCuotas ? 'none' : 'block';
-            const citaId = document.getElementById('genFacturaCitaId').value;
-            if (citaId) actualizarPreviews(citaId);
-        });
+    // ── Conversión en vivo: método de pago en generar factura ──
+    document.getElementById('genMetodoPago')?.addEventListener('change', actualizarConversionGenerar);
+    document.getElementById('genMontoBs')?.addEventListener('input', function () {
+        actualizarConversionGenerar();
+        validarAnticipo();
     });
 
-    document.getElementById('genMetodoPago')?.addEventListener('change', function () {
-        document.getElementById('genDivisaSection').style.display = this.value === 'divisas' ? 'block' : 'none';
-    });
+    function actualizarConversionGenerar() {
+        const metodo = document.getElementById('genMetodoPago').value;
+        const montoBs = parseFloat(document.getElementById('genMontoBs').value) || 0;
+        const row = document.getElementById('genConversionRow');
+        const text = document.getElementById('genConversionText');
+        if (!montoBs || montoBs <= 0 || !TASA_BCV || TASA_BCV <= 0) { row.style.display = 'none'; return; }
+        row.style.display = 'block';
+        const usd = montoBs / TASA_BCV;
+        if (metodo === 'divisas') {
+            text.innerHTML = '<strong>$' + usd.toFixed(2) + ' USD</strong> a la tasa de <strong>1 $ = ' + TASA_BCV.toFixed(2) + ' Bs</strong>';
+        } else {
+            text.innerHTML = '<strong>' + montoBs.toFixed(2) + ' Bs</strong> ≈ <strong>$' + usd.toFixed(2) + ' USD</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
+        }
+    }
 
+    function validarAnticipo() {
+        const montoBs = parseFloat(document.getElementById('genMontoBs').value) || 0;
+        const errEl = document.getElementById('genErrorAnticipo');
+        const progressFill = document.getElementById('genProgressFill');
+        const progressLabel = document.getElementById('genProgressLabel');
+        const btnSubmit = document.getElementById('btnGuardarFactura');
+
+        if (!totalCalculado || totalCalculado <= 0) {
+            errEl.style.display = 'none';
+            progressFill.style.width = '0%';
+            progressLabel.textContent = '0%';
+            btnSubmit.disabled = false;
+            return;
+        }
+
+        const minimo = totalCalculado * 0.50;
+        const pct = Math.min(100, (montoBs / totalCalculado) * 100);
+        progressFill.style.width = pct + '%';
+        progressFill.className = 'pago-progress-fill ' + (pct >= 100 ? 'ok' : 'warning');
+        progressLabel.textContent = pct.toFixed(0) + '%';
+
+        if (montoBs <= 0) {
+            errEl.style.display = 'none';
+            btnSubmit.disabled = false;
+            return;
+        }
+
+        if (montoBs > totalCalculado + 0.01) {
+            const dev = (montoBs - totalCalculado).toFixed(2);
+            errEl.textContent = 'Se generará una devolución de ' + dev + ' Bs por el excedente.';
+            errEl.style.display = 'block';
+            errEl.style.color = '#856404';
+            btnSubmit.disabled = false;
+        } else {
+            errEl.style.display = 'none';
+            errEl.style.color = '#dc3545';
+        }
+
+        if (montoBs < minimo - 0.01) {
+            errEl.textContent = 'El anticipo mínimo es del 50% (' + minimo.toFixed(2) + ' Bs).';
+            errEl.style.display = 'block';
+            btnSubmit.disabled = true;
+            return;
+        }
+
+        errEl.style.display = 'none';
+        btnSubmit.disabled = false;
+    }
+
+    // ── Costo servicio recalcula preview ──────────────────
     document.getElementById('genCostoServicio')?.addEventListener('input', function () {
-        const citaId = document.getElementById('genFacturaCitaId').value;
-        if (citaId) actualizarPreviews(citaId);
-    });
-
-    document.getElementById('genNumCuotas')?.addEventListener('change', function () {
         const citaId = document.getElementById('genFacturaCitaId').value;
         if (citaId) actualizarPreviews(citaId);
     });
@@ -84,32 +137,36 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         const citaId = parseInt(document.getElementById('genFacturaCitaId').value);
         const costoServicio = parseFloat(document.getElementById('genCostoServicio').value) || 0;
-        const notasCuota = document.getElementById('genNotasCuota').value.trim();
         const descripcionServicio = document.getElementById('genDescripcionServicio').value.trim();
-        const planTipo = document.querySelector('input[name="planTipo"]:checked').value;
-        const planCuotasTotal = planTipo === 'cuotas' ? parseInt(document.getElementById('genNumCuotas').value) : null;
+        const montoPagoBs = parseFloat(document.getElementById('genMontoBs').value) || 0;
+        const metodoPago = document.getElementById('genMetodoPago').value;
 
-        const metodoPago = planTipo === 'contado' ? document.getElementById('genMetodoPago').value : null;
-        const tasaUsada = planTipo === 'contado' ? TASA_BCV : null;
-        const montoUsd = (planTipo === 'contado' && metodoPago === 'divisas') ? parseFloat(document.getElementById('genMontoUsd').value) || 0 : null;
+        if (!citaId) return toast('ID de cita requerido.', 'warning');
+        if (!descripcionServicio) return toast('Describa el servicio prestado.', 'warning');
+        if (!costoServicio || costoServicio <= 0) return toast('Especifique un costo de servicio válido.', 'warning');
+        if (!materialesCache.length) return toast('La cita debe tener al menos un material asignado.', 'warning');
+        if (!metodoPago) return toast('Seleccione un método de pago.', 'warning');
+        if (montoPagoBs <= 0) return toast('Debe especificar un monto de anticipo.', 'warning');
 
-        if (costoServicio < 0) return toast('El costo de servicio no puede ser negativo.', 'warning');
+        const minimo = totalCalculado * 0.50;
+        if (montoPagoBs < minimo - 0.01) {
+            return toast('El anticipo mínimo obligatorio es del 50% (' + minimo.toFixed(2) + ' Bs).', 'warning');
+        }
+
         setLoading('btnGuardarFactura', true);
         try {
             const res = await callApi(APP_URL + 'Public/api/facturas.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-                body: JSON.stringify(Object.assign({
+                body: JSON.stringify({
                     action: 'crear',
                     cita_id: citaId,
                     costo_servicio: costoServicio,
                     descripcion_servicio: descripcionServicio,
-                    plan_tipo: planTipo,
-                    plan_cuotas_total: planCuotasTotal,
+                    monto_pago_bs: montoPagoBs,
                     metodo_pago: metodoPago,
-                    tasa_usada: tasaUsada,
-                    monto_usd: montoUsd
-                }, planTipo === 'cuotas' ? { notas_cuota: notasCuota } : {}))
+                    tasa_usada: TASA_BCV
+                })
             });
             if (res.success) {
                 document.getElementById('generarFacturaModal').style.display = 'none';
@@ -120,8 +177,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         window.open(APP_URL + 'factura-recibo?id=' + reciboId, '_blank');
                     }, 500);
                 } else {
-                    const cuotaStr = (res.data?.planMontoCuotaSugerido || 0).toFixed(2);
-                    toast('Plan de ' + res.data?.planCuotasTotal + ' cuotas creado. Cuota sugerida: ' + cuotaStr + ' Bs', 'success');
+                    toast(res.message || 'Anticipo registrado exitosamente.', 'success');
+                    const reciboId = res.data?.reciboId;
+                    if (reciboId) {
+                        setTimeout(() => {
+                            window.open(APP_URL + 'factura-recibo?id=' + reciboId, '_blank');
+                        }, 500);
+                    }
                 }
                 cargarFacturas(currentTab);
                 if (res.data?.id) {
@@ -144,34 +206,39 @@ document.addEventListener('DOMContentLoaded', function () {
         abrirModalPago();
     });
 
-    document.getElementById('pagoMetodo')?.addEventListener('change', function (e) {
-        const divGroup = document.getElementById('divisaGroup');
-        if (e.target.value === 'divisas') {
-            divGroup.style.display = 'block';
-            document.getElementById('pagoMontoUsd').removeAttribute('readonly');
-            document.getElementById('pagoMontoUsd').style.background = '';
-        } else {
-            divGroup.style.display = 'none';
-            document.getElementById('pagoMontoUsd').value = '';
-        }
-    });
+    document.getElementById('pagoMetodo')?.addEventListener('change', actualizarConversionPago);
+    document.getElementById('pagoMontoVes')?.addEventListener('input', actualizarConversionPago);
 
-    document.getElementById('pagoMontoVes')?.addEventListener('input', function (e) {
+    function actualizarConversionPago() {
         const metodo = document.getElementById('pagoMetodo').value;
-        const ves = parseFloat(e.target.value);
-        if (metodo === 'divisas' && !isNaN(ves) && ves > 0 && e.target.value !== '') {
-            document.getElementById('pagoMontoUsd').value = (ves / TASA_BCV).toFixed(2);
-        } else if (metodo === 'divisas' && e.target.value === '') {
-            document.getElementById('pagoMontoUsd').value = '';
+        const monto = parseFloat(document.getElementById('pagoMontoVes').value) || 0;
+        const hint = document.getElementById('pagoInputHint');
+        const row = document.getElementById('pagoConversionRow');
+        const text = document.getElementById('pagoConversionText');
+
+        if (metodo === 'divisas') {
+            hint.textContent = 'Ingrese el monto en Bolívares (se convertirá a Dólares)';
+        } else {
+            hint.textContent = 'Ingrese el monto en Bolívares';
         }
-    });
+
+        if (!monto || monto <= 0 || !TASA_BCV || TASA_BCV <= 0) { row.style.display = 'none'; return; }
+        row.style.display = 'block';
+
+        const usd = monto / TASA_BCV;
+        if (metodo === 'divisas') {
+            text.innerHTML = 'Equivalente en Dólares: <strong>$' + usd.toFixed(2) + '</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
+        } else {
+            text.innerHTML = 'Equivalente en Dólares: <strong>$' + usd.toFixed(2) + '</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
+        }
+    }
 
     document.getElementById('pagoForm')?.addEventListener('submit', async function (e) {
         e.preventDefault();
         const facturaIdVal = parseInt(document.getElementById('pagoFacturaId').value);
         const metodoPago = document.getElementById('pagoMetodo').value;
         const montoVes = parseFloat(document.getElementById('pagoMontoVes').value);
-        const tasaUsada = parseFloat(document.getElementById('pagoTasa').value);
+        const tasaUsada = parseFloat(document.getElementById('pagoTasa').value) || TASA_BCV;
         if (!montoVes || montoVes <= 0) return toast('Ingrese un monto válido.', 'warning');
         const montoUsd = montoVes / tasaUsada;
         setLoading('btnGuardarPago', true);
@@ -194,6 +261,16 @@ document.addEventListener('DOMContentLoaded', function () {
         } finally {
             setLoading('btnGuardarPago', false);
         }
+    });
+
+    // ── Imprimir (Pagadas / readonly) ────────────────────
+    document.getElementById('btnImprimirOriginal')?.addEventListener('click', function () {
+        if (!facturaId) return;
+        window.open(APP_URL + 'factura-recibo?id=' + facturaId, '_blank');
+    });
+    document.getElementById('btnImprimirCopia')?.addEventListener('click', function () {
+        if (!facturaId) return;
+        window.open(APP_URL + 'factura-recibo?id=' + facturaId + '&copia=1', '_blank');
     });
 
     // ── Cerrar factura ───────────────────────────────────
@@ -231,18 +308,33 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Anular factura ───────────────────────────────────
-    document.getElementById('btnAnularFactura')?.addEventListener('click', async function () {
+    document.getElementById('btnAnularFactura')?.addEventListener('click', function () {
         if (!facturaId) return;
-        if (!confirm('¿Está seguro de anular esta factura? Esta acción no se puede deshacer.')) return;
-        setLoading('btnAnularFactura', true);
+        document.getElementById('anularMotivo').value = '';
+        document.getElementById('anularFacturaModal').style.display = 'flex';
+    });
+
+    document.getElementById('cancelAnularFactura')?.addEventListener('click', function () {
+        document.getElementById('anularFacturaModal').style.display = 'none';
+    });
+
+    document.getElementById('anularFacturaForm')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const motivo = document.getElementById('anularMotivo').value.trim();
+        if (!motivo) {
+            toast('Debe indicar el motivo de anulación.', 'warning');
+            return;
+        }
+        setLoading('btnConfirmarAnular', true);
         try {
             const res = await callApi(APP_URL + 'Public/api/facturas.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-                body: JSON.stringify({ action: 'anular', factura_id: facturaId })
+                body: JSON.stringify({ action: 'anular', factura_id: facturaId, motivo: motivo })
             });
             if (res.success) {
                 toast('Factura anulada exitosamente.', 'success');
+                document.getElementById('anularFacturaModal').style.display = 'none';
                 cargarFacturas(currentTab);
                 if (selectedFacturaId) cargarDetalleFactura(selectedFacturaId);
             } else {
@@ -251,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (err) {
             toast(err.message || 'Error de conexión.', 'error');
         } finally {
-            setLoading('btnAnularFactura', false);
+            setLoading('btnConfirmarAnular', false);
         }
     });
 
@@ -263,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Load initial data ────────────────────────────────
-    cargarFacturas('abiertas');
+    cargarFacturas('pendientes');
 });
 
 // ──────────────────────────────────────────────────────────
@@ -291,6 +383,28 @@ function renderSidebarList(facturas) {
         list.innerHTML = '<div class="sidebar-empty">No hay facturas en esta sección.</div>';
         return;
     }
+
+    if (currentTab === 'canceladas') {
+        list.innerHTML = facturas.map(f => {
+            const fecha = f.fechaFactura ? f.fechaFactura.slice(0, 10) : (f.fechaCita ? f.fechaCita.slice(0, 10) : '—');
+            const activeClass = (f.facturaId || 0) === selectedFacturaId ? ' active' : '';
+            const totalPagado = parseFloat(f.totalPagadoVes) || 0;
+            const totalFactura = parseFloat(f.totalFactura) || 0;
+            return '<div class="factura-item' + activeClass + '" data-factura-id="' + (f.facturaId || 0) + '" data-cita-id="' + f.citaId + '" onclick="seleccionarFactura(this)">' +
+                '<div class="fi-header">' +
+                '<span class="fi-id">#' + String(f.facturaId || 0).padStart(6, '0') + '</span>' +
+                '<span class="fi-date">' + fecha + '</span>' +
+                '</div>' +
+                '<div class="fi-client">' + escapeHtml(f.clienteNombre || '—') + ' <span class="fi-cedula">' + escapeHtml(f.clienteCedula || '') + '</span></div>' +
+                '<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;">' +
+                '<span class="fi-status estado-cancelada">Cancelada</span>' +
+                '<span style="font-size:0.7rem;color:#dc3545;">Pagado: ' + (totalPagado).toFixed(2) + ' / ' + totalFactura.toFixed(2) + ' Bs</span>' +
+                '</div>' +
+                '</div>';
+        }).join('');
+        return;
+    }
+
     list.innerHTML = facturas.map(f => {
         const fecha = f.fechaCita ? f.fechaCita.slice(0, 10) : '—';
         const hasFactura = f.facturaId > 0;
@@ -303,7 +417,7 @@ function renderSidebarList(facturas) {
             '<span class="fi-id">' + displayId + '</span>' +
             '<span class="fi-date">' + fecha + '</span>' +
             '</div>' +
-            '<div class="fi-client">' + escapeHtml(f.clienteNombre || '—') + '</div>' +
+            '<div class="fi-client">' + escapeHtml(f.clienteNombre || '—') + ' <span class="fi-cedula">' + escapeHtml(f.clienteCedula || '') + '</span></div>' +
             '<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;">' +
             '<span class="fi-status ' + estadoClass + '">' + estadoLabel + '</span>' +
             (hasFactura ? '<span style="font-size:0.7rem;color:var(--gray);">' + (parseFloat(f.totalFactura) || 0).toFixed(2) + ' Bs</span>' : '') +
@@ -334,6 +448,24 @@ function seleccionarFactura(el) {
     selectedFacturaId = fid;
     document.querySelectorAll('.factura-item').forEach(i => i.classList.remove('active'));
     el.classList.add('active');
+
+    if (currentTab === 'canceladas') {
+        if (fid > 0) {
+            const params = new URLSearchParams({ action: 'detalle-factura', factura_id: fid });
+            callApi(APP_URL + 'Public/api/facturas.php?' + params.toString())
+                .then(res => {
+                    if (res.success && res.data) {
+                        renderDetalleCancelada(res.data, fid);
+                    } else {
+                        toast('Error al cargar detalle.', 'error');
+                    }
+                })
+                .catch(err => {
+                    toast('Error al cargar detalle.', 'error');
+                });
+        }
+        return;
+    }
 
     if (fid > 0) {
         const params = new URLSearchParams({ action: 'detalle-factura', factura_id: fid });
@@ -367,6 +499,29 @@ function seleccionarFactura(el) {
 function ocultarDetalle() {
     document.getElementById('detailEmpty').style.display = 'block';
     document.getElementById('detailContent').style.display = 'none';
+    document.getElementById('detailCancelada').style.display = 'none';
+}
+
+// ──────────────────────────────────────────────────────────
+// Renderizar detalle de cancelada
+// ──────────────────────────────────────────────────────────
+function renderDetalleCancelada(d, fid) {
+    document.getElementById('detailEmpty').style.display = 'none';
+    document.getElementById('detailContent').style.display = 'none';
+    document.getElementById('detailCancelada').style.display = 'block';
+
+    const g = d.general || {};
+    const totalPagadoVes = (d.pagos || []).reduce((sum, p) => sum + (parseFloat(p.monto) || 0) * (parseFloat(p.tasaUsada) || 0), 0);
+    const totalFactura = parseFloat(g.totalFactura) || 0;
+
+    document.getElementById('can-cliente').textContent = g.clienteNombre || '—';
+    document.getElementById('can-cedula').textContent = g.clienteCedula || '—';
+    document.getElementById('can-fechaCita').textContent = g.fechaHoraInicio ? g.fechaHoraInicio.replace('T', ' ') : '—';
+    document.getElementById('can-fechaFactura').textContent = g.facturaCreatedAt ? g.facturaCreatedAt.replace('T', ' ') : '—';
+    document.getElementById('can-codigo').textContent = g.facturaId ? '#' + String(g.facturaId).padStart(6, '0') : '—';
+    document.getElementById('can-motivo').textContent = g.motivoCancelacion || 'Sin motivo registrado';
+    document.getElementById('can-montoPagado').textContent = totalPagadoVes.toFixed(2) + ' Bs';
+    document.getElementById('can-montoTotal').textContent = totalFactura.toFixed(2) + ' Bs';
 }
 
 // ──────────────────────────────────────────────────────────
@@ -375,6 +530,7 @@ function ocultarDetalle() {
 function renderDetalleFactura(d, fid) {
     document.getElementById('detailEmpty').style.display = 'none';
     document.getElementById('detailContent').style.display = 'block';
+    document.getElementById('detailCancelada').style.display = 'none';
 
     TASA_BCV = d.tasaBcv || APP_CONFIG.bcvRate || 0;
     facturaId = d.general?.facturaId || fid || null;
@@ -438,29 +594,28 @@ function renderDetalleFactura(d, fid) {
     const subtotal = totalMat + costoServicio;
     const iva = subtotal * APP_CONFIG.ivaRate;
     const totalFacturaCalc = subtotal + iva;
-    document.getElementById('card2-total-materiales').textContent = totalMat.toFixed(2) + ' Bs';
     document.getElementById('card2-costo-servicio').textContent = costoServicio.toFixed(2) + ' Bs';
     document.getElementById('card2-iva').textContent = iva.toFixed(2) + ' Bs';
-    document.getElementById('card2-total-valor').innerHTML = '<strong>' + totalFacturaCalc.toFixed(2) + ' Bs</strong>';
+    document.getElementById('card2-total-valor').innerHTML = '<strong>' + totalMat.toFixed(2) + ' Bs</strong>';
 
     // ── Actions en Card 2 ────────────────────────────────
     const actionsDiv = document.getElementById('facturaActions');
-    if (facturaId) {
+    if (facturaId && facturaEstado === 'cerrada') {
+        // Pagada: solo mostrar imprimir
+        actionsDiv.innerHTML = '';
+        actionsDiv.style.display = 'none';
+    } else if (facturaId) {
         let actionsHtml = '';
         if (facturaEstado === 'activa') {
             actionsHtml += '<button type="button" class="btn btn-primary" id="btnRegistrarAbonoCard2" style="flex:1;"><i class="fas fa-plus-circle"></i> Registrar Abono</button>';
         }
-        actionsHtml += '<button type="button" class="btn btn-outline" id="btnImprimir" style="flex:1;"><i class="fas fa-print"></i> Imprimir Recibo</button>';
         actionsDiv.innerHTML = actionsHtml;
-        actionsDiv.style.display = 'flex';
+        actionsDiv.style.display = actionsHtml ? 'flex' : 'none';
         document.getElementById('btnRegistrarAbonoCard2')?.addEventListener('click', function () {
             abrirModalPago();
         });
-        document.getElementById('btnImprimir')?.addEventListener('click', function () {
-            window.open(APP_URL + 'factura-recibo?id=' + facturaId, '_blank');
-        });
     } else {
-        // No tiene factura
+        // No tiene factura (Pendiente)
         actionsDiv.innerHTML = '<button type="button" class="btn btn-primary" id="btnGenerarFactura" style="flex:1;"><i class="fas fa-file-invoice"></i> Generar Factura</button>';
         actionsDiv.style.display = 'flex';
         document.getElementById('btnGenerarFactura')?.addEventListener('click', function () {
@@ -481,16 +636,21 @@ function renderDetalleFactura(d, fid) {
         const montoVes = monto * tasa;
         totalPagadoVes += montoVes;
         const esDivisas = p.metodoPago === 'divisas';
+        const metodoLabel = p.metodoPago === 'divisas' ? 'Dólar $' : p.metodoPago === 'efectivo' ? 'Efectivo' : 'Pago Móvil';
         const montoStr = esDivisas
             ? '$' + monto.toFixed(2) + ' @ ' + tasa.toFixed(2)
             : montoVes.toFixed(2) + ' Bs';
         pagosHtml += '<tr>' +
             '<td>' + (p.fecha ? p.fecha.slice(0, 10) : '—') + '</td>' +
             '<td class="text-right">' + montoStr + '</td>' +
-            '<td>' + (p.metodoPago === 'divisas' ? 'Divisas' : p.metodoPago === 'efectivo' ? 'Efectivo' : 'PagoMóvil') + '</td>' +
+            '<td>' + metodoLabel + '</td>' +
             '<td class="text-right">' + tasa.toFixed(2) + '</td>' +
             '</tr>';
     });
+    const devolucion = Math.max(0, totalPagadoVes - totalFacturaCalc);
+    if (devolucion > 0.01) {
+        pagosHtml += '<tr class="devolucion-row"><td colspan="4" class="text-right" style="padding-top:8px;font-weight:700;color:#dc3545;">Devolución: ' + devolucion.toFixed(2) + ' Bs</td></tr>';
+    }
     if (!pagos.length) {
         pagosHtml = '<tr><td colspan="4" class="text-center" style="color:var(--gray);padding:15px;">Sin pagos registrados</td></tr>';
     }
@@ -514,25 +674,40 @@ function renderDetalleFactura(d, fid) {
         statusEl.textContent = 'FACTURA POR GENERAR';
         statusEl.className = 'pago-status';
     } else if (saldoPendienteVes <= 0.01) {
-        statusEl.textContent = '✓ FACTURA TOTALMENTE PAGADA';
+        const devMsg = (totalPagadoVes > totalFacturaCalc + 0.01) ? ' — Devolución: ' + (totalPagadoVes - totalFacturaCalc).toFixed(2) + ' Bs' : '';
+        statusEl.textContent = '✓ FACTURA TOTALMENTE PAGADA' + devMsg;
         statusEl.className = 'pago-status pagada';
     } else {
-        statusEl.textContent = 'PAGO POR CUOTAS — Pendiente: ' + saldoPendienteVes.toFixed(2) + ' Bs';
+        statusEl.textContent = 'PAGO PARCIAL — Pendiente: ' + saldoPendienteVes.toFixed(2) + ' Bs';
         statusEl.className = 'pago-status pendiente-pago';
     }
 
-    // Pago Actions (Card 3)
+    // Pago Actions (Card 3) — Show based on tab and estado
     const pagoActions = document.getElementById('pagoActions');
+    const pagoActionsRO = document.getElementById('pagoActionsReadOnly');
     const btnAbono = document.getElementById('btnRegistrarAbonoPagos');
     const btnCerrar = document.getElementById('btnCerrarFactura');
     const btnAnular = document.getElementById('btnAnularFactura');
-    if (facturaId && facturaEstado === 'activa') {
+
+    if (currentTab === 'pagadas' || facturaEstado === 'cerrada') {
+        // Read-only: only show print buttons
+        pagoActions.style.display = 'none';
+        pagoActionsRO.style.display = 'flex';
+    } else if (facturaId && facturaEstado === 'activa') {
         pagoActions.style.display = 'flex';
+        pagoActionsRO.style.display = 'none';
         if (btnAbono) { btnAbono.style.display = ''; }
         if (btnCerrar) { btnCerrar.style.display = ''; }
         if (btnAnular) { btnAnular.style.display = ''; }
     } else {
         pagoActions.style.display = 'none';
+        pagoActionsRO.style.display = 'none';
+    }
+
+    // For pending (sin factura), also hide pago actions
+    if (!facturaId) {
+        pagoActions.style.display = 'none';
+        pagoActionsRO.style.display = 'none';
     }
 }
 
@@ -543,11 +718,10 @@ function abrirModalPago() {
     if (!facturaId) return toast('Debe generar la factura primero.', 'warning');
     document.getElementById('pagoFacturaId').value = facturaId;
     document.getElementById('pagoMontoVes').value = '';
-    document.getElementById('pagoMontoUsd').value = '';
     document.getElementById('pagoTasa').value = TASA_BCV.toFixed(2);
-    document.getElementById('pagoTasaDisplay').textContent = TASA_BCV.toFixed(2);
-    document.getElementById('divisaGroup').style.display = 'none';
     document.getElementById('pagoMetodo').value = 'efectivo';
+    document.getElementById('pagoConversionRow').style.display = 'none';
+    document.getElementById('pagoInputHint').textContent = 'Ingrese el monto en Bolívares';
     document.getElementById('pagoModal').style.display = 'flex';
 }
 
@@ -562,19 +736,14 @@ function actualizarPreviews(citaId) {
     });
     const subtotal = totalMat + costoServicio;
     const iva = subtotal * APP_CONFIG.ivaRate;
-    const total = subtotal + iva;
+    totalCalculado = subtotal + iva;
 
     const fmt = v => v.toFixed(2) + ' Bs';
 
     document.getElementById('previewSubtotal').textContent = fmt(subtotal);
     document.getElementById('previewIva').textContent = fmt(iva);
-    document.getElementById('previewTotal').textContent = fmt(total);
-
-    document.getElementById('cuotaPreviewSubtotal').textContent = fmt(subtotal);
-    document.getElementById('cuotaPreviewIva').textContent = fmt(iva);
-    document.getElementById('cuotaPreviewTotal').textContent = fmt(total);
-    const n = parseInt(document.getElementById('genNumCuotas').value) || 2;
-    document.getElementById('cuotaPreviewCuota').textContent = n + ' cuotas de ' + fmt(total / n);
+    document.getElementById('previewTotal').textContent = fmt(totalCalculado);
+    document.getElementById('previewMinimo').textContent = fmt(totalCalculado * 0.50);
 }
 
 // ──────────────────────────────────────────────────────────
@@ -600,9 +769,32 @@ async function cargarTerminos() {
     }
 }
 
+function asyncCargarDetalleFactura(facturaId) {
+    const params = new URLSearchParams({ action: 'detalle-factura', factura_id: facturaId });
+    return callApi(APP_URL + 'Public/api/facturas.php?' + params.toString());
+}
+
+async function cargarDetalleFactura(fid) {
+    try {
+        const res = await asyncCargarDetalleFactura(fid);
+        if (res.success && res.data) {
+            renderDetalleFactura(res.data, fid);
+        }
+    } catch (err) {
+        // silent
+    }
+}
+
 // ──────────────────────────────────────────────────────────
 // Utility
 // ──────────────────────────────────────────────────────────
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 function setLoading(btnId, loading) {
     const btn = document.getElementById(btnId);
     if (!btn) return;

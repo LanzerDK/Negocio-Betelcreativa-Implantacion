@@ -77,9 +77,12 @@ class ControllerAdminUsers
     public static function updateRole(): void
     {
         self::requireAdmin();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
-        $input = json_decode(file_get_contents('php://input'), true);
         $userId = (int)($input['user_id'] ?? 0);
         $role   = trim($input['role'] ?? '');
 
@@ -107,9 +110,11 @@ class ControllerAdminUsers
     public static function create(): void
     {
         self::requireAdmin();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
-
-        $input = json_decode(file_get_contents('php://input'), true);
 
         $name       = trim($input['name'] ?? '');
         $lastName   = trim($input['last_name'] ?? '');
@@ -173,9 +178,12 @@ class ControllerAdminUsers
     public static function toggleActive(): void
     {
         self::requireAdmin();
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
-        $input = json_decode(file_get_contents('php://input'), true);
         $userId = (int)($input['user_id'] ?? 0);
 
         if ($userId <= 0) {

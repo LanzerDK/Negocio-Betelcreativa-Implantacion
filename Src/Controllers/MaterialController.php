@@ -36,8 +36,11 @@ class MaterialController
                 break;
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
                 $locationId = !empty($input['location_id']) ? (int)$input['location_id'] : null;
                 if (!$locationId) {
@@ -107,8 +110,11 @@ class MaterialController
                 break;
 
             case 'PUT':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
                 $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
 
                 if (!$id) {

@@ -35,8 +35,11 @@ class LocationController
                 break;
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
                 $name = trim($input['name'] ?? '');
                 $description = trim($input['description'] ?? '');
@@ -65,9 +68,13 @@ class LocationController
                 break;
 
             case 'DELETE':
+                $raw = file_get_contents('php://input');
+                $input = json_decode($raw, true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_GET;
-                $id = (int)($input['id'] ?? 0);
+                $id = (int)($input['id'] ?? $_GET['id'] ?? 0);
                 if (!$id) {
                     ApiResponse::error('ID de ubicación requerido.');
                 }

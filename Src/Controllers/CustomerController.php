@@ -44,10 +44,13 @@ class CustomerController
                 break;
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 // Valida el token CSRF para evitar ataques de falsificación
                 CsrfHelper::validateRequestOrFail();
                 // Lee el cuerpo JSON de la petición o los datos POST normales
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
                 // Crea el modelo con los datos recibidos
                 $customer = new CustomerModel([
@@ -130,8 +133,11 @@ class CustomerController
                 break;
 
             case 'PUT':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
                 $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
 
                 if (!$id) {

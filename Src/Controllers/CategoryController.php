@@ -32,8 +32,11 @@ class CategoryController
                 break;
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
                 $category = new CategoryModel([
                     'name' => trim($input['name'] ?? ''),
@@ -57,8 +60,11 @@ class CategoryController
                 break;
 
             case 'PUT':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
                 $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
 
                 if (!$id) {

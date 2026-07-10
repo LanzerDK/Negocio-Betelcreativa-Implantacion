@@ -18,6 +18,10 @@ class ControllerLogin
     {
         header('Content-Type: application/json');
 
+        $input = json_decode(file_get_contents('php://input'), true) ?? [];
+        if (!empty($input['csrf_token'])) {
+            $_POST['csrf_token'] = $input['csrf_token'];
+        }
         CsrfHelper::validateRequestOrFail();
 
         $ip = self::getClientIp();
@@ -26,7 +30,6 @@ class ControllerLogin
             ApiResponse::error('Demasiados intentos fallidos. Intente nuevamente en ' . self::BLOCK_MINUTES . ' minutos.', 429);
         }
 
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $username = trim($input['username'] ?? '');
         $password = $input['password'] ?? '';
 

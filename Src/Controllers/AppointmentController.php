@@ -169,8 +169,11 @@ class AppointmentController
                 }
 
             case 'POST':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
                 // A4: endpoint para evaluar y persistir estados de cita (cron o llamada manual)
                 $action = $input['action'] ?? '';
@@ -238,8 +241,11 @@ class AppointmentController
                 break;
 
             case 'PUT':
+                $input = json_decode(file_get_contents('php://input'), true) ?? [];
+                if (!empty($input['csrf_token'])) {
+                    $_POST['csrf_token'] = $input['csrf_token'];
+                }
                 CsrfHelper::validateRequestOrFail();
-                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
                 $id = (int)($_GET['id'] ?? $input['id'] ?? 0);
                 if (!$id) { ApiResponse::error('ID de cita requerido.'); return; }
 
