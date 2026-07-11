@@ -9,7 +9,10 @@ use BetelCreativa\Controllers\ControllerRegister;
 
 SessionHelpers::start();
 
-if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+$userCount = (new \BetelCreativa\Infrastructure\UserRepository())->countAll();
+$isFirstUser = $userCount === 0;
+
+if (!$isFirstUser && (($_SESSION['user_role'] ?? '') !== 'super_admin')) {
     ApiResponse::error('Acceso denegado.', 403);
 }
 

@@ -110,7 +110,7 @@
                         <button class="btn-limpiar" id="btnLimpiarCategorias">Limpiar</button>
                     </div>
 
-                    <button class="btn-nuevo-categoria" onclick="Modal.open('categoryModal')">
+                    <button class="btn-nuevo-categoria" id="newCategoryBtn" onclick="Modal.open('categoryModal')">
                         <i class="fas fa-plus"></i> Nueva Categoría
                     </button>
 
@@ -157,8 +157,8 @@
 
         <!-- Modal de categoría -->
         <div class="modal" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
-            <div class="modal-wrapper">
-                <div class="modal-content" style="flex:0 0 auto;width:480px;">
+            <div class="modal-wrapper" >
+                <div class="modal-content" style="flex:0 0 auto;width:480px;" >
                     <div class="modal-header">
                         <h1 class="modal-title fs-5" id="categoryModalLabel">Nueva Categoría</h1>
                         <button type="button" class="btn-close" data-modal-dismiss="categoryModal" aria-label="Close"></button>

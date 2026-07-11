@@ -50,7 +50,7 @@ function renderLayout() {
   grid.innerHTML = '';
   const paginationEl = document.getElementById('pagination');
   if (paginationEl) paginationEl.innerHTML = '';
-  const orphanShelves = allLocations.filter(l => l.warehouse_id === null && l.name !== 'Almacén General');
+  const orphanShelves = allLocations.filter(l => l.warehouse_id === null && l.name !== 'Almacén General' && l.name !== 'Almacen General');
   if (!allWarehouses.length && !orphanShelves.length) {
     grid.innerHTML = '<div class="empty-state"><p>No hay almacenes registrados. Cree un almacén para comenzar.</p></div>';
     return;
@@ -182,6 +182,7 @@ function llenarSelectUbicacion(selectId, selected, excludeId) {
   sel.innerHTML = '<option value="">Seleccionar ubicación...</option>';
   allLocations.forEach(l => {
     if (excludeId && l.id === excludeId) return;
+    if (l.name === 'Almacén General' || l.name === 'Almacen General') return;
     const opt = document.createElement('option');
     opt.value = l.id;
     const wh = allWarehouses.find(w => w.id === l.warehouse_id);

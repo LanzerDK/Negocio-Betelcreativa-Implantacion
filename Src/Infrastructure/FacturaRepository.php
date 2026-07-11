@@ -16,6 +16,27 @@ class FacturaRepository
         $this->db = Database::getConnection();
     }
 
+    private function resolveFacturaEstado(?string $estadoFactura, ?string $citaEstado, int $facturaId, float $totalFactura = 0.0): string
+    {
+        $estado = $estadoFactura ?: 'activa';
+        if (in_array($estado, ['cerrada', 'pagada', 'finalizada'], true)) {
+            return 'cerrada';
+        }
+
+        if (in_array($citaEstado, ['Finalizada', 'Pagado', 'finalizada', 'pagado'], true)) {
+            return 'cerrada';
+        }
+
+        if ($facturaId > 0 && $totalFactura > 0) {
+            $pagado = $this->getTotalPagadoVes($facturaId);
+            if ($pagado >= $totalFactura - 0.01) {
+                return 'cerrada';
+            }
+        }
+
+        return $estado;
+    }
+
     public function getDetalleByCitaId(int $citaId): ?array
     {
         try {
@@ -52,6 +73,13 @@ class FacturaRepository
             $stmt->execute([':cita_id' => $citaId]);
             $general = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$general) return null;
+
+            $general['facturaEstado'] = $this->resolveFacturaEstado(
+                $general['facturaEstado'] ?? null,
+                $general['citaEstado'] ?? null,
+                (int)($general['facturaId'] ?? 0),
+                (float)($general['totalFactura'] ?? 0)
+            );
 
             $sqlMat = "SELECT
                            cm.material_id AS materialId,
@@ -395,41 +423,67 @@ class FacturaRepository
                                    f.estado, f.created_at AS createdAt,
                                    CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
                                    cust.id_number AS clienteCedula,
-                                   c.fecha_hora_inicio AS fechaCita
+                                   c.fecha_hora_inicio AS fechaCita,
+                                   c.estado AS citaEstado
                             FROM facturas f
                             JOIN citas c ON f.cita_id = c.id
                             JOIN customers cust ON c.cliente_id = cust.customer_id
-                            WHERE f.tipo = 'factura' AND f.estado = 'activa'
+                            WHERE f.tipo = 'factura'
                               AND c.estado IN ('En Proceso','En Progreso')
+                              AND c.estado <> 'Cancelado'
                             ORDER BY f.created_at DESC";
                     $stmt = $this->db->query($sql);
                     $facturas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                     $result = [];
                     foreach ($facturas as $f) {
-                        $totalPagado = $this->getTotalPagadoVes((int)$f['facturaId']);
-                        $totalFactura = (float)$f['totalFactura'];
-                        if ($totalPagado < $totalFactura - 0.01) {
-                            $f['totalPagadoVes'] = $totalPagado;
-                            $result[] = $f;
+                        $f['estado'] = $this->resolveFacturaEstado(
+                            $f['estado'] ?? null,
+                            $f['citaEstado'] ?? null,
+                            (int)$f['facturaId'],
+                            (float)$f['totalFactura']
+                        );
+                        if ($f['estado'] !== 'cerrada') {
+                            $totalPagado = $this->getTotalPagadoVes((int)$f['facturaId']);
+                            $totalFactura = (float)$f['totalFactura'];
+                            if ($totalPagado < $totalFactura - 0.01) {
+                                $f['totalPagadoVes'] = $totalPagado;
+                                $result[] = $f;
+                            }
                         }
                     }
                     return $result;
 
                 case 'pagadas':
-                    // Facturas cerradas (solo facturas principales, no recibos)
+                    // Facturas cerradas, pagadas o asociadas a citas finalizadas
                     $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
                                    f.estado, f.created_at AS createdAt,
                                    CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
                                    cust.id_number AS clienteCedula,
-                                   c.fecha_hora_inicio AS fechaCita
+                                   c.fecha_hora_inicio AS fechaCita,
+                                   c.estado AS citaEstado
                             FROM facturas f
                             JOIN citas c ON f.cita_id = c.id
                             JOIN customers cust ON c.cliente_id = cust.customer_id
-                            WHERE f.tipo = 'factura' AND f.estado = 'cerrada'
+                            WHERE f.tipo = 'factura'
+                              AND c.estado <> 'Cancelado'
                             ORDER BY f.created_at DESC";
                     $stmt = $this->db->query($sql);
-                    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $result = [];
+                    foreach ($rows as $f) {
+                        $f['estado'] = $this->resolveFacturaEstado(
+                            $f['estado'] ?? null,
+                            $f['citaEstado'] ?? null,
+                            (int)$f['facturaId'],
+                            (float)$f['totalFactura']
+                        );
+                        if ($f['estado'] === 'cerrada') {
+                            $f['totalPagadoVes'] = $this->getTotalPagadoVes((int)$f['facturaId']);
+                            $result[] = $f;
+                        }
+                    }
+                    return $result;
 
                 case 'canceladas':
                     // Facturas de citas canceladas
@@ -501,6 +555,13 @@ class FacturaRepository
             $stmt->execute([':factura_id' => $facturaId]);
             $general = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$general) return null;
+
+            $general['facturaEstado'] = $this->resolveFacturaEstado(
+                $general['facturaEstado'] ?? null,
+                $general['citaEstado'] ?? null,
+                (int)$facturaId,
+                (float)($general['totalFactura'] ?? 0)
+            );
 
             $sqlMat = "SELECT
                            cm.material_id AS materialId,

@@ -257,16 +257,20 @@ class FacturaController
 
                         $refPagoMovil = trim($input['ref_pago_movil'] ?? '') ?: null;
                         $reciboId = $repo->registrarPago($facturaId, $monto, $metodoPago, $tasaUsada, false, $refPagoMovil);
-                        $db->commit();
 
                         $pagos = $repo->getPagosByFacturaId($facturaId);
                         $totalPagado = 0;
                         foreach ($pagos as $p) $totalPagado += (float)$p['monto'];
-                        // Determine si la factura quedó completamente pagada
+
                         $estadoFactura = $factura['estado'];
-                        if ($totalPagadoVes + ($monto * $tasaUsada) >= $totalFacturaVes - 0.01) {
+                        $totalPagadoVesActual = $repo->getTotalPagadoVes($facturaId);
+                        if ($totalPagadoVesActual >= $totalFacturaVes - 0.01) {
+                            $repo->cambiarEstado($facturaId, 'cerrada', (int)($_SESSION['user_id'] ?? 0), 'Pago completo');
                             $estadoFactura = 'cerrada';
                         }
+
+                        $db->commit();
+
                         ApiResponse::success([
                             'totalPagado'   => $totalPagado,
                             'pagos'         => $pagos,

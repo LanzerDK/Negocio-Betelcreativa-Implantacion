@@ -272,6 +272,7 @@ class StorageRepository
                         l.max_capacity AS maxCapacity,
                         COALESCE((SELECT SUM(msl.quantity) FROM material_stock_locations msl WHERE msl.location_id = l.location_id), 0) AS currentStock
                  FROM locations l
+                 WHERE l.location_name <> 'Almacén General'
                  ORDER BY l.location_name ASC"
             );
             return $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -282,16 +283,13 @@ class StorageRepository
 
     private function getOrCreateDefaultLocation(): int
     {
-        $stmt = $this->db->prepare("SELECT location_id FROM locations ORDER BY location_id ASC LIMIT 1");
-        $stmt->execute();
+$stmt = $this->db->prepare("SELECT location_id FROM locations WHERE location_name <> 'Almacén General' ORDER BY location_id ASC LIMIT 1");        $stmt->execute();
         $row = $stmt->fetch();
         if ($row) {
             return (int)$row['location_id'];
         }
-        $this->db->prepare(
-            "INSERT INTO locations (location_name, description) VALUES ('Almacén General', 'Ubicación por defecto')"
-        )->execute();
-        return (int)$this->db->lastInsertId();
+
+        throw new \RuntimeException('No hay ubicaciones disponibles para registrar stock.');
     }
 
     private function upsertStockLocation(int $materialId, int $locationId, int $quantityChange): void

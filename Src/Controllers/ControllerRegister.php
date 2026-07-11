@@ -27,7 +27,10 @@ class ControllerRegister
 
         SessionHelpers::start();
 
-        if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+        $userRepository = new UserRepository();
+        $isFirstUser = $userRepository->countAll() === 0;
+
+        if (!$isFirstUser && (($_SESSION['user_role'] ?? '') !== 'super_admin')) {
             ApiResponse::error('Acceso denegado.', 403);
         }
 
@@ -58,8 +61,6 @@ class ControllerRegister
 
         $cedulaCompleta = $tipoCedula . '-' . $cedulaNum;
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
-
-        $userRepository = new UserRepository();
 
         $errors = [];
         if ($userRepository->existsByUsername($usuario)) {

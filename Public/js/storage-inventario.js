@@ -146,6 +146,9 @@ function llenarSelectores() {
     allLocations.forEach(l => {
       const opt = document.createElement('option');
       opt.value = l.id;
+      if(l.name === 'Almacén General' || l.name === 'Almacen General') {
+        return;
+      }
       const wh = allWarehouses.find(w => w.id === l.warehouse_id);
       opt.textContent = l.name + (wh ? ' (' + wh.name + ')' : '') + ' — Cap. ' + (l.max_capacity || 'N/A');
       adjustLocSel.appendChild(opt);
@@ -174,6 +177,9 @@ function llenarSelectUbicacion(selectId, selected) {
   allLocations.forEach(l => {
     const opt = document.createElement('option');
     opt.value = l.id;
+    if(l.name === 'Almacén General' || l.name === 'Almacen General') {
+        return;
+      }
     opt.textContent = `${l.name} - ${l.description || 'Sin zona'}`;
     const selVal = selected || editVal;
     if (selVal && String(l.id) === String(selVal)) opt.selected = true;
@@ -295,6 +301,9 @@ async function abrirAjustar(material) {
       const opt = document.createElement('option');
       opt.value = l.id;
       const wh = allWarehouses.find(w => w.id === l.warehouse_id);
+      if(l.name === 'Almacén General' || l.name === 'Almacen General') {
+      return  
+      }
       opt.textContent = l.name + (wh ? ' (' + wh.name + ')' : '') + ' — Cap. ' + (l.max_capacity || 'N/A');
       locSel.appendChild(opt);
     });
