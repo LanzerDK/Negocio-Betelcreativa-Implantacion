@@ -270,6 +270,12 @@ class AppointmentController
                     // Liberar reservas de materiales (mantiene cita_materiales para posible restauración)
                     $matRepo = new CitaMaterialRepository();
                     $matRepo->cancelReservations($id, 'Cancelado', (int)$_SESSION['user_id']);
+                    // Auto-anular factura activa si existe
+                    $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
+                    $factura = $factRepo->getFacturaByCitaId($id);
+                    if ($factura && ($factura['estado'] ?? '') === 'activa') {
+                        $factRepo->cambiarEstado((int)$factura['id'], 'anulada', (int)$_SESSION['user_id'], 'Anulación automática por cancelación de cita #' . $id);
+                    }
                     ApiResponse::success(null, 'Cita cancelada exitosamente.');
                     return;
                 }
@@ -306,6 +312,12 @@ class AppointmentController
                         'fechaHoraCancelacion'    => null,
                         'motivoCancelacion'       => null
                     ]);
+                    // Restaurar factura anulada si existe
+                    $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
+                    $factura = $factRepo->getFacturaByCitaId($id);
+                    if ($factura && ($factura['estado'] ?? '') === 'anulada') {
+                        $factRepo->cambiarEstado((int)$factura['id'], 'activa', (int)$_SESSION['user_id'], 'Restauración automática por restauración de cita #' . $id);
+                    }
                     $mensaje = $stockOk
                         ? 'Cita restaurada exitosamente.'
                         : 'Cita restaurada, pero algunos materiales no tenían stock suficiente y fueron removidos. Debe reasignar los materiales manualmente.';

@@ -362,24 +362,6 @@
 }
 
 /* Estilos para exportación a PDF */
-@media print {
-  body * {
-    visibility: hidden;
-  }
-  .report-content.active,
-  .report-content.active * {
-    visibility: visible;
-  }
-  .report-content.active {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    box-shadow: none;
-    background: #fff;
-  }
-}
-
 /* Responsive */
 
 @media (max-width: 1024px) {

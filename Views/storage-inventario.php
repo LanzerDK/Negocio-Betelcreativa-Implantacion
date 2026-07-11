@@ -225,6 +225,7 @@
                     <div class="mb-3">
                         <label class="form-label">Stock Actual</label>
                         <input type="text" class="form-control" id="adjustCurrentStock" disabled>
+                        <div id="adjustLocations" class="location-stock-container"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Tipo de Ajuste</label>
@@ -265,11 +266,19 @@
                     </div>
                     <div class="mb-3" id="supplierGroup">
                         <label class="form-label">Proveedor</label>
-                        <input type="text" class="form-control" id="adjustSupplier" placeholder="Nombre del proveedor">
+                        <select class="form-select" id="adjustSupplier">
+                            <option value="">Ninguno</option>
+                        </select>
                     </div>
                     <div class="mb-3" id="purchasePriceGroup">
                         <label class="form-label">Precio de Compra (BS)</label>
                         <input type="number" step="0.01" class="form-control" id="adjustPurchasePrice" placeholder="0.00" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ubicación</label>
+                        <select class="form-select" id="adjustLocation">
+                            <option value="">Seleccionar ubicación...</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Notas</label>

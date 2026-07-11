@@ -14,11 +14,14 @@
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/chart.min.js"></script>
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/jspdf.umd.min.js"></script>
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/xlsx.full.min.js"></script>
-    <script src="<?php echo APP_URL; ?>Public/assets/vendor/html2canvas.min.js"></script>
+
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/jspdf-autotable.min.js"></script>
 </head>
 
 <body>
+    <?php if (($_SESSION['user_role'] ?? '') !== 'super_admin'): ?>
+    <?php header('Location: ' . APP_URL . 'dashboard'); exit; ?>
+    <?php endif; ?>
     <div class="app-container">
         <header class="app-header">
             <div class="logo-container">
@@ -110,11 +113,6 @@
                 <!-- Page Header -->
                 <div class="page-header">
                     <h2 class="page-title">Reportes del Sistema</h2>
-                    <div class="page-actions">
-                        <button class="btn btn-primary" id="exportAllBtn">
-                            <i class="fas fa-file-export"></i> Exportar Todos
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Report Cards -->
@@ -130,9 +128,6 @@
                             <button class="report-btn primary" data-report="inventory">
                                 <i class="fas fa-eye"></i> Ver Reporte
                             </button>
-                            <button class="report-btn outline" data-report="inventory">
-                                <i class="fas fa-download"></i> PDF
-                            </button>
                         </div>
                     </div>
 
@@ -147,9 +142,6 @@
                             <button class="report-btn primary" data-report="movements">
                                 <i class="fas fa-eye"></i> Ver Reporte
                             </button>
-                            <button class="report-btn outline" data-report="movements">
-                                <i class="fas fa-download"></i> PDF
-                            </button>
                         </div>
                     </div>
 
@@ -163,9 +155,6 @@
                         <div class="report-actions">
                             <button class="report-btn primary" data-report="income">
                                 <i class="fas fa-eye"></i> Ver Reporte
-                            </button>
-                            <button class="report-btn outline" data-report="income">
-                                <i class="fas fa-download"></i> PDF
                             </button>
                         </div>
                     </div>
@@ -183,9 +172,6 @@
                             <button class="report-btn primary" data-report="purchases">
                                 <i class="fas fa-eye"></i> Ver Reporte
                             </button>
-                            <button class="report-btn outline" data-report="purchases">
-                                <i class="fas fa-download"></i> PDF
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -195,10 +181,10 @@
                     <div class="report-header">
                         <h3 class="report-name">Reporte de Inventario Actual</h3>
                         <div class="report-tools">
-                            <button class="btn btn-outline export-pdf" data-report="inventoryReport">
+                            <button class="btn btn-gold export-pdf" data-report="inventoryReport">
                                 <i class="fas fa-file-pdf"></i> Exportar PDF
                             </button>
-                            <button class="btn btn-outline close-report">
+                            <button class="btn btn-gold close-report">
                                 <i class="fas fa-times"></i> Cerrar
                             </button>
                         </div>
@@ -289,10 +275,10 @@
                     <div class="report-header">
                         <h3 class="report-name">Movimientos de Inventario</h3>
                         <div class="report-tools">
-                            <button class="btn btn-outline export-pdf" data-report="movementsReport">
+                            <button class="btn btn-gold export-pdf" data-report="movementsReport">
                                 <i class="fas fa-file-pdf"></i> Exportar PDF
                             </button>
-                            <button class="btn btn-outline close-report">
+                            <button class="btn btn-gold close-report">
                                 <i class="fas fa-times"></i> Cerrar
                             </button>
                         </div>
@@ -368,10 +354,10 @@
                     <div class="report-header">
                         <h3 class="report-name">Reporte de Ingresos</h3>
                         <div class="report-tools">
-                            <button class="btn btn-outline export-pdf" data-report="incomeReport">
+                            <button class="btn btn-gold export-pdf" data-report="incomeReport">
                                 <i class="fas fa-file-pdf"></i> Exportar PDF
                             </button>
-                            <button class="btn btn-outline close-report">
+                            <button class="btn btn-gold close-report">
                                 <i class="fas fa-times"></i> Cerrar
                             </button>
                         </div>
@@ -402,6 +388,14 @@
                                 <div class="stat-label">Eventos Completados</div>
                             </div>
                             <div class="stat-card">
+                                <div class="stat-value">$0</div>
+                                <div class="stat-label">Ingresos Facturados</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">0</div>
+                                <div class="stat-label">Facturas Emitidas</div>
+                            </div>
+                            <div class="stat-card">
                                 <div class="stat-value">—</div>
                                 <div class="stat-label">Período</div>
                             </div>
@@ -418,7 +412,9 @@
                                 <thead>
                                     <tr>
                                         <th>Mes</th>
-                                        <th>Eventos Completados</th>
+                                        <th>Eventos</th>
+                                        <th>Ingresos ($)</th>
+                                        <th>Facturas</th>
                                     </tr>
                                 </thead>
                                 <tbody class="income-table-body">
@@ -434,10 +430,10 @@
                     <div class="report-header">
                         <h3 class="report-name">Reporte de Compras</h3>
                         <div class="report-tools">
-                            <button class="btn btn-outline export-pdf" data-report="purchasesReport">
+                            <button class="btn btn-gold export-pdf" data-report="purchasesReport">
                                 <i class="fas fa-file-pdf"></i> Exportar PDF
                             </button>
-                            <button class="btn btn-outline close-report">
+                            <button class="btn btn-gold close-report">
                                 <i class="fas fa-times"></i> Cerrar
                             </button>
                         </div>

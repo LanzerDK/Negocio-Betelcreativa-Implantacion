@@ -28,6 +28,9 @@ class StorageController
                     $perPage = max(1, min(50, (int)($_GET['per_page'] ?? 15)));
                     $result = $repo->getHistory($page, $perPage);
                     ApiResponse::success($result);
+                } elseif ($action === 'locations-stock') {
+                    $stock = $repo->getAllLocationsWithStock();
+                    ApiResponse::success($stock);
                 } elseif ($action === 'stock') {
                     $materialId = (int)($_GET['material_id'] ?? 0);
                     $locationId = (int)($_GET['location_id'] ?? 0);
@@ -63,6 +66,7 @@ class StorageController
                     $reason = trim($input['reason'] ?? '');
                     $notes = trim($input['notes'] ?? '');
                     $supplier = trim($input['supplier'] ?? '');
+                    $supplierId = !empty($input['supplier_id']) ? (int)$input['supplier_id'] : null;
                     $purchasePrice = !empty($input['purchase_price']) ? (float)$input['purchase_price'] : null;
                     $locationId = !empty($input['location_id']) ? (int)$input['location_id'] : null;
 
@@ -90,6 +94,19 @@ class StorageController
                         ? $cantidadIngresada * $factorConversion
                         : $cantidadIngresada;
 
+                    // Validar capacidad del destino en entradas
+                    if ($type === 'entry' && $locationId) {
+                        $locRepo = new \BetelCreativa\Infrastructure\LocationRepository();
+                        $destLoc = $locRepo->findById($locationId);
+                        if ($destLoc) {
+                            $maxCap = $destLoc->getMaxCapacity();
+                            $currentDestStock = $repo->getTotalStockAtLocation($locationId);
+                            if (($currentDestStock + $quantity) > $maxCap) {
+                                ApiResponse::error("La ubicación no tiene capacidad suficiente. Máx: {$maxCap}, ocupado: {$currentDestStock}, nuevo: {$quantity}.", 400);
+                            }
+                        }
+                    }
+
                     $tipoReferencia = match ($reason) {
                         'compra'      => 'compra',
                         'venta', 'devolucion' => 'venta',
@@ -102,6 +119,15 @@ class StorageController
                     $extraNote = !empty($extraMeta) ? json_encode(['notes' => $notes, 'meta' => $extraMeta]) : $notes;
 
                     if ($repo->recordAdjustment($materialId, $userId, $type, $quantity, $reason, $extraNote, $locationId, $tipoReferencia)) {
+                        // Actualizar supplier_id del material si se seleccionó un proveedor
+                        if ($supplierId && $matRepo) {
+                            $existingMaterial = $matRepo->findById($materialId);
+                            if ($existingMaterial) {
+                                $db2 = \BetelCreativa\Config\Database::getConnection();
+                                $db2->prepare("UPDATE materials SET supplier_id = :sid WHERE material_id = :mid")
+                                    ->execute([':sid' => $supplierId, ':mid' => $materialId]);
+                            }
+                        }
                         ApiResponse::success(null, 'Ajuste registrado exitosamente.');
                     } else {
                         ApiResponse::error('Error al registrar el ajuste.', 500);

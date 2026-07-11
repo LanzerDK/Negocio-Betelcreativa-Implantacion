@@ -256,6 +256,18 @@ body {
   box-shadow: var(--shadow);
 }
 
+/* Botón dorado - texto dorado, borde blanco */
+.btn-gold {
+  background: transparent;
+  border: 2px solid #fff;
+  color: var(--gold-button);
+}
+
+.btn-gold:hover {
+  background: rgba(212, 175, 55, 0.1);
+  transform: translateY(-3px);
+}
+
 /* Botón de éxito/confirmar en verde */
 .btn-success {
   background: var(--success);

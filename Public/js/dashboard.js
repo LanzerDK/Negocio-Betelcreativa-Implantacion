@@ -113,8 +113,8 @@ function renderUpcomingEvents()
 
     container.innerHTML = events.map((e, i) => `
         <div class="event-item">
-            <h3><i class="fas fa-star"></i> ${e.customer}</h3>
-            <p><i class="far fa-calendar-alt"></i> ${formatTime(e.date)} — ${e.startTime}</p>
+            <h3><i class="fas fa-star"></i> C.I. ${e.idNumber || '—'} — ${e.customer}</h3>
+            <p><i class="far fa-calendar-alt"></i> ${formatTime(e.date)}</p>
             <p><i class="fas fa-tag"></i> ${e.eventType || 'Evento'} ${e.location ? '— ' + e.location : ''}</p>
         </div>
         ${i < events.length - 1 ? '<hr>' : ''}
@@ -124,9 +124,14 @@ function renderUpcomingEvents()
 function formatTime(dateStr)
 {
     if (!dateStr) return '';
-    const d = new Date(dateStr + 'T00:00:00');
+    const d = new Date(dateStr.replace(' ', 'T'));
+    if (isNaN(d.getTime())) return dateStr;
     const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    return `${d.getDate()} ${months[d.getMonth()]}`;
+    const day = d.getDate();
+    const month = months[d.getMonth()];
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return `${day} ${month} ${hours}:${mins}`;
 }
 
 // ── CHARTS ──────────────────────────────────

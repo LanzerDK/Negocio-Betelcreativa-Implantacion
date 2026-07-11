@@ -366,41 +366,6 @@
   transform: translateY(-2px);
 }
 
-/* Supplier select wrap (reusado desde materials) */
-.supplier-select-wrap {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.supplier-select-wrap .form-control {
-  flex: 1;
-}
-
-.btn-add-supplier {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  border: 1px dashed var(--gold-border);
-  background: rgba(212, 175, 55, 0.08);
-  color: var(--gold-text);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  transition: var(--transition);
-  flex-shrink: 0;
-}
-
-.btn-add-supplier:hover {
-  background: var(--gold-gradient);
-  color: var(--primary);
-  border-color: var(--gold);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-}
-
 .supplier-type-badge {
   display: inline-flex;
   align-items: center;

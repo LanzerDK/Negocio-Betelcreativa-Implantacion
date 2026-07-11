@@ -98,6 +98,10 @@ class LocationController
                 if (!$loc) {
                     ApiResponse::error('Ubicación no encontrada.', 404);
                 }
+                if ($repo->hasStock($id)) {
+                    ApiResponse::error('No se puede eliminar el estante porque tiene materiales vinculados.', 400);
+                    break;
+                }
                 if ($repo->delete($id)) {
                     ApiResponse::success(null, 'Ubicación eliminada exitosamente.');
                 } else {

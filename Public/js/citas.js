@@ -345,10 +345,12 @@ function initCalendar()
         initialView: 'dayGridMonth',
         locale: 'es',
         headerToolbar: false,
-        editable: true,
+        editable: false,
         events: function(fetchInfo, successCallback) {
             const lista = todasLasCitas.length > 0 ? todasLasCitas : citasList;
-            const eventos = lista.map(c => ({
+            const eventos = lista
+                .filter(c => (c.estado || '').toLowerCase() !== 'cancelado')
+                .map(c => ({
                 id: String(c.id),
                 title: obtenerNombreCliente(c.clienteId) + ' - ' + (c.eventType || 'Evento'),
                 start: c.fechaHoraInicio ? c.fechaHoraInicio.replace(' ', 'T') : '',
@@ -359,10 +361,9 @@ function initCalendar()
             successCallback(eventos);
         },
         eventClick: function(info) {
-            const id = parseInt(info.event.id);
-            const lista = todasLasCitas.length > 0 ? todasLasCitas : citasList;
-            const cita = lista.find(c => c.id === id);
-            if (cita) abrirModalEdicion(cita);
+            const nombre = info.event.title;
+            const ubicacion = info.event.extendedProps.ubicacion || 'Sin ubicación';
+            toast(`${nombre} | Ubicación: ${ubicacion}`, 'info');
         },
         datesSet: function() { actualizarTituloCalendario(); }
     });
@@ -395,12 +396,15 @@ function abrirModalNueva()
     poblarSelectoresCliente();
     const form = document.getElementById('newAppointmentForm');
     if (form) form.reset();
-    // Bloquear fechas pasadas
+    // Bloquear fechas pasadas y futuro > 1 año
     const hoy = new Date().toISOString().slice(0, 10);
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+    const maxStr = maxDate.toISOString().slice(0, 10);
     const fechaInicio = document.getElementById('newFechaInicio');
-    if (fechaInicio) fechaInicio.min = hoy;
+    if (fechaInicio) { fechaInicio.min = hoy; fechaInicio.max = maxStr; }
     const fechaFin = document.getElementById('newFechaFin');
-    if (fechaFin) fechaFin.min = hoy;
+    if (fechaFin) { fechaFin.min = hoy; fechaFin.max = maxStr; }
     // Resetear hora a 8:00 AM por defecto
     ['newHoraInicio_h','newHoraFin_h'].forEach(id => { const s=document.getElementById(id); if(s) s.value='8'; });
     ['newHoraInicio_m','newHoraFin_m'].forEach(id => { const s=document.getElementById(id); if(s) s.value='00'; });
@@ -488,6 +492,15 @@ async function abrirModalEdicion(cita)
         const sinMatTextarea = document.getElementById('editMotivoSinMateriales');
         if (sinMatTextarea) sinMatTextarea.disabled = true;
     }
+
+    // Limitar fecha máxima a 1 año desde hoy
+    const maxDate = new Date();
+    maxDate.setFullYear(maxDate.getFullYear() + 1);
+    const maxStr = maxDate.toISOString().slice(0, 10);
+    const editInicio = document.getElementById('editFechaInicio');
+    if (editInicio) editInicio.max = maxStr;
+    const editFin = document.getElementById('editFechaFin');
+    if (editFin) editFin.max = maxStr;
 }
 
 async function cargarMaterialesCita(citaId)
@@ -1127,6 +1140,12 @@ function validarDatosCita(datos)
     if (!datos.fechaHoraFin) { toast('La fecha y hora de fin es obligatoria.', 'warning'); return false; }
     if (datos.fechaHoraInicio >= datos.fechaHoraFin) {
         toast('La fecha de fin debe ser posterior a la de inicio.', 'warning');
+        return false;
+    }
+    const unAno = new Date();
+    unAno.setFullYear(unAno.getFullYear() + 1);
+    if (new Date(datos.fechaHoraInicio) > unAno) {
+        toast('No se pueden agendar citas con más de 1 año de anticipación.', 'warning');
         return false;
     }
     if (!datos.materiales || datos.materiales.length === 0) {

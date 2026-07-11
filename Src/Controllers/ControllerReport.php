@@ -28,9 +28,17 @@ class ControllerReport
         return date('Y-m-d');
     }
 
-    public static function inventory(): void
+    private static function requireSuperAdmin(): void
     {
         SessionHelpers::requireAuth();
+        if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+            ApiResponse::error('Acceso denegado.', 403);
+        }
+    }
+
+    public static function inventory(): void
+    {
+        self::requireSuperAdmin();
 
         $category    = trim($_GET['category'] ?? '');
         $stockStatus = trim($_GET['stock_status'] ?? '');
@@ -57,7 +65,7 @@ class ControllerReport
 
     public static function movements(): void
     {
-        SessionHelpers::requireAuth();
+        self::requireSuperAdmin();
 
         $from = self::validateDate($_GET['from'] ?? '', 'Fecha inicio') ?? self::getDefaultFrom();
         $to   = self::validateDate($_GET['to'] ?? '', 'Fecha fin') ?? self::getDefaultTo();
@@ -83,7 +91,7 @@ class ControllerReport
 
     public static function income(): void
     {
-        SessionHelpers::requireAuth();
+        self::requireSuperAdmin();
 
         $from = self::validateDate($_GET['from'] ?? '', 'Fecha inicio') ?? self::getDefaultFrom();
         $to   = self::validateDate($_GET['to'] ?? '', 'Fecha fin') ?? self::getDefaultTo();
@@ -103,7 +111,7 @@ class ControllerReport
 
     public static function purchases(): void
     {
-        SessionHelpers::requireAuth();
+        self::requireSuperAdmin();
 
         $from = self::validateDate($_GET['from'] ?? '', 'Fecha inicio') ?? self::getDefaultFrom();
         $to   = self::validateDate($_GET['to'] ?? '', 'Fecha fin') ?? self::getDefaultTo();

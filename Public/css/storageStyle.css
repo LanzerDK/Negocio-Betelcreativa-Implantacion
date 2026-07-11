@@ -596,28 +596,7 @@
   margin-top: 20px;
 }
 
-/* Botones de acción en section header: Agregar Almacén / Agregar Estante */
-#addWarehouseBtn,
-#addShelfBtn {
-  background: var(--secondary);
-  color: var(--gold-button);
-  border: 1px solid var(--gold-button);
-  padding: 10px 22px;
-  border-radius: 50px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: var(--transition);
-  white-space: nowrap;
-}
-#addWarehouseBtn:hover,
-#addShelfBtn:hover {
-  background: var(--primary-dark);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow);
-}
+
 
 
 

@@ -289,6 +289,8 @@
   position: relative;
   z-index: 1;
   padding: 20px;
+  max-height: 380px;
+  overflow-y: auto;
 }
 
 .card-back {

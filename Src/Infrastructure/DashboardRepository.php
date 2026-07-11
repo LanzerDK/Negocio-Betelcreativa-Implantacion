@@ -144,7 +144,7 @@ class DashboardRepository
         try {
             $stmt = $this->db->query(
                 "SELECT a.fecha_hora_inicio, a.ubicacion, a.estado,
-                        c.first_name, c.last_name,
+                        c.id_number, c.first_name, c.last_name,
                         COALESCE(et.name, '') AS event_type
                  FROM citas a
                  JOIN customers c ON a.cliente_id = c.customer_id
@@ -164,6 +164,7 @@ class DashboardRepository
                     'location'  => $r['ubicacion'],
                     'status'    => $r['estado'],
                     'customer'  => trim($r['first_name'] . ' ' . $r['last_name']),
+                    'idNumber'  => $r['id_number'],
                 ];
             }
             return $items;

@@ -90,6 +90,19 @@ class LocationRepository
         }
     }
 
+    public function hasStock(int $locationId): bool
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) FROM material_stock_locations WHERE location_id = :id AND quantity > 0"
+            );
+            $stmt->execute([':id' => $locationId]);
+            return ((int)$stmt->fetchColumn()) > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
     public function delete(int $id): bool
     {
         try {

@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initReportNavigation();
     initChartInstances();
     initGenerateButtons();
-    initExportButtons();
+
 
     // Set default dates and load initial data
     setDefaultDates();
@@ -272,77 +272,19 @@ function formatNumber(n) {
     if (typeof n === 'number' && !Number.isInteger(n)) {
         return n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    if (typeof n === 'string' && isNaN(Number(n))) return n;
     return Number(n).toLocaleString('es-VE');
 }
 
 
-// ── PDF export ──────────────────────────────────
+// ── PDF export (table only) ─────────────────────
 
-function initExportButtons() {
-    document.querySelectorAll('.export-pdf').forEach(btn => {
-        btn.addEventListener('click', function () {
-            let reportId = this.dataset.report;
-            if (!reportId.endsWith('Report')) reportId = reportId + 'Report';
-            exportToPDF(reportId);
-        });
-    });
-
-    document.querySelectorAll('.report-btn.outline').forEach(btn => {
-        btn.addEventListener('click', function () {
-            let reportId = this.dataset.report + 'Report';
-            exportToPDF(reportId);
-        });
-    });
-
-    document.getElementById('exportAllBtn')?.addEventListener('click', exportAllReports);
-}
-
-function loadImage(url) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => resolve(img);
-        img.onerror = reject;
-        img.src = url;
-    });
-}
-
-async function captureChartImage(element) {
-    const chartUrl = element.dataset.chartUrl;
-    if (chartUrl) {
-        try {
-            const img = await loadImage(chartUrl);
-            return { type: 'quickchart', data: img };
-        } catch (_) {}
-    }
-    const chartContainer = element.querySelector('.chart-container');
-    if (chartContainer) {
-        try {
-            const canvas = await html2canvas(chartContainer, { scale: 2, useCORS: true, logging: false });
-            return { type: 'canvas', data: canvas };
-        } catch (_) {}
-    }
-    return null;
-}
-
-function addChartToPdf(pdf, chartResult, yPos) {
-    if (!chartResult) return yPos;
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    if (chartResult.type === 'quickchart') {
-        const img = chartResult.data;
-        const h = (img.height * pdfWidth) / img.width;
-        const clamped = Math.min(h, 120);
-        pdf.addImage(img, 'PNG', 0, yPos, pdfWidth, clamped);
-        return yPos + clamped + 8;
-    } else {
-        const canvas = chartResult.data;
-        const imgData = canvas.toDataURL('image/png');
-        const h = (canvas.height * pdfWidth) / canvas.width;
-        const clamped = Math.min(h, 120);
-        pdf.addImage(imgData, 'PNG', 0, yPos, pdfWidth, clamped);
-        return yPos + clamped + 8;
-    }
-}
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.export-pdf');
+    if (!btn) return;
+    const reportId = btn.dataset.report;
+    exportToPDF(reportId);
+});
 
 function addTableToPdf(pdf, element, startY) {
     const table = element.querySelector('.report-table');
@@ -407,48 +349,10 @@ async function exportToPDF(reportId) {
         pdf.setFontSize(16);
         pdf.text(title, pdfWidth / 2, 12, { align: 'center' });
 
-        let yPos = 20;
-        const chartResult = await captureChartImage(element);
-        yPos = addChartToPdf(pdf, chartResult, yPos);
-        addTableToPdf(pdf, element, yPos);
+        addTableToPdf(pdf, element, 20);
 
         pdf.save(`reporte_${reportId}.pdf`);
     } finally {
         if (!wasActive) element.classList.remove('active');
     }
-}
-
-async function exportAllReports() {
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const reportIds = ['inventoryReport', 'movementsReport', 'incomeReport', 'purchasesReport'];
-
-    for (let i = 0; i < reportIds.length; i++) {
-        const element = document.getElementById(reportIds[i]);
-        if (!element) continue;
-
-        const report = reportIds[i].replace('Report', '');
-        const wasActive = element.classList.contains('active');
-        if (!wasActive) element.classList.add('active');
-
-        await loadReport(report);
-        await new Promise(r => setTimeout(r, 600));
-
-        try {
-            if (i > 0) pdf.addPage();
-
-            const title = element.querySelector('.report-name')?.textContent || report;
-            pdf.setFontSize(16);
-            pdf.text(title, pdf.internal.pageSize.getWidth() / 2, 12, { align: 'center' });
-
-            let yPos = 20;
-            const chartResult = await captureChartImage(element);
-            yPos = addChartToPdf(pdf, chartResult, yPos);
-            addTableToPdf(pdf, element, yPos);
-        } finally {
-            if (!wasActive) element.classList.remove('active');
-        }
-    }
-
-    pdf.save('todos_los_reportes.pdf');
 }

@@ -1,6 +1,7 @@
 let allMaterials = [];
 let allCategories = [];
 let allLocations = [];
+let allWarehouses = [];
 
 let suppliersMap = {};
 let historyData = [];
@@ -59,10 +60,11 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.getElementById('guardarNuevoMaterialBtn')?.addEventListener('click', guardarNuevoMaterial);
   document.getElementById('guardarAjusteBtn')?.addEventListener('click', guardarAjuste);
-  document.getElementById('guardarMovimientoBtn')?.addEventListener('click', guardarMovimiento);
+  document.getElementById('adjustQuantity')?.addEventListener('input', validarCantidadTiempoReal);
   document.getElementById('adjustType')?.addEventListener('change', function () {
     actualizarMotivosAjuste();
     toggleSupplierPrice();
+    validarCantidadTiempoReal();
   });
   document.getElementById('addMatCostType')?.addEventListener('change', function () {
     document.getElementById('addMatWholesaleQtyGroup').style.display = this.value === 'wholesale' ? 'block' : 'none';
@@ -126,6 +128,27 @@ function llenarSelectores() {
       opt.value = id;
       opt.textContent = name;
       supSel.appendChild(opt);
+    });
+  }
+  const adjustSupSel = document.getElementById('adjustSupplier');
+  if (adjustSupSel) {
+    adjustSupSel.innerHTML = '<option value="">Ninguno</option>';
+    Object.entries(suppliersMap).forEach(([id, name]) => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = name;
+      adjustSupSel.appendChild(opt);
+    });
+  }
+  const adjustLocSel = document.getElementById('adjustLocation');
+  if (adjustLocSel) {
+    adjustLocSel.innerHTML = '<option value="">Seleccionar ubicación...</option>';
+    allLocations.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l.id;
+      const wh = allWarehouses.find(w => w.id === l.warehouse_id);
+      opt.textContent = l.name + (wh ? ' (' + wh.name + ')' : '') + ' — Cap. ' + (l.max_capacity || 'N/A');
+      adjustLocSel.appendChild(opt);
     });
   }
 }
@@ -253,11 +276,59 @@ async function abrirAjustar(material) {
   document.getElementById('adjustSupplier').value = '';
   document.getElementById('adjustPurchasePrice').value = '';
   document.getElementById('adjustCurrentStock').value = material.stock || 0;
+  // Repoblar select de proveedores
+  const adjSup = document.getElementById('adjustSupplier');
+  if (adjSup) {
+    adjSup.innerHTML = '<option value="">Ninguno</option>';
+    Object.entries(suppliersMap).forEach(([id, name]) => {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = name;
+      adjSup.appendChild(opt);
+    });
+  }
+  // Poblar select de ubicaciones
+  const locSel = document.getElementById('adjustLocation');
+  if (locSel) {
+    locSel.innerHTML = '<option value="">Seleccionar ubicación...</option>';
+    allLocations.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l.id;
+      const wh = allWarehouses.find(w => w.id === l.warehouse_id);
+      opt.textContent = l.name + (wh ? ' (' + wh.name + ')' : '') + ' — Cap. ' + (l.max_capacity || 'N/A');
+      locSel.appendChild(opt);
+    });
+  }
   actualizarMotivosAjuste();
   toggleSupplierPrice();
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   document.getElementById('tipoUnitario').checked = true;
   actualizarInfoConversion(material);
+  // Cargar stock por ubicación
+  try {
+    const data = await callApi(APP_URL + 'Public/api/storage.php?action=stock&material_id=' + material.id);
+    const locContainer = document.getElementById('adjustLocations');
+    if (locContainer) {
+      if (data.success && data.data && data.data.length > 0) {
+        locContainer.innerHTML = '<div class="location-stock-title"><i class="fas fa-map-marker-alt"></i> Ubicaciones:</div>';
+        data.data.forEach(item => {
+          const loc = allLocations.find(l => l.id === item.locationId);
+          if (!loc) return;
+          const wh = allWarehouses.find(w => w.id === loc.warehouse_id);
+          const whName = wh ? wh.name + ' / ' : '';
+          const capText = loc.max_capacity ? ' (Capacidad: ' + loc.max_capacity + ')' : '';
+          const div = document.createElement('div');
+          div.className = 'location-stock-item';
+          div.textContent = '• ' + whName + loc.name + ' — ' + item.quantity + ' unid.' + capText;
+          locContainer.appendChild(div);
+        });
+      } else {
+        locContainer.innerHTML = '<div class="location-stock-empty">Sin stock en ubicaciones.</div>';
+      }
+    }
+  } catch (e) {
+    console.error('Error al cargar ubicaciones:', e);
+  }
   Modal.open('adjustModal');
 }
 
@@ -292,7 +363,10 @@ async function guardarAjuste() {
   const tipoIngreso = document.querySelector('input[name="tipoIngreso"]:checked')?.value || 'Unitario';
   const reason = document.getElementById('adjustReason').value;
   const notes = document.getElementById('adjustNotes').value.trim();
-  const supplier = document.getElementById('adjustSupplier').value.trim();
+  const adjSup = document.getElementById('adjustSupplier');
+  const adjSupVal = adjSup.value;
+  const supplier = adjSup.selectedIndex > 0 ? adjSup.options[adjSup.selectedIndex].textContent.trim() : '';
+  const locationId = parseInt(document.getElementById('adjustLocation').value) || null;
   const purchasePrice = parseFloat(document.getElementById('adjustPurchasePrice').value) || null;
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   let valid = true;
@@ -317,8 +391,9 @@ async function guardarAjuste() {
   setLoading('guardarAjusteBtn', true);
   try {
     const body = { action: 'adjust', material_id: materialId, type, cantidad_ingresada: cantidadIngresada, tipo_ingreso: tipoIngreso, reason, notes };
-    if (supplier) body.supplier = supplier;
+    if (supplier) { body.supplier = supplier; body.supplier_id = adjSupVal; }
     if (purchasePrice !== null) body.purchase_price = purchasePrice;
+    if (locationId) body.location_id = locationId;
     const data = await callApi(APP_URL + 'Public/api/storage.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
@@ -341,18 +416,20 @@ async function guardarAjuste() {
 
 async function recargarDatos() {
   try {
-    const [mat, cat, loc, sum, sup] = await Promise.all([
+    const [mat, cat, loc, sum, sup, wh] = await Promise.all([
       fetch(APP_URL + 'Public/api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/locations.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/storage.php?action=summary').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'Public/api/admin/suppliers.php').then(r => r.json()).catch(() => ({ success: false, data: [] }))
+      fetch(APP_URL + 'Public/api/admin/suppliers.php').then(r => r.json()).catch(() => ({ success: false, data: [] })),
+      fetch(APP_URL + 'Public/api/warehouses.php').then(r => r.json()).catch(() => ({ success: false, data: [] }))
     ]);
     if (mat.success) allMaterials = mat.data;
     if (cat.success) allCategories = cat.data;
     if (loc.success) {
       allLocations = loc.data;
     }
+    if (wh && wh.success) allWarehouses = wh.data;
     if (sup && sup.success) {
       suppliersMap = {};
       sup.data.forEach(s => { suppliersMap[s.id] = s.company_name; });
@@ -504,6 +581,25 @@ function abrirModalNuevoMaterial() {
 function marcarError(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add('is-invalid');
+}
+
+function limpiarError(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('is-invalid');
+}
+
+function validarCantidadTiempoReal() {
+  const qtyInput = document.getElementById('adjustQuantity');
+  const tipo = document.getElementById('adjustType')?.value;
+  const cant = parseInt(qtyInput?.value);
+  const currentStock = parseInt(document.getElementById('adjustCurrentStock')?.value || 0);
+  if (!cant || cant <= 0) {
+    if (qtyInput) qtyInput.classList.add('is-invalid');
+  } else if (tipo === 'exit' && cant > currentStock) {
+    if (qtyInput) qtyInput.classList.add('is-invalid');
+  } else {
+    if (qtyInput) qtyInput.classList.remove('is-invalid');
+  }
 }
 
 function formatearStock(m) {

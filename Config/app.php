@@ -44,6 +44,12 @@ define('RESEND_FROM_EMAIL', EnvLoader::get('RESEND_FROM_EMAIL', 'onboarding@rese
 
 \BetelCreativa\Helpers\Logger::init();
 
+// ── Configurar CA bundle para cURL (Resend, etc.) ──────
+$cacertPath = __DIR__ . '/cacert.pem';
+if (file_exists($cacertPath)) {
+    ini_set('curl.cainfo', $cacertPath);
+}
+
 if (session_status() === PHP_SESSION_NONE) {
     \BetelCreativa\Helpers\SessionHelpers::start();
 }

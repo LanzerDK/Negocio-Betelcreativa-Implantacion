@@ -10,6 +10,10 @@ use BetelCreativa\Helpers\ApiResponse;
 header('Content-Type: application/json');
 SessionHelpers::start();
 
+if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+    ApiResponse::error('Acceso denegado.', 403);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     ApiResponse::error('Método no permitido.', 405);
 }

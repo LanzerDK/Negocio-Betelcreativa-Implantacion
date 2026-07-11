@@ -76,7 +76,7 @@ class SupplierRepository
     {
         try {
             $stmt = $this->db->prepare(
-                "SELECT COUNT(*) FROM materials WHERE supplier_id = :id"
+                "SELECT COUNT(*) FROM materials WHERE supplier_id = :id AND is_active = 1"
             );
             $stmt->execute([':id' => $supplierId]);
             return (int) $stmt->fetchColumn();

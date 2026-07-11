@@ -2,6 +2,7 @@
 
 namespace BetelCreativa\Controllers;
 
+use BetelCreativa\Domain\UserModel;
 use BetelCreativa\Infrastructure\UserRepository;
 use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;

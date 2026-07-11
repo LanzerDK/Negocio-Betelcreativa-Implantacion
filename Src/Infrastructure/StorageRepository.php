@@ -264,6 +264,22 @@ class StorageRepository
         }
     }
 
+    public function getAllLocationsWithStock(): array
+    {
+        try {
+            $stmt = $this->db->query(
+                "SELECT l.location_id AS locationId, l.location_name AS locationName,
+                        l.max_capacity AS maxCapacity,
+                        COALESCE((SELECT SUM(msl.quantity) FROM material_stock_locations msl WHERE msl.location_id = l.location_id), 0) AS currentStock
+                 FROM locations l
+                 ORDER BY l.location_name ASC"
+            );
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            return [];
+        }
+    }
+
     private function getOrCreateDefaultLocation(): int
     {
         $stmt = $this->db->prepare("SELECT location_id FROM locations ORDER BY location_id ASC LIMIT 1");

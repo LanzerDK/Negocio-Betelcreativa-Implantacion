@@ -6,6 +6,7 @@ use BetelCreativa\Domain\UserModel;
 use BetelCreativa\Infrastructure\UserRepository;
 use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
+use BetelCreativa\Helpers\SessionHelpers;
 
 use BetelCreativa\Config\EnvLoader;
 
@@ -23,6 +24,12 @@ class ControllerRegister
         }
 
         header('Content-Type: application/json');
+
+        SessionHelpers::start();
+
+        if (($_SESSION['user_role'] ?? '') !== 'super_admin') {
+            ApiResponse::error('Acceso denegado.', 403);
+        }
 
         CsrfHelper::validateRequestOrFail();
 

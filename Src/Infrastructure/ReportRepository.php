@@ -225,14 +225,14 @@ class ReportRepository
     {
         try {
             $stmt = $this->db->prepare(
-                "SELECT DATE_FORMAT(c.fecha_hora_inicio, '%Y-%m') AS month,
+                "SELECT DATE_FORMAT(COALESCE(c.fecha_hora_inicio, f.created_at), '%Y-%m') AS month,
                         COUNT(DISTINCT c.id) AS eventos,
-                        COALESCE(SUM(f.total_factura), 0) AS total_usd,
+                        SUM(f.total_factura) AS total_usd,
                         COUNT(DISTINCT f.id) AS facturas
-                 FROM citas c
-                 LEFT JOIN facturas f ON c.id = f.cita_id
-                  WHERE c.estado = 'Finalizada'
-                   AND DATE(c.fecha_hora_inicio) BETWEEN :from AND :to
+                 FROM facturas f
+                 LEFT JOIN citas c ON f.cita_id = c.id
+                 WHERE f.estado IN ('activa', 'cerrada')
+                   AND DATE(COALESCE(c.fecha_hora_inicio, f.created_at)) BETWEEN :from AND :to
                  GROUP BY month
                  ORDER BY month ASC"
             );
@@ -278,7 +278,7 @@ class ReportRepository
                 ],
                 'stats' => [
                     ['label' => 'Eventos Completados', 'value' => $totalEventos],
-                    ['label' => 'Ingresos Facturados', 'value' => '$' . number_format($totalIngresos, 2)],
+                    ['label' => 'Ingresos Facturados', 'value' => $totalIngresos, 'currency' => true],
                     ['label' => 'Facturas Emitidas',   'value' => $totalFacturados],
                     ['label' => 'Período',              'value' => "$from — $to"],
                 ],

@@ -2,6 +2,7 @@ let allMaterials = [];
 let allCategories = [];
 let allLocations = [];
 let allWarehouses = [];
+let allLocationStock = [];
 let currentPage = 1;
 const ITEMS_PER_PAGE = 9;
 
@@ -122,10 +123,8 @@ function renderLayout() {
     renderPagination(totalPages);
   }
 function crearShelfElement(l) {
-  const itemCount = allMaterials.filter(m =>
-    m.location_id === l.id ||
-    (Array.isArray(m.stockLocations) && m.stockLocations.some(sl => sl.locationId === l.id))
-  ).length;
+  const ls = allLocationStock.find(s => s.locationId === l.id);
+  const itemCount = ls ? ls.currentStock : 0;
   const maxCap = l.max_capacity || 200;
   const shelfDiv = document.createElement('div');
   shelfDiv.className = 'shelf';
@@ -186,7 +185,13 @@ function llenarSelectUbicacion(selectId, selected, excludeId) {
     const opt = document.createElement('option');
     opt.value = l.id;
     const wh = allWarehouses.find(w => w.id === l.warehouse_id);
-    opt.textContent = `${l.name}${wh ? ' (' + wh.name + ')' : ''}`;
+    const ls = allLocationStock.find(s => s.locationId === l.id);
+    if (ls && ls.maxCapacity > 0) {
+      const libre = ls.maxCapacity - ls.currentStock;
+      opt.textContent = `${l.name}${wh ? ' (' + wh.name + ')' : ''} — Libre: ${libre} de ${ls.maxCapacity}`;
+    } else {
+      opt.textContent = `${l.name}${wh ? ' (' + wh.name + ')' : ''}`;
+    }
     if (selected && String(l.id) === String(selected)) opt.selected = true;
     sel.appendChild(opt);
   });
@@ -353,14 +358,14 @@ async function eliminarEstante() {
 async function abrirVerMateriales(shelfId, shelfName) {
   document.getElementById('viewShelfModalTitle').textContent = `Materiales en ${shelfName}`;
   const tbody = document.getElementById('viewShelfBody');
-  tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--gray)">Cargando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--gray)">Cargando...</td></tr>';
   Modal.open('viewShelfModal');
   try {
     const data = await callApi(APP_URL + 'Public/api/storage.php?action=stock&location_id=' + shelfId);
     const items = data.success ? data.data : [];
     tbody.innerHTML = '';
     if (!items.length) {
-      tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--gray)">Este estante no tiene materiales.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--gray)">Este estante no tiene materiales.</td></tr>';
       return;
     }
     const frag = document.createDocumentFragment();
@@ -369,12 +374,13 @@ async function abrirVerMateriales(shelfId, shelfName) {
       const mat = allMaterials.find(m => m.id === item.materialId || m.id === item.material_id);
       const code = mat ? (mat.code || '—') : (item.code || '—');
       const name = mat ? mat.name : (item.name || '—');
-      tr.innerHTML = `<td>${escapeHtml(code)}</td><td>${escapeHtml(name)}</td>`;
+      const qty = item.quantity || 0;
+      tr.innerHTML = `<td>${escapeHtml(code)}</td><td>${escapeHtml(name)}</td><td>${qty}</td>`;
       frag.appendChild(tr);
     });
     tbody.appendChild(frag);
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--gray)">Error al cargar materiales.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--gray)">Error al cargar materiales.</td></tr>';
   }
 }
 
@@ -468,16 +474,18 @@ async function guardarMovimientoShelf() {
 
 async function recargarDatos() {
   try {
-    const [mat, cat, loc, wh] = await Promise.all([
+    const [mat, cat, loc, wh, ls] = await Promise.all([
       fetch(APP_URL + 'Public/api/materials.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/categories.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/locations.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
-      fetch(APP_URL + 'Public/api/warehouses.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
+      fetch(APP_URL + 'Public/api/warehouses.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
+      fetch(APP_URL + 'Public/api/storage.php?action=locations-stock').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
     ]);
     if (mat.success) allMaterials = mat.data;
     if (cat.success) allCategories = cat.data;
     if (loc.success) allLocations = loc.data;
     if (wh.success) allWarehouses = wh.data;
+    if (ls.success) allLocationStock = ls.data;
     renderLayout();
   } catch (err) {
     console.error('Error al recargar:', err.message);

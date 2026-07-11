@@ -96,10 +96,10 @@
                 <div class="section-header">
                     <h3 class="section-title">Almacenes</h3>
                     <div class="section-actions">
-                        <button class="btn" id="addWarehouseBtn">
+                        <button class="btn btn-gold" id="addWarehouseBtn">
                             <i class="fas fa-plus"></i> Agregar Almacén
                         </button>
-                        <button class="btn" id="addShelfBtn">
+                        <button class="btn btn-gold" id="addShelfBtn">
                             <i class="fas fa-plus"></i> Agregar Estante
                         </button>
                     </div>
@@ -213,6 +213,7 @@
                             <tr>
                                 <th>Código</th>
                                 <th>Nombre</th>
+                                <th>Cantidad</th>
                             </tr>
                         </thead>
                         <tbody id="viewShelfBody">

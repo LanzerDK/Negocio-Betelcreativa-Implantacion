@@ -10,12 +10,6 @@
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/loginStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
-    <style>
-    .secret-feedback {
-      margin-top: 8px; font-size: 0.85rem; color: #f8d7da;
-      display: none; text-align: center;
-    }
-    </style>
 </head>
 
 <body>
@@ -65,29 +59,6 @@
 
     </div>
 
-    <!-- Modal de registro (aparece tras 3 clics en el logo) -->
-    <div class="secret-modal-overlay" id="secretModal">
-        <div class="secret-modal">
-            <h2><i class="bi bi-shield-lock"></i> Acceso restringido</h2>
-            <p>Ingrese el código de seguridad para acceder al registro de nuevos usuarios.</p>
-
-            <div class="secret-input-group" id="secretCodeGroup">
-                <input type="text" class="secret-input" id="secretCodeInput" placeholder="Codigo de seguridad" maxlength="11" autocomplete="off">
-                <button class="btn-validate" id="confirmSecretBtn">Confirmar Clave</button>
-            </div>
-            <div class="secret-feedback" id="secretFeedback"></div>
-
-            <div class="secret-timer" id="secretTimer" style="display: none;">
-                <i class="bi bi-clock"></i> <span id="timerText">Debe esperar 1:30 para volver a intentar</span>
-            </div>
-
-            <div class="register-link-in-modal" id="registerLinkInModal">
-                <a href="<?php echo APP_URL; ?>register"><i class="bi bi-arrow-right-circle"></i> Ir al registro</a>
-            </div>
-
-            <button class="btn-close-modal" id="closeSecretModal">Cerrar</button>
-        </div>
-    </div>
 </body>
 
 <script>

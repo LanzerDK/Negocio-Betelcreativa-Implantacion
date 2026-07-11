@@ -251,6 +251,32 @@
 .form-check { display: flex; align-items: center; gap: 6px; }
 .form-check-input { width: 16px; height: 16px; }
 
+/* Location stock display in adjust modal */
+.location-stock-container {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.location-stock-title {
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
+.location-stock-item {
+  padding: 2px 0;
+  color: #555;
+}
+
+.location-stock-empty {
+  color: var(--gray);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 992px) {
   .content-wrapper { grid-template-columns: 1fr; }
   .table-header { display: none; }

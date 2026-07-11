@@ -299,19 +299,27 @@ class FacturaRepository
     public function cambiarEstado(int $facturaId, string $estado, ?int $changedBy = null, string $motivo = ''): bool
     {
         try {
-            $allowed = ['cerrada', 'anulada'];
+            $allowed = ['cerrada', 'anulada', 'activa'];
             if (!in_array($estado, $allowed, true)) return false;
 
             $actual = $this->getFacturaById($facturaId);
             if (!$actual) return false;
             $estadoAnterior = $actual['estado'];
-            if ($estadoAnterior !== 'activa') return false;
+
+            // Permitir activa→anulada, activa→cerrada, anulada→activa
+            $transiciones = [
+                'activa'  => ['cerrada', 'anulada'],
+                'anulada' => ['activa']
+            ];
+            if (!isset($transiciones[$estadoAnterior]) || !in_array($estado, $transiciones[$estadoAnterior], true)) {
+                return false;
+            }
 
             $ownTx = !$this->db->inTransaction();
             if ($ownTx) $this->db->beginTransaction();
 
-            $stmt = $this->db->prepare("UPDATE facturas SET estado = :estado WHERE id = :id AND estado = 'activa'");
-            $ok = $stmt->execute([':estado' => $estado, ':id' => $facturaId]);
+            $stmt = $this->db->prepare("UPDATE facturas SET estado = :estado WHERE id = :id AND estado = :ea");
+            $ok = $stmt->execute([':estado' => $estado, ':id' => $facturaId, ':ea' => $estadoAnterior]);
             if ($ok) {
                 try {
                     $logStmt = $this->db->prepare(
