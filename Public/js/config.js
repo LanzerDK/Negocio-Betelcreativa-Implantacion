@@ -261,7 +261,7 @@ function renderUsers(data) {
                 <select class="role-select" data-user-id="${u.id}" ${u.id === USER_ID ? 'disabled' : ''}>
                     <option value="user" ${u.role === 'user' ? 'selected' : ''}>Usuario</option>
                     <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                    <option value="super_admin" ${u.role === 'super_admin' ? 'selected' : ''}>Super Admin</option>
+                    <!-- <option value="super_admin" ${u.role === 'super_admin' ? 'selected' : ''}>Super Admin</option> -->
                 </select>
             </td>
             <td>

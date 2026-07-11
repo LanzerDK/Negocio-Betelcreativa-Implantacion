@@ -189,7 +189,7 @@ class UserRepository
                         u.avatar AS avatarUrl
                     FROM users u
                     LEFT JOIN roles r ON u.id_rol = r.id_rol
-                    WHERE u.user_id = :id";
+                    WHERE u.user_id = :id ";
                     
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
@@ -273,11 +273,13 @@ class UserRepository
             $params = [':limit' => $perPage, ':offset' => $offset];
 
             if ($search !== '') {
-                $where = "WHERE (u.first_name LIKE :q OR u.last_name LIKE :q2 OR u.email LIKE :q3 OR u.username LIKE :q4)";
+                $where = "WHERE u.user_id > 1 AND (u.first_name LIKE :q OR u.last_name LIKE :q2 OR u.email LIKE :q3 OR u.username LIKE :q4)";
                 $params[':q'] = "%{$search}%";
                 $params[':q2'] = "%{$search}%";
                 $params[':q3'] = "%{$search}%";
                 $params[':q4'] = "%{$search}%";
+            }else {
+                $where = "WHERE u.user_id > 1";
             }
 
             $countSql = "SELECT COUNT(*) FROM users u $where";
