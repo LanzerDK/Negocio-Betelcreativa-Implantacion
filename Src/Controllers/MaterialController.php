@@ -9,8 +9,11 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// MaterialController — CRUD de materiales/inventario
+// Incluye gestión de categorías, ubicaciones, unidades de compra/consumo y factor de conversión
 class MaterialController
 {
+    // Punto de entrada: enruta según método HTTP (GET/POST/PUT/DELETE)
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -19,6 +22,9 @@ class MaterialController
 
         switch ($method) {
             case 'GET':
+                // GET con ?id — detalle de un material
+                // GET con ?category_id — materiales por categoría
+                // GET sin parámetros — lista completa
                 if (isset($_GET['id'])) {
                     $m = $repo->findById((int)$_GET['id']);
                     if ($m) {
@@ -42,6 +48,7 @@ class MaterialController
                 }
                 CsrfHelper::validateRequestOrFail();
 
+                // Si no se especifica ubicación, asigna la primera disponible
                 $locationId = !empty($input['location_id']) ? (int)$input['location_id'] : null;
                 if (!$locationId) {
                     $locDb = \BetelCreativa\Config\Database::getConnection();
@@ -66,6 +73,7 @@ class MaterialController
                     'imageUrl' => $input['image_url'] ?? null
                 ]);
 
+                // Validaciones de campos obligatorios
                 if (empty($material->getName()) || empty($material->getCode())) {
                     ApiResponse::error('El nombre y código del material son obligatorios.');
                 }
@@ -74,6 +82,7 @@ class MaterialController
                     ApiResponse::error('El precio no puede ser negativo.');
                 }
 
+                // Valida que la categoría seleccionada esté activa
                 if ($material->getCategoryId()) {
                     $catRepo = new CategoryRepository();
                     $cat = $catRepo->findById($material->getCategoryId());
@@ -82,6 +91,7 @@ class MaterialController
                     }
                 }
 
+                // Validación de unicidad de código y nombre
                 if ($repo->existsByCode($material->getCode())) {
                     ApiResponse::error('Ya existe un material con ese código.');
                 }
@@ -114,6 +124,7 @@ class MaterialController
                     ApiResponse::error('Material no encontrado.', 404);
                 }
 
+                // Construye modelo con valores actualizados o existentes
                 $material = new MaterialModel([
                     'id' => $id,
                     'code' => $existing->getCode(),
@@ -145,6 +156,7 @@ class MaterialController
                     }
                 }
 
+                // No permitir deshabilitar si tiene stock
                 if ($material->getIsActive() === 0 && $existing->getStock() > 0) {
                     ApiResponse::error('No se puede deshabilitar: el material tiene existencia (' . $existing->getStock() . ' unidades).');
                 }
@@ -179,6 +191,7 @@ class MaterialController
         }
     }
 
+    // Convierte un MaterialModel a array asociativo para respuesta JSON
     private static function toArray(MaterialModel $m): array
     {
         return [

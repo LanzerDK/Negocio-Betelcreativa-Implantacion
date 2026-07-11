@@ -5,24 +5,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportes - Gestión de Almacén</title>
+    <!-- Favicon del sistema -->
     <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
-    
+    <!-- Estilos base comunes y específicos del módulo de reportes -->
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/reportStyle.css">
+    <!-- Font Awesome para iconos vectoriales -->
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <!-- Fuente Poppins para tipografía uniforme -->
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
+    <!-- Chart.js para gráficos estadísticos -->
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/chart.min.js"></script>
+    <!-- jsPDF para exportación de reportes a PDF -->
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/jspdf.umd.min.js"></script>
+    <!-- SheetJS (xlsx) para exportación a Excel -->
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/xlsx.full.min.js"></script>
-
+    <!-- jsPDF-AutoTable para tablas en PDF -->
     <script src="<?php echo APP_URL; ?>Public/assets/vendor/jspdf-autotable.min.js"></script>
 </head>
 
 <body>
+    <!-- Protección: solo super_admin puede acceder a esta vista -->
     <?php if (($_SESSION['user_role'] ?? '') !== 'super_admin'): ?>
     <?php header('Location: ' . APP_URL . 'dashboard'); exit; ?>
     <?php endif; ?>
     <div class="app-container">
+        <!-- Encabezado con logo, información del módulo y avatar del usuario autenticado -->
         <header class="app-header">
             <div class="logo-container">
                 <i class="fas fa-chart-line logo-icon"></i>
@@ -31,7 +39,7 @@
                     <p>Análisis de datos de Bet-El Creativa</p>
                 </div>
             </div>
-
+            <!-- Bloque de usuario: avatar, nombre y menú de configuración / cierre de sesión -->
             <div class="user-container">
                 <div class="imagenfoto">
                     <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
@@ -41,6 +49,7 @@
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
                     <p><?php echo htmlspecialchars(roleLabel($_SESSION['user_role'] ?? null)); ?></p>
                 </div>
+                <!-- Dropdown de configuración de cuenta y cierre de sesión -->
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
                         <i class="fas fa-cog"></i>
@@ -57,7 +66,7 @@
             </div>
         </header>
 
-        <!-- Menú principal -->
+        <!-- Menú de navegación principal con enlaces a los módulos del sistema -->
         <nav class="main-menu">
             <a href="<?php echo APP_URL; ?>dashboard" class="menu-item">
                 <i class="fas fa-tachometer-alt"></i>
@@ -75,6 +84,7 @@
                 <i class="fas fa-truck"></i>
                 <span>Proveedores</span>
             </a>
+            <!-- Submenú de almacén con acceso a inventario -->
             <div class="menu-item-wrapper">
                 <a href="<?php echo APP_URL; ?>storage" class="menu-item">
                     <i class="fas fa-warehouse"></i>
@@ -99,6 +109,7 @@
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Facturación</span>
             </a>
+            <!-- Enlace activo de Reportes, visible solo para super_admin -->
             <?php if (($_SESSION['user_role'] ?? '') === 'super_admin'): ?>
             <a href="<?php echo APP_URL; ?>reports" class="menu-item active">
                 <i class="fas fa-chart-line"></i>
@@ -107,15 +118,15 @@
             <?php endif; ?>
         </nav>
 
-        <!-- Main Content -->
+        <!-- Contenedor del contenido principal -->
         <div class="main-content">
             <div class="content">
-                <!-- Page Header -->
+                <!-- Encabezado de página con título del módulo -->
                 <div class="page-header">
                     <h2 class="page-title">Reportes del Sistema</h2>
                 </div>
 
-                <!-- Report Cards -->
+                <!-- Tarjetas de selección de reporte: Inventario, Movimientos, Ingresos, Compras -->
                 <div class="report-cards">
                     <!-- Reporte 1: Inventario Actual -->
                     <div class="report-card">
@@ -159,8 +170,6 @@
                         </div>
                     </div>
 
-                    
-
                     <!-- Reporte 6: Compras -->
                     <div class="report-card">
                         <div class="report-icon">
@@ -176,7 +185,7 @@
                     </div>
                 </div>
 
-                <!-- Report Content Area - Inventario -->
+                <!-- Área de contenido dinámico del reporte de inventario -->
                 <div class="report-content" id="inventoryReport">
                     <div class="report-header">
                         <h3 class="report-name">Reporte de Inventario Actual</h3>
@@ -190,6 +199,7 @@
                         </div>
                     </div>
 
+                    <!-- Filtros del reporte de inventario: categoría, estado y orden -->
                     <div class="report-filters inventory-filters">
                         <div class="filter-group">
                             <label class="filter-label">Categoría</label>
@@ -229,6 +239,7 @@
                         </div>
                     </div>
 
+                    <!-- Contenido del reporte: estadísticas, gráfico y tabla -->
                     <div class="report-data">
                         <div class="stats-grid inventory-stats">
                             <div class="stat-card">
@@ -249,10 +260,12 @@
                             </div>
                         </div>
 
+                        <!-- Lienzo para gráfico Chart.js del inventario -->
                         <div class="chart-container">
                             <canvas id="inventoryChart"></canvas>
                         </div>
 
+                        <!-- Tabla de datos del inventario -->
                         <div class="table-container">
                             <table class="report-table">
                                 <thead>
@@ -270,7 +283,7 @@
                     </div>
                 </div>
 
-                <!-- Report Content Area - Movimientos -->
+                <!-- Área de contenido dinámico del reporte de movimientos -->
                 <div class="report-content" id="movementsReport">
                     <div class="report-header">
                         <h3 class="report-name">Movimientos de Inventario</h3>
@@ -284,6 +297,7 @@
                         </div>
                     </div>
 
+                    <!-- Filtros de movimientos: rango de fechas y tipo -->
                     <div class="report-filters movements-filters">
                         <div class="filter-group">
                             <label class="filter-label">Fecha Inicio</label>
@@ -311,6 +325,7 @@
                         </div>
                     </div>
 
+                    <!-- Contenido del reporte de movimientos -->
                     <div class="report-data">
                         <div class="stats-grid movements-stats">
                             <div class="stat-card">
@@ -327,10 +342,12 @@
                             </div>
                         </div>
 
+                        <!-- Lienzo para gráfico Chart.js de movimientos -->
                         <div class="chart-container">
                             <canvas id="movementsChart"></canvas>
                         </div>
 
+                        <!-- Tabla de movimientos -->
                         <div class="table-container">
                             <table class="report-table">
                                 <thead>
@@ -349,7 +366,7 @@
                     </div>
                 </div>
 
-                <!-- Report Content Area - Ingresos -->
+                <!-- Área de contenido dinámico del reporte de ingresos -->
                 <div class="report-content" id="incomeReport">
                     <div class="report-header">
                         <h3 class="report-name">Reporte de Ingresos</h3>
@@ -363,6 +380,7 @@
                         </div>
                     </div>
 
+                    <!-- Filtros de ingresos: rango de fechas -->
                     <div class="report-filters">
                         <div class="filter-group">
                             <label class="filter-label">Fecha Inicio</label>
@@ -381,6 +399,7 @@
                         </div>
                     </div>
 
+                    <!-- Contenido del reporte de ingresos -->
                     <div class="report-data">
                         <div class="stats-grid income-stats">
                             <div class="stat-card">
@@ -401,12 +420,15 @@
                             </div>
                         </div>
 
+                        <!-- Lienzo para gráfico Chart.js de ingresos -->
                         <div class="chart-container">
                             <canvas id="incomeChart"></canvas>
                         </div>
+                        <!-- Nota informativa sobre la fuente de datos de ingresos -->
                         <div class="income-note" style="text-align:center;padding:15px;color:var(--gray);font-style:italic;">
                             Los datos de ingresos monetarios provienen del módulo de facturación (ver <a href="facturas" style="color:var(--primary);text-decoration:underline;">Facturación</a>).
                         </div>
+                        <!-- Tabla de ingresos por mes -->
                         <div class="table-container">
                             <table class="report-table">
                                 <thead>
@@ -424,8 +446,7 @@
                     </div>
                 </div>
 
-               
-                <!-- Report Content Area - Compras -->
+                <!-- Área de contenido dinámico del reporte de compras -->
                 <div class="report-content" id="purchasesReport">
                     <div class="report-header">
                         <h3 class="report-name">Reporte de Compras</h3>
@@ -439,6 +460,7 @@
                         </div>
                     </div>
 
+                    <!-- Filtros de compras: rango de fechas -->
                     <div class="report-filters purchases-filters">
                         <div class="filter-group">
                             <label class="filter-label">Fecha Inicio</label>
@@ -457,6 +479,7 @@
                         </div>
                     </div>
 
+                    <!-- Contenido del reporte de compras -->
                     <div class="report-data">
                         <div class="stats-grid purchases-stats">
                             <div class="stat-card">
@@ -477,10 +500,12 @@
                             </div>
                         </div>
 
+                        <!-- Lienzo para gráfico Chart.js de compras -->
                         <div class="chart-container">
                             <canvas id="purchasesChart"></canvas>
                         </div>
 
+                        <!-- Tabla de compras -->
                         <div class="table-container">
                             <table class="report-table">
                                 <thead>
@@ -499,11 +524,13 @@
                 </div>
             </div>
         </div>
-    
+
+    <!-- Configuración de constantes PHP expuestas al JS -->
     <script>
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
+    <!-- Toggles de menú desplegable: configuración de usuario y submenú de almacén -->
     <script>
         document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -518,6 +545,7 @@
             document.getElementById('almacenSubmenu')?.classList.remove('show');
         });
     </script>
+    <!-- Scripts JS: notificaciones toast y lógica de reportes -->
     <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/Reportes.js"></script>
 </body>

@@ -1,5 +1,6 @@
 /* registerStyle.css - Estilos específicos para registro de usuarios */
 
+/* Fondo de página con imagen de registro a pantalla completa */
 body {
   background: url("../images/registro.jpg") center/cover no-repeat;
   min-height: 100vh;
@@ -11,6 +12,7 @@ body {
   overflow-x: hidden;
 }
 
+/* Overlay oscuro semitransparente sobre la imagen de fondo */
 body::before {
   content: "";
   position: absolute;
@@ -22,6 +24,7 @@ body::before {
   z-index: 1;
 }
 
+/* Contenedor principal del formulario de registro con efecto vidrio */
 .register-container {
   position: relative;
   z-index: 2;
@@ -36,16 +39,19 @@ body::before {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Efecto hover elevando el contenedor */
 .register-container:hover {
   transform: translateY(-5px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
+/* Cabecera centrada con logo, título y subtítulo */
 .register-header {
   text-align: center;
   margin-bottom: 30px;
 }
 
+/* Título con degradado de color azul */
 .register-header h1 {
   color: #fff;
   font-size: 2.5rem;
@@ -56,28 +62,33 @@ body::before {
   -webkit-text-fill-color: transparent;
 }
 
+/* Subtítulo descriptivo del formulario */
 .register-header p {
   color: rgba(255, 255, 255, 0.8);
   font-size: 1.1rem;
 }
 
+/* Logo de la empresa en la cabecera */
 .register-header img {
   width: 100px;
   margin-bottom: 10px;
 }
 
+/* Fila de formulario con campos lado a lado */
 .form-row {
   display: flex;
   gap: 15px;
   margin-bottom: 25px;
 }
 
+/* Grupo de campo con espacio reservado para mensajes de validación */
 .form-group {
   flex: 1;
   position: relative;
   padding-bottom: 50px;
 }
 
+/* Etiqueta del campo de formulario */
 .form-group label {
   display: block;
   margin-bottom: 8px;
@@ -85,6 +96,7 @@ body::before {
   font-weight: 500;
 }
 
+/* Icono decorativo superpuesto a la izquierda del input */
 .input-icon {
   position: absolute;
   left: 12px;
@@ -96,16 +108,19 @@ body::before {
   pointer-events: none;
 }
 
+/* Grupo de entrada flexible para campos en fila */
 .input-group {
   display: flex;
   gap: 10px;
 }
 
+/* Wrapper del select personalizado con flecha */
 .select-wrapper {
   flex: 1;
   position: relative;
 }
 
+/* Flecha descendente personalizada para el select */
 .select-wrapper::after {
   content: "▼";
   position: absolute;
@@ -116,6 +131,7 @@ body::before {
   pointer-events: none;
 }
 
+/* Select personalizado con borde negro y fondo blanco */
 .select-wrapper select {
   width: 100%;
   padding: 12px 15px;
@@ -130,6 +146,7 @@ body::before {
   cursor: pointer;
 }
 
+/* Campo de texto del formulario de registro */
 input {
   width: 100%;
   padding: 12px 15px 12px 50px;
@@ -143,10 +160,12 @@ input {
   outline: none;
 }
 
+/* Placeholder de los campos */
 input::placeholder {
   color: #555;
 }
 
+/* Botón de mostrar/ocultar contraseña */
 .toggle-password {
   position: absolute;
   right: 15px;
@@ -159,10 +178,12 @@ input::placeholder {
   line-height: 1;
 }
 
+/* Icono de contraseña en color primary al hover */
 .toggle-password:hover {
   color: var(--primary);
 }
 
+/* Barra de indicador de fortaleza de contraseña */
 .password-strength {
   height: 6px;
   background: #e0e0e0;
@@ -172,25 +193,30 @@ input::placeholder {
   position: relative;
 }
 
+/* Barra de progreso que se llena según la fortaleza */
 .password-strength-bar {
   height: 100%;
   width: 0%;
   transition: width 0.3s ease;
 }
 
+/* Nivel débil — barra roja al 25% */
 .password-strength-bar.weak {
   background: #dc3545;
   width: 25% !important;
 }
 
+/* Nivel medio — barra amarilla */
 .password-strength-bar.medium {
   background: #ffc107;
 }
 
+/* Nivel fuerte — barra verde */
 .password-strength-bar.strong {
   background: #28a745;
 }
 
+/* Texto de sugerencia de contraseña debajo de la barra */
 .password-hint {
   display: block;
   margin-top: 5px;
@@ -198,6 +224,7 @@ input::placeholder {
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Botón de enviar formulario de registro */
 .register-button {
   width: 100%;
   padding: 15px;
@@ -213,16 +240,19 @@ input::placeholder {
   margin-top: 10px;
 }
 
+/* Botón de registro con elevación al hover */
 .register-button:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(13, 71, 161, 0.6);
   background: rgba(13, 71, 161, 0.9);
 }
 
+/* Botón de registro al hacer clic (pressed) */
 .register-button:active {
   transform: translateY(0);
 }
 
+/* Mensaje de feedback de validación de campos */
 .feedback {
   position: absolute;
   left: 0;
@@ -234,48 +264,57 @@ input::placeholder {
   display: none;
 }
 
+/* Feedback visible cuando es válido o inválido */
 .feedback.valid-feedback,
 .feedback.invalid-feedback {
   display: block;
 }
 
+/* Animación de entrada para feedback de éxito */
 .feedback.valid-feedback {
   animation: feedbackIn 0.35s ease;
 }
 
+/* Animación de entrada + sacudida para feedback de error */
 .feedback.invalid-feedback {
   animation: feedbackIn 0.35s ease, shake 0.4s;
 }
 
+/* Estilo del mensaje de validación exitosa */
 .valid-feedback {
   background: rgba(40, 167, 69, 0.2);
   color: #d4edda;
   border: 1px solid rgba(195, 230, 203, 0.3);
 }
 
+/* Estilo del mensaje de validación con error */
 .invalid-feedback {
   background: rgba(220, 53, 69, 0.2);
   color: #f8d7da;
   border: 1px solid rgba(245, 198, 203, 0.3);
 }
 
+/* Animación de aparición deslizante para mensajes de feedback */
 @keyframes feedbackIn {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Animación de sacudida horizontal para errores */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
 
+/* Enlace de navegación hacia el formulario de login */
 .login-link {
   text-align: center;
   margin-top: 25px;
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Texto del enlace de login */
 .login-link a {
   color: #ffffff;
   text-decoration: none;
@@ -284,12 +323,13 @@ input::placeholder {
   transition: color 0.3s;
 }
 
+/* Hover del enlace de login */
 .login-link a:hover {
   color: var(--secondary);
   text-decoration: underline;
 }
 
-/* Responsive */
+/* Responsive: tablet — paddings reducidos y formulario de una columna */
 @media (max-width: 768px) {
   .register-container {
     padding: 30px;
@@ -304,6 +344,7 @@ input::placeholder {
   }
 }
 
+/* Responsive: móvil — tamaños de fuente y paddings aún más compactos */
 @media (max-width: 480px) {
   .register-container {
     padding: 25px 20px;

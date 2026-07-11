@@ -8,15 +8,19 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// CategoryRepository — Acceso a datos de la tabla `categories`
+// CRUD completo con verificación de nombre duplicado y conteo de materiales asociados
 class CategoryRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todas las categorías ordenadas por ID descendente
     public function findAll(): array
     {
         try {
@@ -34,6 +38,7 @@ class CategoryRepository
         }
     }
 
+    // Busca una categoría por su ID
     public function findById(int $id): ?CategoryModel
     {
         try {
@@ -49,6 +54,7 @@ class CategoryRepository
         }
     }
 
+    // Verifica si ya existe una categoría con el mismo nombre (excluyendo ID opcional)
     public function existsByName(string $name, ?int $excludeId = null): bool
     {
         try {
@@ -67,6 +73,7 @@ class CategoryRepository
         }
     }
 
+    // Inserta una nueva categoría en la BD
     public function save(CategoryModel $category): bool
     {
         try {
@@ -84,6 +91,7 @@ class CategoryRepository
         }
     }
 
+    // Actualiza una categoría existente
     public function update(CategoryModel $category): bool
     {
         try {
@@ -102,6 +110,8 @@ class CategoryRepository
         }
     }
 
+    // Cuenta cuántos materiales pertenecen a una categoría
+    // (útil para evitar eliminar categorías con materiales asociados)
     public function countMaterials(int $categoryId): int
     {
         try {
@@ -116,6 +126,7 @@ class CategoryRepository
         }
     }
 
+    // Elimina una categoría por su ID
     public function delete(int $id): bool
     {
         try {

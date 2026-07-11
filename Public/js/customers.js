@@ -6,10 +6,12 @@
 let clients = [];
 let currentClientId = null;
 
+// Expresiones regulares para validación de campos
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX_VE = /^0[24]\d{9}$/;
 const PREF_LINE_REGEX = /^[^:]+:.+$/;
 
+// Muestra un mensaje de error debajo de un campo del formulario
 function showFieldError(fieldId, message) {
     const field = document.getElementById(fieldId);
     if (!field) return;
@@ -17,6 +19,7 @@ function showFieldError(fieldId, message) {
     const parent = field.closest('.form-group');
     if (!parent) return;
     let errorEl = parent.querySelector('.invalid-feedback');
+    // Crear elemento de error si no existe aún
     if (!errorEl) {
         errorEl = document.createElement('div');
         errorEl.className = 'invalid-feedback';
@@ -25,6 +28,7 @@ function showFieldError(fieldId, message) {
     errorEl.textContent = message;
 }
 
+// Limpia el estado de error de un campo específico
 function clearFieldError(fieldId) {
     const field = document.getElementById(fieldId);
     if (!field) return;
@@ -35,10 +39,14 @@ function clearFieldError(fieldId) {
     if (errorEl) errorEl.remove();
 }
 
+// Elimina todas las clases de error del formulario actual
 function clearErrors() {
     document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 }
 
+// ── OPERACIONES CRUD CON LA API ─────────────────────────────
+
+// Obtiene la lista completa de clientes desde el API
 async function fetchClients()
 {
     try {
@@ -47,10 +55,12 @@ async function fetchClients()
             clients = data.data;
             updateClientCounter();
             renderClientsList();
+            // Seleccionar automáticamente el primer cliente si existen datos
             if (clients.length > 0) {
                 const firstItem = document.querySelector('.client-item');
                 if (firstItem) firstItem.click();
             } else {
+                // Mostrar estado vacío si no hay clientes
                 const noSel = document.getElementById('noClientSelected');
                 const detail = document.getElementById('clientDetail');
                 if (noSel) noSel.style.display = 'flex';
@@ -63,6 +73,7 @@ async function fetchClients()
     }
 }
 
+// Crea un nuevo cliente enviando datos por POST al API
 async function createClient(clientData)
 {
     try {
@@ -85,6 +96,7 @@ async function createClient(clientData)
     }
 }
 
+// Actualiza un cliente existente enviando datos por PUT al API
 async function updateClient(id, clientData)
 {
     try {
@@ -97,6 +109,7 @@ async function updateClient(id, clientData)
             body: JSON.stringify(clientData)
         });
         if (data.success) {
+            // Actualizar el objeto en el array local sin recargar todo
             const idx = clients.findIndex(c => c.id === id);
             if (idx !== -1) {
                 clients[idx] = { ...clients[idx], ...clientData };
@@ -111,6 +124,7 @@ async function updateClient(id, clientData)
     }
 }
 
+// Alterna el estado activo/inactivo de un cliente
 async function toggleClientStatus(id, isActive)
 {
     try {
@@ -130,6 +144,9 @@ async function toggleClientStatus(id, isActive)
     }
 }
 
+// ── RENDERIZADO DE LA LISTA DE CLIENTES ─────────────────────
+
+// Genera la lista lateral de clientes con avatar, nombre y email
 function renderClientsList()
 {
     const clientsList = document.getElementById('clientsList');
@@ -151,6 +168,7 @@ function renderClientsList()
             </div>
         `;
 
+        // Evento click para mostrar detalles del cliente seleccionado
         item.addEventListener('click', () => {
             document.querySelectorAll('.client-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
@@ -161,6 +179,9 @@ function renderClientsList()
     });
 }
 
+// ── RENDERIZADO DEL DETALLE DEL CLIENTE ─────────────────────
+
+// Muestra toda la información del cliente seleccionado en el panel derecho
 function renderClientDetails(clientId)
 {
     const client = clients.find(c => c.id === clientId);
@@ -179,6 +200,7 @@ function renderClientDetails(clientId)
     const avatar = client.avatar || 'https://i.imgur.com/1As0akH.jpg';
 
     if (!detail) return;
+    // Generar HTML completo del detalle con pestañas de información y preferencias
     detail.innerHTML = `
         ${client.isActive === false || client.isActive === 0 ? '<div class="client-inactive-banner"><i class="fas fa-eye-slash"></i> Cliente Inhabilitado</div>' : ''}
         <div class="client-header">
@@ -235,6 +257,8 @@ function renderClientDetails(clientId)
         </div>
     `;
 
+    // ── EVENTOS DE PESTAÑAS ─────────────────────────────────
+    // Alternar entre pestañas de Información y Preferencias
     document.querySelectorAll('.client-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             document.querySelectorAll('.client-tab').forEach(t => t.classList.remove('active'));
@@ -246,6 +270,7 @@ function renderClientDetails(clientId)
         });
     });
 
+    // Botón de editar: deshabilitado si el cliente está inactivo
     const editBtn = document.getElementById('editClientBtn');
     if (editBtn) {
         if (client.isActive === false || client.isActive === 0) {
@@ -258,9 +283,11 @@ function renderClientDetails(clientId)
         });
     }
 
+    // Botón de alternar estado activo/inactivo
     const toggleBtn = document.getElementById('toggleClientBtn');
     if (toggleBtn) toggleBtn.addEventListener('click', () => toggleClientStatus(client.id, client.isActive));
 
+    // Paginación de tarjetas de preferencias
     const prefsGrid = document.querySelector('#preferences-tab .preferences-grid');
     if (prefsGrid) {
         prefsGrid.addEventListener('click', function(e) {
@@ -276,16 +303,21 @@ function renderClientDetails(clientId)
     }
 }
 
+// ── FUNCIONES DE UTILIDAD ───────────────────────────────────
+
+// Convierte el tipo de cliente interno a etiqueta en español
 function getClientTypeLabel(type) {
     const labels = { Regular: 'Regular', Frequent: 'Cliente frecuente', VIP: 'VIP', New: 'Nuevo' };
     return labels[type] || type;
 }
 
+// Convierte la fuente de procedencia a etiqueta en español
 function getSourceLabel(source) {
     const labels = { Recommendation: 'Recomendación', 'Social Media': 'Redes Sociales', Website: 'Sitio Web', Event: 'En un evento', Other: 'Otro' };
     return labels[source] || source;
 }
 
+// Genera tarjetas paginadas de preferencias de decoración del cliente
 function getPreferencesCards(preferences, page) {
     if (!preferences) return '<p>Sin preferencias registradas</p>';
     const lines = preferences.split('\n').filter(l => l.trim());
@@ -295,6 +327,7 @@ function getPreferencesCards(preferences, page) {
     const start = (page - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageLines = lines.slice(start, end);
+    // Mapa de palabras clave a iconos de Font Awesome
     const iconMap = { 'colores': 'fas fa-palette', 'estilo': 'fas fa-heart', 'no gusta': 'fas fa-times-circle', 'alergias': 'fas fa-allergies' };
     let html = '';
     pageLines.forEach(line => {
@@ -311,6 +344,7 @@ function getPreferencesCards(preferences, page) {
             </div>
         `;
     });
+    // Agregar controles de paginación si hay más de una página
     if (totalPages > 1) {
         html += `
             <div class="pref-pagination">
@@ -327,6 +361,9 @@ function getPreferencesCards(preferences, page) {
     return html;
 }
 
+// ── MODAL DE EDICIÓN DE CLIENTE ─────────────────────────────
+
+// Abre el modal de edición y precarga los datos del cliente
 function openEditClientModal(client)
 {
     const modal = document.getElementById('editClientModal');
@@ -334,9 +371,11 @@ function openEditClientModal(client)
     clearErrors();
     modal.style.display = 'flex';
 
+    // Función auxiliar para asignar valores a inputs
     const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
     setVal('editFirstName', client.firstName);
     setVal('editLastName', client.lastName);
+    // Separar tipo y número de cédula (formato "V-12345678")
     const idParts = (client.idNumber || '').split('-');
     setVal('editIdType', idParts[0] || 'V');
     setVal('editIdNumber', idParts.slice(1).join('-') || '');
@@ -348,6 +387,7 @@ function openEditClientModal(client)
     setVal('editNotes', client.notes);
     setVal('editPreferences', client.preferences);
 
+    // Clonar botón para eliminar listeners previos y reasignar evento
     const saveBtn = document.getElementById('saveEditBtn');
     if (saveBtn) {
         const newBtn = saveBtn.cloneNode(true);
@@ -363,6 +403,7 @@ function openEditClientModal(client)
             const phone = document.getElementById('editPhone')?.value?.trim() || '';
             const preferences = document.getElementById('editPreferences')?.value?.trim() || '';
 
+            // ── VALIDACIONES DEL FORMULARIO DE EDICIÓN ───────
             if (!firstName || !lastName) {
                 showFieldError('editFirstName', 'El nombre es obligatorio');
                 showFieldError('editLastName', 'El apellido es obligatorio');
@@ -376,6 +417,7 @@ function openEditClientModal(client)
                 showFieldError('editIdNumber', 'La cédula debe tener 6 o 8 dígitos');
                 return;
             }
+            // Verificar unicidad de cédula (excluyendo el cliente actual)
             if (idNumber !== client.idNumber && clients.find(c => c.idNumber === idNumber)) {
                 showFieldError('editIdNumber', 'Ya existe un cliente con esta cédula.');
                 return;
@@ -388,6 +430,7 @@ function openEditClientModal(client)
                 showFieldError('editEmail', 'El formato del email no es válido');
                 return;
             }
+            // Verificar unicidad de email (excluyendo el cliente actual)
             if (email !== client.email && clients.find(c => c.email === email && c.id !== client.id)) {
                 showFieldError('editEmail', 'Ya existe un cliente con este correo electrónico.');
                 return;
@@ -400,10 +443,12 @@ function openEditClientModal(client)
                 showFieldError('editPhone', 'Debe tener 11 dígitos, formato: 0XX-XXX-XXXX.');
                 return;
             }
+            // Verificar unicidad de teléfono (excluyendo el cliente actual)
             if (phone !== client.phone && clients.find(c => c.phone === phone && c.id !== client.id)) {
                 showFieldError('editPhone', 'Ya existe un cliente con este número de teléfono.');
                 return;
             }
+            // Validar formato de preferencias (Título: Valor) si se proporcionan
             if (preferences) {
                 const lines = preferences.split('\n');
                 for (let i = 0; i < lines.length; i++) {
@@ -415,6 +460,7 @@ function openEditClientModal(client)
                 }
             }
 
+            // Enviar datos actualizados al API
             const updated = {
                 firstName: firstName,
                 lastName: lastName,
@@ -431,14 +477,19 @@ function openEditClientModal(client)
             modal.style.display = 'none';
         });
     }
+    // Configurar validación en tiempo real para los campos de edición
     setupEditRealTimeValidation(client);
 }
 
+// ── FORMULARIO DE CREACIÓN DE CLIENTE ───────────────────────
+
+// Configura el botón de guardar del formulario de nuevo cliente con validaciones
 function setupNewClientForm()
 {
     const saveBtn = document.getElementById('saveClientBtn');
     if (!saveBtn) return;
 
+    // Clonar para eliminar listeners previos
     const newBtn = saveBtn.cloneNode(true);
     saveBtn.parentNode.replaceChild(newBtn, saveBtn);
 
@@ -453,6 +504,7 @@ function setupNewClientForm()
         const phone = document.getElementById('phone')?.value?.trim() || '';
         const preferences = document.getElementById('preferences')?.value?.trim() || '';
 
+        // ── VALIDACIONES DEL FORMULARIO DE CREACIÓN ─────────
         if (!firstName || !lastName) {
             showFieldError('firstName', 'El nombre es obligatorio');
             showFieldError('lastName', 'El apellido es obligatorio');
@@ -505,6 +557,7 @@ function setupNewClientForm()
             }
         }
 
+        // Enviar nuevo cliente al API y cerrar modal
         const newClient = {
             firstName: firstName,
             lastName: lastName,
@@ -523,6 +576,7 @@ function setupNewClientForm()
     });
 }
 
+// Actualiza el contador total de clientes en el encabezado de filtros
 function updateClientCounter()
 {
     const span = document.querySelector('.filters-header span');
@@ -531,12 +585,14 @@ function updateClientCounter()
 
 // ── Validación en tiempo real ──────────────────────────────────
 
+// Construye el número de cédula completo concatenando tipo + número
 function getFullId(idTypeId, idNumberId) {
     const t = document.getElementById(idTypeId);
     const n = document.getElementById(idNumberId);
     return (t ? t.value : 'V') + '-' + (n ? n.value.trim() : '');
 }
 
+// Valida un campo del formulario de creación en tiempo real
 function validateCreateField(fieldId) {
     clearFieldError(fieldId);
     const val = (document.getElementById(fieldId)?.value || '').trim();
@@ -577,6 +633,7 @@ function validateCreateField(fieldId) {
     return true;
 }
 
+// Valida un campo del formulario de edición en tiempo real
 function validateEditField(fieldId, currentClient) {
     clearFieldError(fieldId);
     const val = (document.getElementById(fieldId)?.value || '').trim();
@@ -617,6 +674,7 @@ function validateEditField(fieldId, currentClient) {
     return true;
 }
 
+// Asocia eventos de validación en tiempo real a todos los campos del formulario de creación
 function setupCreateRealTimeValidation() {
     const fields = ['firstName', 'lastName', 'newIdNumber', 'email', 'phone', 'preferences'];
     fields.forEach(id => {
@@ -624,10 +682,12 @@ function setupCreateRealTimeValidation() {
         if (!el) return;
         el.addEventListener('input', () => validateCreateField(id));
     });
+    // Revalidar cédula si cambia el tipo (V/E)
     const idType = document.getElementById('newIdType');
     if (idType) idType.addEventListener('change', () => validateCreateField('newIdNumber'));
 }
 
+// Asocia eventos de validación en tiempo real a todos los campos del formulario de edición
 function setupEditRealTimeValidation(client) {
     const fields = ['editFirstName', 'editLastName', 'editIdNumber', 'editEmail', 'editPhone', 'editPreferences'];
     fields.forEach(id => {
@@ -639,9 +699,13 @@ function setupEditRealTimeValidation(client) {
     if (idType) idType.addEventListener('change', () => validateEditField('editIdNumber', client));
 }
 
+// ── INICIALIZACIÓN ──────────────────────────────────────────
+// Evento principal al cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
+    // Cargar lista de clientes al iniciar
     fetchClients();
 
+    // Botones para abrir el modal de nuevo cliente
     const newBtn1 = document.getElementById('newClientBtn');
     const newBtn2 = document.getElementById('newClientBtn2');
     const openModal = () => {
@@ -651,9 +715,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newBtn1) newBtn1.addEventListener('click', openModal);
     if (newBtn2) newBtn2.addEventListener('click', openModal);
 
+    // Configurar formulario de creación y validación en tiempo real
     setupNewClientForm();
     setupCreateRealTimeValidation();
 
+    // Botones para cerrar cualquier modal abierto
     const closeIds = ['closeModalBtn', 'closeEditModalBtn', 'cancelModalBtn', 'cancelEditModalBtn'];
     closeIds.forEach(id => {
         const el = document.getElementById(id);
@@ -662,13 +728,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Cerrar modal al hacer clic fuera del contenido (overlay)
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', function(e) {
             if (e.target === this) this.style.display = 'none';
         });
     });
 
-    // Status filter buttons
+    // ── FILTROS DE TIPO DE CLIENTE ─────────────────────────
+    // Filtrar la lista lateral por tipo de cliente (Todos, Frecuentes, Nuevos, VIP)
     const typeMap = { 'todos': null, 'frecuentes': 'Frequent', 'nuevos': 'New', 'vip': 'VIP' };
     document.querySelectorAll('.status-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -684,6 +752,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ── BÚSQUEDA DE CLIENTES ───────────────────────────────
+    // Filtrar la lista lateral por nombre o email en tiempo real
     const searchInput = document.getElementById('searchClient');
     if (searchInput) {
         searchInput.addEventListener('input', function(e) {

@@ -5,18 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Materiales - Bet-El Creativa</title>
+    <!-- Favicon del sistema -->
     <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
-
+    <!-- Estilos base comunes y específicos del módulo de materiales -->
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/materialStyle.css">
+    <!-- Font Awesome para iconos vectoriales -->
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
+    <!-- Fuente Poppins para tipografía uniforme -->
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
 </head>
 
 <body>
 
     <div class="app-container">
-        <!-- Header -->
+        <!-- Encabezado con logo, información del módulo y avatar del usuario autenticado -->
         <header class="app-header">
             <div class="logo-container">
                 <h1 class="logo-icon"><i class="fas fa-boxes"></i></h1>
@@ -25,8 +28,10 @@
                     <p>Administra el inventario de materiales para decoración</p>
                 </div>
             </div>
+            <!-- Bloque de usuario: avatar, nombre y menú de configuración / cierre de sesión -->
             <div class="user-container">
                 <div class="imagenfoto">
+                    <!-- Avatar: usa el de sesión o el logo del sistema por defecto -->
                     <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
                     <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
@@ -34,6 +39,7 @@
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
                     <p><?php echo htmlspecialchars(roleLabel($_SESSION['user_role'] ?? null)); ?></p>
                 </div>
+                <!-- Dropdown de configuración de cuenta y cierre de sesión -->
                 <div class="user-settings" id="userSettings">
                     <button class="settings-btn" id="settingsBtn">
                         <i class="fas fa-cog"></i>
@@ -50,7 +56,7 @@
             </div>
         </header>
 
-        <!-- Menú principal -->
+        <!-- Menú de navegación principal con enlaces a los módulos del sistema -->
         <nav class="main-menu">
             <a href="<?php echo APP_URL; ?>dashboard" class="menu-item">
                 <i class="fas fa-tachometer-alt"></i>
@@ -60,6 +66,7 @@
                 <i class="fas fa-layer-group"></i>
                 <span>Categoría</span>
             </a>
+            <!-- Enlace activo del módulo de materiales -->
             <a class="menu-item active">
                 <i class="fas fa-box-open"></i>
                 <span>Materiales</span>
@@ -68,6 +75,7 @@
                 <i class="fas fa-truck"></i>
                 <span>Proveedores</span>
             </a>
+            <!-- Submenú de almacén con acceso a inventario -->
             <div class="menu-item-wrapper">
                 <a href="<?php echo APP_URL; ?>storage" class="menu-item">
                     <i class="fas fa-warehouse"></i>
@@ -92,6 +100,7 @@
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Facturación</span>
             </a>
+            <!-- Botón de Reportes visible solo para super_admin -->
             <?php if (($_SESSION['user_role'] ?? '') === 'super_admin'): ?>
             <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
@@ -100,25 +109,25 @@
             <?php endif; ?>
         </nav>
 
-        <!-- Contenido principal -->
+        <!-- Contenido principal: panel de filtros + grid de materiales -->
         <div>
             <div class="material-container">
-                <!-- Panel de filtros -->
+                <!-- Panel lateral de filtros: búsqueda, categorías y estado de inventario -->
                 <section class="filters-section">
                     <div class="filters-header">
                         <h2>Filtros</h2>
                         <button class="btn-limpiar">Limpiar</button>
                     </div>
-
+                    <!-- Botón para abrir el modal de nuevo material -->
                     <button class="btn-nuevo-material" onclick="Modal.open('nuevoMaterialModal')">
                         <i class="fas fa-plus"></i> Nuevo Material
                     </button>
-
+                    <!-- Caja de búsqueda por nombre o código -->
                     <div class="search-box">
                         <i class="fas fa-search"></i>
                         <input type="text" placeholder="Buscar materiales...">
                     </div>
-
+                    <!-- Filtro por categorías (cargado dinámicamente vía JS) -->
                     <div class="filter-group">
                         <h3>Categorías</h3>
                         <ul class="category-list">
@@ -128,7 +137,7 @@
                             </li>
                         </ul>
                     </div>
-
+                    <!-- Filtro por estado de inventario: En Stock, Stock Bajo, Sin Stock -->
                     <div class="filter-group">
                         <h3>Estado de Inventario</h3>
                         <div class="stock-filter">
@@ -144,16 +153,14 @@
                         </div>
                     </div>
                 </section>
-
-                <!-- Listado de materiales -->
+                <!-- Grid de tarjetas de materiales renderizado dinámicamente vía JS -->
                 <section>
-                    <div class="materials-grid" id="materialsContainer">
-                    </div>
+                    <div class="materials-grid" id="materialsContainer"></div>
                 </section>
             </div>
         </div>
 
-        <!-- Modal para nuevo material -->
+        <!-- Modal para crear nuevo material -->
         <div class="modal" id="nuevoMaterialModal" tabindex="-1" aria-labelledby="nuevoMaterialModalLabel" aria-hidden="true">
             <div class="modal-wrapper">
                 <div class="modal-content" style="flex:0 0 auto;width:480px;">
@@ -162,21 +169,26 @@
                         <button type="button" class="btn-close" data-modal-dismiss="nuevoMaterialModal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <!-- Formulario de nuevo material con campos de código, nombre, categoría, tipo, costo y empaque -->
                         <form id="nuevoMaterialForm">
+                            <!-- Código auto-generado (solo lectura) -->
                             <div class="mb-3">
                                 <label for="nuevoCodigo" class="form-label">Código</label>
                                 <input type="text" class="form-control" id="nuevoCodigo" readonly>
                             </div>
+                            <!-- Nombre del material -->
                             <div class="mb-3">
                                 <label for="nuevoMaterial" class="form-label">Nombre del Material</label>
                                 <input type="text" class="form-control" id="nuevoMaterial" placeholder="Ej: Globos Metálicos">
                             </div>
+                            <!-- Categoría del material (select poblado vía JS) -->
                             <div class="mb-3">
                                 <label for="nuevaCategoria" class="form-label">Categoría</label>
                                 <select class="form-select" id="nuevaCategoria">
                                     <option value="">Seleccionar categoría</option>
                                 </select>
                             </div>
+                            <!-- Tipo de material: consumible o activo retornable -->
                             <div class="mb-3">
                                 <label for="nuevoTipoMaterial" class="form-label">Tipo de Material</label>
                                 <select class="form-select" id="nuevoTipoMaterial">
@@ -184,7 +196,7 @@
                                     <option value="activo_retornable">Activos/Retornables</option>
                                 </select>
                             </div>
-
+                            <!-- Tipo de costo: unitario o por mayor -->
                             <div class="mb-3">
                                 <label for="nuevoCostType" class="form-label">Tipo de Costo</label>
                                 <select class="form-select" id="nuevoCostType">
@@ -192,16 +204,18 @@
                                     <option value="wholesale">Por Mayor</option>
                                 </select>
                             </div>
+                            <!-- Precio / costo en bolívares -->
                             <div class="mb-3">
                                 <label for="nuevoPrecio" class="form-label">Costo (Bs)</label>
                                 <input type="number" step="0.01" class="form-control" id="nuevoPrecio" min="0.01">
                             </div>
+                            <!-- Cantidad por mayor (visible solo cuando se selecciona tipo wholesale) -->
                             <div class="mb-3" id="wholesaleQtyGroup">
                                 <label for="nuevoWholesaleQty" class="form-label">Cantidad por Mayor</label>
                                 <input type="number" class="form-control" id="nuevoWholesaleQty" min="1" placeholder="Ej: 12">
                             </div>
-
                             <hr>
+                            <!-- Configuración de empaque: unidad de compra, consumo y factor de conversión -->
                             <h6 class="text-muted mb-3">Configuración de Empaque</h6>
                             <div class="mb-3">
                                 <label for="nuevaUnidadCompra" class="form-label">Unidad de Compra</label>
@@ -217,7 +231,7 @@
                                 <div class="form-text">¿Cuántas unidades de consumo hay en una unidad de compra?</div>
                             </div>
                             <hr>
-
+                            <!-- Carga de imagen del material con vista previa -->
                             <div class="mb-3">
                                 <label for="nuevaImagen" class="form-label">Imagen del Material</label>
                                 <input type="file" class="form-control" id="nuevaImagen" accept="image/*">
@@ -232,11 +246,10 @@
                         <button type="button" class="btn btn-primary" id="guardarMaterialBtn">Guardar Material</button>
                     </div>
                 </div>
-
             </div>
         </div>
 
-    <!-- Modal para editar material -->
+        <!-- Modal para editar material existente -->
         <div class="modal" id="editarMaterialModal" tabindex="-1" aria-labelledby="editarMaterialModalLabel" aria-hidden="true">
             <div class="modal-wrapper">
                 <div class="modal-content" style="flex:0 0 auto;width:480px;">
@@ -245,6 +258,7 @@
                         <button type="button" class="btn-close" data-modal-dismiss="editarMaterialModal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <!-- Formulario de edición con los mismos campos del formulario de creación -->
                         <form>
                             <div class="mb-3">
                                 <label for="codigo" class="form-label">Código</label>
@@ -260,8 +274,6 @@
                                     <option value="">Seleccionar categoría</option>
                                 </select>
                             </div>
-                           
-
                             <div class="mb-3">
                                 <label for="costType" class="form-label">Tipo de Costo</label>
                                 <select class="form-select" id="costType">
@@ -277,7 +289,6 @@
                                 <label for="wholesaleQty" class="form-label">Cantidad por Mayor</label>
                                 <input type="number" class="form-control" id="wholesaleQty" min="1" placeholder="Ej: 12">
                             </div>
-
                             <hr>
                             <h6 class="text-muted mb-3">Configuración de Empaque</h6>
                             <div class="mb-3">
@@ -294,7 +305,6 @@
                                 <div class="form-text">¿Cuántas unidades de consumo hay en una unidad de compra?</div>
                             </div>
                             <hr>
-
                             <div class="mb-3">
                                 <label for="editImagen" class="form-label">Imagen del Material</label>
                                 <input type="file" class="form-control" id="editImagen" accept="image/*">
@@ -309,16 +319,16 @@
                         <button type="button" class="btn btn-primary" id="guardarCambiosBtn">Guardar Cambios</button>
                     </div>
                 </div>
-
             </div>
         </div>
-
     </div>
 
+    <!-- Configuración de constantes PHP expuestas al JS para peticiones AJAX -->
     <script>
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
+    <!-- Toggles del menú desplegable de usuario y submenú de almacén -->
     <script>
         document.getElementById('settingsBtn')?.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -333,6 +343,7 @@
             document.getElementById('almacenSubmenu')?.classList.remove('show');
         });
     </script>
+    <!-- Scripts JS: modales genéricos, notificaciones toast y lógica de materiales -->
     <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/materiales.js"></script>

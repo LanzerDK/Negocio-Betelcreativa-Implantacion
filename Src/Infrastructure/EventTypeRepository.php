@@ -8,15 +8,19 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// EventTypeRepository — Acceso a datos de la tabla `event_types`
+// CRUD con validación de nombre único y verificación de citas asociadas
 class EventTypeRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todos los tipos de evento activos, ordenados alfabéticamente
     public function findAll(): array
     {
         try {
@@ -36,6 +40,7 @@ class EventTypeRepository
         }
     }
 
+    // Busca un tipo de evento por su ID
     public function findById(int $id): ?EventTypeModel
     {
         try {
@@ -52,6 +57,7 @@ class EventTypeRepository
         }
     }
 
+    // Verifica si ya existe un tipo de evento con el mismo nombre (excluyendo ID opcional)
     public function existsByName(string $name, ?int $excludeId = null): bool
     {
         try {
@@ -69,6 +75,8 @@ class EventTypeRepository
         }
     }
 
+    // Verifica si existen citas asociadas a un tipo de evento
+    // (útil para evitar eliminar tipos con citas activas)
     public function hasAppointments(int $id): bool
     {
         try {
@@ -80,6 +88,7 @@ class EventTypeRepository
         }
     }
 
+    // Inserta un nuevo tipo de evento
     public function save(EventTypeModel $type): bool
     {
         try {
@@ -91,6 +100,7 @@ class EventTypeRepository
         }
     }
 
+    // Actualiza el nombre de un tipo de evento existente
     public function update(EventTypeModel $type): bool
     {
         try {
@@ -106,6 +116,7 @@ class EventTypeRepository
         }
     }
 
+    // Elimina un tipo de evento por su ID
     public function delete(int $id): bool
     {
         try {

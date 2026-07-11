@@ -8,8 +8,12 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// LocationController — CRUD de ubicaciones/estantes dentro de almacenes
+// Controla la creación con validación de límite de estantes por almacén
 class LocationController
 {
+    // Punto de entrada: enruta según método HTTP (GET/POST/DELETE)
+    // Las ubicaciones no se actualizan (PUT), solo se crean/eliminan
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -18,6 +22,9 @@ class LocationController
 
         switch ($method) {
             case 'GET':
+                // GET con ?zones — lista de zonas/estantes
+                // GET con ?id — detalle de una ubicación
+                // GET sin parámetros — lista completa
                 if (isset($_GET['zones'])) {
                     $zones = $repo->findZones();
                     ApiResponse::success($zones);
@@ -46,6 +53,7 @@ class LocationController
                 $warehouseId = !empty($input['warehouse_id']) ? (int)$input['warehouse_id'] : null;
                 $maxCapacity = (int)($input['max_capacity'] ?? 200);
 
+                // Validaciones de campos
                 if (empty($name)) {
                     ApiResponse::error('El nombre de la ubicación es obligatorio.');
                 }
@@ -53,10 +61,12 @@ class LocationController
                     ApiResponse::error('La capacidad máxima debe estar entre 1 y 200.', 400);
                 }
 
+                // Nombre único
                 if ($repo->existsByName($name)) {
                     ApiResponse::error('Ya existe una ubicación con ese nombre.');
                 }
 
+                // Si se asigna a un almacén, verifica límite de estantes
                 if ($warehouseId) {
                     $whRepo = new \BetelCreativa\Infrastructure\WarehouseRepository();
                     $wh = $whRepo->findById($warehouseId);
@@ -98,6 +108,7 @@ class LocationController
                 if (!$loc) {
                     ApiResponse::error('Ubicación no encontrada.', 404);
                 }
+                // Protección: no eliminar si tiene materiales asignados
                 if ($repo->hasStock($id)) {
                     ApiResponse::error('No se puede eliminar el estante porque tiene materiales vinculados.', 400);
                     break;
@@ -114,6 +125,7 @@ class LocationController
         }
     }
 
+    // Convierte un LocationModel a array asociativo para respuesta JSON
     private static function toArray(LocationModel $l): array
     {
         return [

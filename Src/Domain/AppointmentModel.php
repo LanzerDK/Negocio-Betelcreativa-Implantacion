@@ -2,8 +2,12 @@
 
 namespace BetelCreativa\Domain;
 
+// AppointmentModel — Modelo de dominio para las citas (appointments)
+// Representa el estado y comportamiento de una cita incluyendo su máquina de estados
 class AppointmentModel
 {
+    // Mapa de transiciones de estado válidas: desde cada estado, a qué otros se puede mover
+    // 'Cancelado' puede restaurarse a cualquier estado anterior
     public const TRANSICIONES_PERMITIDAS = [
         'Pendiente'   => ['En Proceso', 'En Progreso', 'Cancelado'],
         'En Proceso'  => ['En Progreso', 'Cancelado'],
@@ -12,20 +16,22 @@ class AppointmentModel
         'Cancelado'   => ['Pendiente', 'En Proceso', 'En Progreso'],
     ];
 
-    private ?int $id;
-    private int $clienteId;
-    private string $fechaHoraInicio;
-    private string $fechaHoraFin;
-    private ?string $eventType;
-    private ?int $eventTypeId;
-    private ?string $ubicacion;
-    private string $estado;
-    private ?string $estadoPrevioCancelacion;
-    private ?string $fechaHoraCancelacion;
-    private ?string $motivoCancelacion;
-    private ?string $notas;
-    private ?string $motivoSinMateriales;
+    // Propiedades privadas de la cita
+    private ?int $id;                         // ID único (null si es nueva)
+    private int $clienteId;                   // ID del cliente asociado
+    private string $fechaHoraInicio;          // Fecha y hora de inicio del evento
+    private string $fechaHoraFin;             // Fecha y hora de fin del evento
+    private ?string $eventType;               // Nombre del tipo de evento (ej: Boda)
+    private ?int $eventTypeId;                // ID del tipo de evento
+    private ?string $ubicacion;               // Dirección o lugar del evento
+    private string $estado;                   // Estado actual (Pendiente, En Proceso, etc.)
+    private ?string $estadoPrevioCancelacion; // Estado antes de cancelar (para restaurar)
+    private ?string $fechaHoraCancelacion;    // Cuándo se canceló
+    private ?string $motivoCancelacion;       // Por qué se canceló
+    private ?string $notas;                   // Notas internas de la cita
+    private ?string $motivoSinMateriales;     // Razón si la cita no requiere materiales
 
+    // Constructor: recibe un array (generalmente del JSON de la request) y asigna campos
     public function __construct(array $data = [])
     {
         $this->id = isset($data['id']) ? (int)$data['id'] : null;
@@ -43,6 +49,7 @@ class AppointmentModel
         $this->motivoSinMateriales = $data['motivoSinMateriales'] ?? null;
     }
 
+    // Getters — permiten leer las propiedades desde fuera
     public function getId(): ?int { return $this->id; }
     public function getClienteId(): int { return $this->clienteId; }
     public function getFechaHoraInicio(): string { return $this->fechaHoraInicio; }
@@ -58,11 +65,13 @@ class AppointmentModel
     public function getMotivoSinMateriales(): ?string { return $this->motivoSinMateriales; }
     public function isCancelado(): bool { return $this->estado === 'Cancelado'; }
 
+    // Verifica si se puede transicionar al nuevo estado según la máquina de estados
     public function canTransitionTo(string $newEstado): bool
     {
         return in_array($newEstado, self::TRANSICIONES_PERMITIDAS[$this->estado] ?? [], true);
     }
 
+    // Valida la transición y lanza una excepción si no es permitida
     public function validarTransicion(string $newEstado): void
     {
         if (!$this->canTransitionTo($newEstado)) {
@@ -72,28 +81,35 @@ class AppointmentModel
         }
     }
 
+    // Evalúa si una cita cancelada puede restaurarse (dentro de 3 días hábiles desde la cancelación y antes del inicio)
     public static function esRestaurable(?string $fechaCancelacion, string $fechaHoraInicio): bool
     {
+        // Si nunca fue cancelada, no es restaurable
         if (!$fechaCancelacion) return false;
 
         $ahora = new \DateTime('now');
 
+        // Si la cita ya debería haber comenzado, no se puede restaurar
         $inicioCita = new \DateTime($fechaHoraInicio);
         if ($ahora >= $inicioCita) return false;
 
+        // Calcula 3 días hábiles (lunes a viernes) después de la cancelación
         $fechaLimite = new \DateTime($fechaCancelacion);
         $diasContados = 0;
         while ($diasContados < 3) {
             $fechaLimite->modify('+1 day');
+            // Solo cuentan los días de semana (N=1 lunes, 5 viernes)
             if ((int)$fechaLimite->format('N') <= 5) {
                 $diasContados++;
             }
         }
         $fechaLimite->setTime(23, 59, 59);
 
+        // Es restaurable si aún estamos dentro del plazo
         return $ahora <= $fechaLimite;
     }
 
+    // Setters — permiten modificar las propiedades de forma controlada
     public function setClienteId(int $id): void { $this->clienteId = $id; }
     public function setFechaHoraInicio(string $fecha): void { $this->fechaHoraInicio = $fecha; }
     public function setFechaHoraFin(string $fecha): void { $this->fechaHoraFin = $fecha; }

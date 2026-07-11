@@ -6,17 +6,21 @@ use BetelCreativa\Config\Database;
 use PDO;
 use PDOException;
 
+// DashboardRepository — Consultas agregadas para el panel principal
+// Métricas: materiales activos, stock bajo, citas pendientes, ventas, etc.
 class DashboardRepository
 {
     private PDO $db;
     private SettingsRepository $settings;
 
+    // Inicializa la conexión PDO y el repositorio de configuraciones
     public function __construct()
     {
         $this->db = Database::getConnection();
         $this->settings = new SettingsRepository();
     }
 
+    // Obtiene el umbral de stock bajo desde configuración (default: 10)
     private function getLowStockThreshold(): int
     {
         try {
@@ -26,6 +30,7 @@ class DashboardRepository
         }
     }
 
+    // Cuenta los materiales activos
     public function countActiveMaterials(): int
     {
         try {
@@ -35,6 +40,7 @@ class DashboardRepository
         }
     }
 
+    // Cuenta materiales con stock > 0 pero por debajo del umbral configurado
     public function countLowStock(): int
     {
         try {
@@ -47,6 +53,7 @@ class DashboardRepository
         }
     }
 
+    // Cuenta materiales activos sin stock disponible
     public function countOutOfStock(): int
     {
         try {
@@ -56,6 +63,7 @@ class DashboardRepository
         }
     }
 
+    // Cuenta citas en estado Pendiente
     public function countPendingAppointments(): int
     {
         try {
@@ -65,6 +73,7 @@ class DashboardRepository
         }
     }
 
+    // Cuenta clientes activos
     public function countActiveCustomers(): int
     {
         try {
@@ -74,6 +83,7 @@ class DashboardRepository
         }
     }
 
+    // Obtiene lista detallada de materiales con stock bajo
     public function findLowStockDetails(): array
     {
         try {
@@ -92,6 +102,7 @@ class DashboardRepository
         }
     }
 
+    // Obtiene lista de materiales sin stock
     public function findOutOfStockDetails(): array
     {
         try {
@@ -108,6 +119,7 @@ class DashboardRepository
         }
     }
 
+    // Obtiene las próximas 10 citas pendientes con datos del cliente
     public function findPendingAppointments(): array
     {
         try {
@@ -139,6 +151,7 @@ class DashboardRepository
         }
     }
 
+    // Obtiene los próximos 5 eventos en los próximos 7 días
     public function findUpcomingEvents(): array
     {
         try {
@@ -173,6 +186,7 @@ class DashboardRepository
         }
     }
 
+    // Cuenta citas agrupadas por tipo de evento
     public function countEventsByType(): array
     {
         try {
@@ -190,6 +204,7 @@ class DashboardRepository
         }
     }
 
+    // Obtiene ventas mensuales (últimos 12 meses) sumando pagos en Bs
     public function getMonthlySales(): array
     {
         try {
@@ -209,6 +224,7 @@ class DashboardRepository
         }
     }
 
+    // Obtiene el total de ventas del mes actual en Bs
     public function getCurrentMonthSales(): float
     {
         try {

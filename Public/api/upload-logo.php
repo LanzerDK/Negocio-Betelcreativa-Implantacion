@@ -1,5 +1,8 @@
 <?php
 
+// Endpoint API para subir el logo del sistema (solo super_admin)
+// Guarda como uploads/logo.ext y persiste la ruta en settings vía SettingsRepository
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../Config/app.php';
 

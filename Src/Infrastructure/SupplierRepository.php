@@ -8,15 +8,19 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// SupplierRepository — Acceso a datos de la tabla `suppliers`
+// CRUD completo con verificación de nombre duplicado y conteo de materiales asociados
 class SupplierRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todos los proveedores ordenados por ID descendente
     public function findAll(): array
     {
         try {
@@ -37,6 +41,7 @@ class SupplierRepository
         }
     }
 
+    // Busca un proveedor por su ID
     public function findById(int $id): ?SupplierModel
     {
         try {
@@ -54,6 +59,7 @@ class SupplierRepository
         }
     }
 
+    // Verifica si ya existe un proveedor con el mismo nombre (excluyendo ID opcional)
     public function existsByName(string $name, ?int $excludeId = null): bool
     {
         try {
@@ -72,6 +78,7 @@ class SupplierRepository
         }
     }
 
+    // Cuenta los materiales activos asociados a un proveedor
     public function countMaterials(int $supplierId): int
     {
         try {
@@ -86,6 +93,7 @@ class SupplierRepository
         }
     }
 
+    // Inserta un nuevo proveedor en la BD
     public function save(SupplierModel $supplier): bool
     {
         try {
@@ -108,6 +116,7 @@ class SupplierRepository
         }
     }
 
+    // Actualiza un proveedor existente
     public function update(SupplierModel $supplier): bool
     {
         try {
@@ -134,6 +143,7 @@ class SupplierRepository
         }
     }
 
+    // Elimina un proveedor por su ID
     public function delete(int $id): bool
     {
         try {

@@ -8,8 +8,11 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// EventTypeController — CRUD de tipos de evento
+// Tipos como "Boda", "XV Años", "Corporativo", etc. asociados a citas
 class EventTypeController
 {
+    // Punto de entrada: enruta según método HTTP (GET/POST/PUT/DELETE)
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -18,6 +21,7 @@ class EventTypeController
 
         switch ($method) {
             case 'GET':
+                // GET con ?id — detalle de un tipo; sin parámetros — lista completa
                 if (isset($_GET['id'])) {
                     $et = $repo->findById((int)$_GET['id']);
                     if ($et) {
@@ -38,6 +42,7 @@ class EventTypeController
                 }
                 CsrfHelper::validateRequestOrFail();
 
+                // Validación: nombre obligatorio y único
                 $name = trim($input['name'] ?? '');
                 if (empty($name)) {
                     ApiResponse::error('El nombre del tipo de evento es obligatorio.');
@@ -73,6 +78,7 @@ class EventTypeController
                 }
 
                 $newName = trim($input['name'] ?? $existing->getName());
+                // Validación: nombre único excluyendo el ID actual
                 if ($repo->existsByName($newName, $id)) {
                     ApiResponse::error('Ya existe otro tipo de evento con este nombre.');
                 }
@@ -96,6 +102,7 @@ class EventTypeController
                     ApiResponse::error('ID de tipo de evento requerido.');
                 }
 
+                // Protección: no eliminar si hay citas asociadas
                 if ($repo->hasAppointments($id)) {
                     ApiResponse::error('No se puede eliminar: hay citas asociadas a este tipo de evento.');
                 }
@@ -112,6 +119,7 @@ class EventTypeController
         }
     }
 
+    // Convierte un EventTypeModel a array asociativo para respuesta JSON
     private static function toArray(EventTypeModel $et): array
     {
         return [

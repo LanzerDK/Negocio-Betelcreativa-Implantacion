@@ -1,5 +1,8 @@
 <?php
 
+// Endpoint API para validación en tiempo real de campos duplicados (usuario, correo, cédula)
+// Usado por el formulario de registro para feedback instantáneo sin recargar la página
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../Config/app.php';
 

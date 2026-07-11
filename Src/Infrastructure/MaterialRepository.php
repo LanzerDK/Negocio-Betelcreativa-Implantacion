@@ -8,15 +8,19 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// MaterialRepository — Acceso a datos de la tabla `materials` y `material_stock_locations`
+// CRUD con gestión de stock por ubicación, validación de unicidad y búsqueda por categoría
 class MaterialRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todos los materiales con stock calculado desde material_stock_locations
     public function findAll(): array
     {
         try {
@@ -34,6 +38,7 @@ class MaterialRepository
         }
     }
 
+    // Busca un material por su ID
     public function findById(int $id): ?MaterialModel
     {
         try {
@@ -49,6 +54,7 @@ class MaterialRepository
         }
     }
 
+    // Busca materiales por categoría
     public function findByCategory(int $categoryId): array
     {
         try {
@@ -67,6 +73,7 @@ class MaterialRepository
         }
     }
 
+    // Verifica si ya existe un material con el mismo código
     public function existsByCode(string $code, ?int $excludeId = null): bool
     {
         try {
@@ -85,6 +92,7 @@ class MaterialRepository
         }
     }
 
+    // Verifica si ya existe un material con el mismo nombre
     public function existsByName(string $name, ?int $excludeId = null): bool
     {
         try {
@@ -103,6 +111,8 @@ class MaterialRepository
         }
     }
 
+    // Inserta un nuevo material con su stock inicial en material_stock_locations
+    // Operación transaccional: crea material + registra stock en ubicación
     public function save(MaterialModel $material): bool
     {
         try {
@@ -128,6 +138,7 @@ class MaterialRepository
                 ':image_url' => $material->getImageUrl()
             ]);
 
+            // Si el material tiene stock inicial y ubicación, lo registra en la tabla de stock
             if ($ok && $material->getStock() > 0 && $material->getLocationId()) {
                 $materialId = $this->db->lastInsertId();
                 $this->db->prepare(
@@ -149,17 +160,21 @@ class MaterialRepository
         }
     }
 
+    // Actualiza un material existente y sincroniza el stock entre ubicaciones si cambió
+    // Operación transaccional que maneja cambios de ubicación y cantidad
     public function update(MaterialModel $material): bool
     {
         try {
             $this->db->beginTransaction();
 
+            // Lee estado anterior del stock y ubicación
             $stmtOld = $this->db->prepare(
                 "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = m.material_id), 0) AS current_stock, m.current_location_id FROM materials m WHERE m.material_id = :id"
             );
             $stmtOld->execute([':id' => $material->getId()]);
             $old = $stmtOld->fetch();
 
+            // Actualiza los campos del material
             $sql = "UPDATE materials SET material_code = :code, name = :name, price = :price, cost_type = :cost_type, wholesale_qty = :wholesale_qty, category_id = :category_id, material_type = :material_type, supplier_id = :supplier_id, detalle_comodin = :detalle_comodin, current_location_id = :location_id, is_active = :is_active, unidad_compra = :unidad_compra, unidad_consumo = :unidad_consumo, factor_conversion = :factor_conversion, image_url = :image_url WHERE material_id = :id";
             $stmt = $this->db->prepare($sql);
             $ok = $stmt->execute([
@@ -181,6 +196,7 @@ class MaterialRepository
                 ':image_url' => $material->getImageUrl()
             ]);
 
+            // Sincroniza stock_locations según los cambios detectados
             if ($ok) {
                 $newStock = $material->getStock();
                 $newLocId = $material->getLocationId();
@@ -188,17 +204,18 @@ class MaterialRepository
                 $oldStock = $old ? (int)$old['current_stock'] : 0;
 
                 if ($oldLocId && $newLocId && $newLocId !== $oldLocId) {
-                    // Location changed: old location loses all, new location gets all
+                    // Cambió la ubicación: vieja pierde todo, nueva recibe todo
                     $this->upsertStockLocation($material->getId(), $oldLocId, -$oldStock);
                     $this->upsertStockLocation($material->getId(), $newLocId, $newStock);
                 } elseif ($oldLocId && $newStock !== $oldStock) {
-                    // Same location, stock changed
+                    // Misma ubicación, cambió la cantidad
                     $this->upsertStockLocation($material->getId(), $oldLocId, $newStock - $oldStock);
                 } elseif (!$oldLocId && $newLocId) {
-                    // New location assigned (had none before)
+                    // No tenía ubicación antes, ahora tiene
                     $this->upsertStockLocation($material->getId(), $newLocId, $newStock);
                 }
 
+                // Limpia registros con cantidad <= 0
                 $delStmt = $this->db->prepare(
                     "DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0"
                 );
@@ -214,6 +231,7 @@ class MaterialRepository
         }
     }
 
+    // Inserta o actualiza el stock de un material en una ubicación específica
     private function upsertStockLocation(int $materialId, int $locationId, int $quantityChange): void
     {
         $existing = $this->db->prepare(
@@ -223,17 +241,20 @@ class MaterialRepository
         $row = $existing->fetch();
 
         if ($row) {
+            // Actualiza cantidad existente (nunca menor a 0)
             $newQty = max(0, (int)$row['quantity'] + $quantityChange);
             $this->db->prepare(
                 "UPDATE material_stock_locations SET quantity = :qty WHERE material_id = :material_id AND location_id = :location_id"
             )->execute([':qty' => $newQty, ':material_id' => $materialId, ':location_id' => $locationId]);
         } else {
+            // Inserta nuevo registro si no existía
             $this->db->prepare(
                 "INSERT INTO material_stock_locations (material_id, location_id, quantity) VALUES (:material_id, :location_id, :qty)"
             )->execute([':material_id' => $materialId, ':location_id' => $locationId, ':qty' => max(0, $quantityChange)]);
         }
     }
 
+    // Elimina un material por su ID
     public function delete(int $id): bool
     {
         try {

@@ -8,8 +8,11 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// CategoryController — CRUD de categorías de materiales
+// Maneja la creación, consulta, actualización y eliminación de categorías con validaciones
 class CategoryController
 {
+    // Punto de entrada: enruta según método HTTP (GET/POST/PUT/DELETE)
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -18,6 +21,7 @@ class CategoryController
 
         switch ($method) {
             case 'GET':
+                // GET con ?id — detalle de una categoría; sin parámetros — lista completa
                 if (isset($_GET['id'])) {
                     $c = $repo->findById((int)$_GET['id']);
                     if ($c) {
@@ -38,6 +42,7 @@ class CategoryController
                 }
                 CsrfHelper::validateRequestOrFail();
 
+                // Crea el modelo con los datos recibidos
                 $category = new CategoryModel([
                     'name' => trim($input['name'] ?? ''),
                     'description' => trim($input['description'] ?? ''),
@@ -45,10 +50,12 @@ class CategoryController
                     'imageUrl' => $input['image_url'] ?? null
                 ]);
 
+                // Validación: nombre obligatorio
                 if (empty($category->getName())) {
                     ApiResponse::error('El nombre de la categoría es obligatorio.');
                 }
 
+                // Validación: nombre único
                 if ($repo->existsByName($category->getName())) {
                     ApiResponse::error('Ya existe una categoría con este nombre.');
                 }
@@ -80,6 +87,7 @@ class CategoryController
                 $newName = trim($input['name'] ?? $existing->getName());
                 $newStatus = trim($input['status'] ?? $existing->getStatus());
 
+                // Si se intenta deshabilitar, verifica que no tenga materiales vinculados
                 if ($newStatus === 'Inactive' && $existing->getStatus() === 'Active') {
                     if ($repo->countMaterials($id) > 0) {
                         ApiResponse::error('No se puede Deshabilitar esta Categoría, Tiene Materiales Vinculados');
@@ -94,6 +102,7 @@ class CategoryController
                     'imageUrl' => array_key_exists('image_url', $input) ? $input['image_url'] : $existing->getImageUrl()
                 ]);
 
+                // Validación: nombre único excluyendo el ID actual
                 if ($repo->existsByName($newName, $id)) {
                     ApiResponse::error('Ya existe otra categoría con este nombre.');
                 }
@@ -123,6 +132,7 @@ class CategoryController
         }
     }
 
+    // Convierte un CategoryModel a array asociativo para respuesta JSON
     private static function toArray(CategoryModel $c): array
     {
         return [

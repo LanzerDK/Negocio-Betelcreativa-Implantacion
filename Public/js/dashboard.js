@@ -7,6 +7,7 @@ let pendingTasks = [];
 let completedTasks = [];
 
 // ── CARGA INICIAL ────────────────────────────
+// Carga todos los datos al dominio y configura actualización automática cada 30 segundos
 document.addEventListener('DOMContentLoaded', () => {
     loadAll();
     setInterval(loadAll, 30000);
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTaskModal();
 });
 
+// Carga paralela de dashboard, tareas pendientes y completadas
 async function loadAll()
 {
     await Promise.all([
@@ -24,6 +26,7 @@ async function loadAll()
 }
 
 // ── DASHBOARD API ────────────────────────────
+// Obtiene los datos del panel desde el API y renderiza todas las secciones
 async function fetchDashboard()
 {
     try {
@@ -41,6 +44,7 @@ async function fetchDashboard()
     }
 }
 
+// Actualiza las tarjetas de estadísticas con los valores del API
 function renderStats()
 {
     const s = dashboardData.stats;
@@ -50,12 +54,13 @@ function renderStats()
     document.getElementById('statMonthlySales').textContent = (s.currentMonthSales || 0).toFixed(2) + ' Bs';
 }
 
+// Renderiza tarjetas de alertas de stock bajo, agotado y citas pendientes
 function renderAlerts()
 {
     const container = document.getElementById('alertsContainer');
     const alerts = [];
 
-    // Low stock alerts
+    // Alertas de stock bajo
     dashboardData.alerts.lowStock.forEach(m => {
         alerts.push({
             icon: 'fa-box-open',
@@ -65,7 +70,7 @@ function renderAlerts()
         });
     });
 
-    // Out of stock alerts
+    // Alertas de material agotado
     dashboardData.alerts.outOfStock.forEach(m => {
         alerts.push({
             icon: 'fa-times-circle',
@@ -75,7 +80,7 @@ function renderAlerts()
         });
     });
 
-    // Pending appointment alerts
+    // Alertas de citas pendientes próximas
     dashboardData.alerts.pending.forEach(a => {
         alerts.push({
             icon: 'fa-calendar-exclamation',
@@ -85,11 +90,13 @@ function renderAlerts()
         });
     });
 
+    // Mostrar mensaje de "todo en orden" si no hay alertas
     if (alerts.length === 0) {
         container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--success);font-weight:600;"><i class="fas fa-check-circle"></i> Todo en orden, no hay alertas</div>';
         return;
     }
 
+    // Generar HTML de las tarjetas de alerta
     container.innerHTML = alerts.map(a => `
         <div class="alert-card ${a.cls}">
             <i class="fas ${a.icon}"></i>
@@ -101,6 +108,7 @@ function renderAlerts()
     `).join('');
 }
 
+// Renderiza la lista de eventos próximos del calendario
 function renderUpcomingEvents()
 {
     const container = document.getElementById('upcomingEventsContainer');
@@ -121,6 +129,7 @@ function renderUpcomingEvents()
     `).join('');
 }
 
+// Convierte una cadena de fecha ISO a formato legible en español (dd Mes hh:mm)
 function formatTime(dateStr)
 {
     if (!dateStr) return '';
@@ -135,12 +144,15 @@ function formatTime(dateStr)
 }
 
 // ── CHARTS ──────────────────────────────────
+// Paleta de colores para los tipos de eventos
 const EVENT_COLORS = ['#002266','#0A369D','#D4AF37','#4A90E2','#F7E493','#28A745','#DC3545','#17A2B8','#6C757D'];
 let eventTypeChart = null;
 let salesChart = null;
 
+// Inicializa los gráficos de Chart.js con configuración por defecto
 function initCharts()
 {
+    // Gráfico de línea para ventas mensuales
     const salesEl = document.getElementById('salesChart');
     if (salesEl) {
         salesChart = new Chart(salesEl.getContext('2d'), {
@@ -171,6 +183,7 @@ function initCharts()
         });
     }
 
+    // Gráfico de dona para distribución de tipos de evento
     const eventEl = document.getElementById('eventTypeChart');
     if (eventEl) {
         eventTypeChart = new Chart(eventEl.getContext('2d'), {
@@ -188,12 +201,14 @@ function initCharts()
     }
 }
 
+// Formatea una cadena de mes (YYYY-MM) a etiqueta abreviada (Ene '26)
 function formatMonthLabel(m)
 {
     const months = { '01':'Ene','02':'Feb','03':'Mar','04':'Abr','05':'May','06':'Jun','07':'Jul','08':'Ago','09':'Sep','10':'Oct','11':'Nov','12':'Dic' };
     return months[m.slice(5,7)] + " '" + m.slice(2,4);
 }
 
+// Actualiza el gráfico de línea con los datos de ventas mensuales
 function renderSalesChart(monthly)
 {
     if (!salesChart) return;
@@ -204,6 +219,7 @@ function renderSalesChart(monthly)
     salesChart.update();
 }
 
+// Actualiza el gráfico de dona con la distribución de tipos de evento
 function renderEventTypeChart(distribution)
 {
     if (!eventTypeChart) return;
@@ -217,6 +233,7 @@ function renderEventTypeChart(distribution)
 }
 
 // ── TASKS API ────────────────────────────────
+// Obtiene las tareas pendientes desde el API
 async function fetchTasks()
 {
     try {
@@ -230,6 +247,7 @@ async function fetchTasks()
     }
 }
 
+// Obtiene las tareas completadas desde el API
 async function fetchCompletedTasks()
 {
     try {
@@ -243,6 +261,7 @@ async function fetchCompletedTasks()
     }
 }
 
+// Renderiza la lista de tareas pendientes con botón de completar
 function renderPendingTasks()
 {
     const list = document.getElementById('pendingTaskList');
@@ -258,11 +277,13 @@ function renderPendingTasks()
         </li>
     `).join('');
 
+    // Asociar evento click a cada checkbox para marcar tarea como completada
     list.querySelectorAll('.task-check').forEach(el => {
         el.addEventListener('click', () => completeTask(parseInt(el.dataset.id)));
     });
 }
 
+// Renderiza la lista de tareas ya completadas (solo visualización)
 function renderCompletedTasks()
 {
     const list = document.getElementById('completedTaskList');
@@ -280,6 +301,7 @@ function renderCompletedTasks()
     syncCardHeight();
 }
 
+// Convierte el identificador de prioridad a etiqueta en español
 function priorityLabel(p)
 {
     return { high: 'Alta', medium: 'Media', low: 'Baja' }[p] || p;
@@ -287,6 +309,7 @@ function priorityLabel(p)
 
 
 
+// Marca una tarea como completada vía PUT al API y recarga ambas listas
 async function completeTask(id)
 {
     try {
@@ -309,6 +332,7 @@ async function completeTask(id)
 }
 
 // ── TASK MODAL ───────────────────────────────
+// Inicializa el modal de creación de tareas con sus eventos
 function initTaskModal()
 {
     const modal = document.getElementById('taskModal');
@@ -319,14 +343,17 @@ function initTaskModal()
     const titleInput = document.getElementById('taskTitle');
     const priorityInput = document.getElementById('taskPriority');
 
+    // Abrir modal con campos limpios y foco en título
     function open() { modal.classList.add('show'); titleInput.value = ''; priorityInput.value = 'medium'; titleInput.focus(); }
     function close() { modal.classList.remove('show'); }
 
     openBtn?.addEventListener('click', open);
     closeBtn?.addEventListener('click', close);
     cancelBtn?.addEventListener('click', close);
+    // Cerrar modal al hacer clic fuera del contenido
     modal?.addEventListener('click', e => { if (e.target === modal) close(); });
 
+    // Guardar nueva tarea via POST al API
     saveBtn?.addEventListener('click', async () => {
         const title = titleInput.value.trim();
         if (!title) { toast('Ingresa una descripción para la tarea.', 'warning'); return; }
@@ -352,16 +379,19 @@ function initTaskModal()
 }
 
 // ── CARD FLIP ────────────────────────────────
+// Efecto de volteo de tarjeta para alternar entre tareas pendientes y completadas
 document.addEventListener('DOMContentLoaded', () => {
     const card = document.getElementById('tasksCard');
     const flipBtn = document.getElementById('toggleHistoryBtn');
     const backBtn = document.getElementById('toggleBackBtn');
 
+    // Voltear para mostrar historial de tareas completadas
     flipBtn?.addEventListener('click', () => {
         card.classList.add('flipped');
         fetchCompletedTasks();
     });
 
+    // Voltear de vuelta para mostrar tareas pendientes
     backBtn?.addEventListener('click', () => {
         card.classList.remove('flipped');
         fetchTasks();

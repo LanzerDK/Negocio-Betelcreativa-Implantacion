@@ -6,11 +6,15 @@ use BetelCreativa\Config\Database;
 use PDO;
 use PDOException;
 
+// SettingsRepository — Acceso a la tabla `settings`
+// Gestiona configuración clave-valor con caché en memoria y valores por defecto
 class SettingsRepository
 {
     private PDO $db;
+    // Caché en memoria estática para evitar múltiples consultas
     private static ?array $cache = null;
 
+    // Valores por defecto del sistema (usados si la tabla no existe)
     private const DEFAULTS = [
         'low_stock_threshold'       => ['value' => '10', 'description' => 'Cantidad mínima antes de marcar stock bajo'],
         'pagination_default'        => ['value' => '10', 'description' => 'Filas por página en tablas'],
@@ -24,11 +28,13 @@ class SettingsRepository
         'log_retention_days'        => ['value' => '90', 'description' => 'Días de retención de logs'],
     ];
 
+    // Inicializa la conexión PDO
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todas las configuraciones con caché en memoria
     public function getAll(): array
     {
         if (self::$cache !== null) {
@@ -48,22 +54,27 @@ class SettingsRepository
             self::$cache = $settings;
             return $settings;
         } catch (PDOException $e) {
+            // Si la tabla no existe, devuelve valores por defecto
             self::$cache = self::DEFAULTS;
             return self::$cache;
         }
     }
 
+    // Obtiene el valor de una clave específica como string
     public function get(string $key, string $default = ''): string
     {
         $all = $this->getAll();
         return $all[$key]['value'] ?? $default;
     }
 
+    // Obtiene el valor de una clave como entero
     public function getInt(string $key, int $default = 0): int
     {
         return (int)$this->get($key, (string)$default);
     }
 
+    // Establece el valor de una clave (upsert: inserta o actualiza)
+    // Invalida la caché después de escribir
     public function set(string $key, string $value, ?string $description = null): bool
     {
         try {
@@ -95,6 +106,7 @@ class SettingsRepository
         } catch (PDOException $e) {
             return false;
         } finally {
+            // Invalida caché para próxima lectura
             self::$cache = null;
         }
     }

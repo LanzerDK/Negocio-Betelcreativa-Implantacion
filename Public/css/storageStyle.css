@@ -1,6 +1,7 @@
 /* storageStyle.css - Estilos específicos del módulo de Almacén */
 
 
+/* Barra de navegación superior con gradiente */
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
@@ -60,6 +61,7 @@
   justify-content: center;
 }
 
+/* Borde dorado decorativo con gradiente via mask */
 .overview-card::before {
   content: '';
   position: absolute;
@@ -104,6 +106,7 @@
   position: relative;
 }
 
+/* Borde dorado decorativo del sidebar de filtros */
 .filters-sidebar::before {
   content: '';
   position: absolute;
@@ -199,12 +202,14 @@
   margin-bottom: 20px;
 }
 
+/* Pantallas medianas - grid de 2 columnas */
 @media (max-width: 1200px) {
   .layout-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
+/* Pantallas pequeñas - grid de 1 columna */
 @media (max-width: 768px) {
   .layout-grid {
     grid-template-columns: 1fr;
@@ -226,7 +231,7 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-/* Cabecera de almacén */
+/* Cabecera de almacén con gradiente */
 .warehouse-header {
   display: flex;
   justify-content: space-between;
@@ -337,6 +342,7 @@
   gap: 6px;
 }
 
+/* Botones de acción del estante (ver, mover, eliminar) */
 .shelf-view,
 .shelf-move,
 .shelf-delete {
@@ -564,6 +570,7 @@
   color: var(--gray);
 }
 
+/* Inputs y selects de formulario con estilo consistente */
 .form-input,
 .form-select {
   width: 100%;
@@ -596,10 +603,6 @@
   margin-top: 20px;
 }
 
-
-
-
-
 /* Contenedor del historial con fondo y borde dorado característico */
 .history-container {
   position: relative;
@@ -609,6 +612,7 @@
   box-shadow: var(--shadow);
 }
 
+/* Borde dorado decorativo del historial */
 .history-container::before {
   content: '';
   position: absolute;
@@ -680,14 +684,14 @@
   gap: 25px;
 }
 
-/* Responsive del layout */
+/* Responsive del layout a una columna */
 @media (max-width: 992px) {
   .content-wrapper {
     grid-template-columns: 1fr;
   }
 }
 
-/* Responsive de tabla de materiales */
+/* Responsive de tabla de materiales - columnas más compactas */
 @media (max-width: 1200px) {
   .table-header,
   .table-row {
@@ -697,6 +701,7 @@
   }
 }
 
+/* Responsive de tabla - vista tarjeta en móviles */
 @media (max-width: 992px) {
   .table-header {
     display: none;
@@ -739,6 +744,7 @@
   }
 }
 
+/* Pantallas pequeñas - menú y tarjetas de inventario más compactos */
 @media (max-width: 768px) {
   .main-menu {
     flex-wrap: wrap;
@@ -766,6 +772,7 @@
   }
 }
 
+/* Pantallas muy pequeñas - ajustes de espaciado y tipografía */
 @media (max-width: 480px) {
   .app-header {
     padding: 15px;
@@ -828,6 +835,7 @@
   background: rgba(13, 71, 161, 0.03);
 }
 
+/* Paginación de tabla */
 .pagination {
   display: flex;
   justify-content: center;

@@ -8,15 +8,18 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// Repositorio para operaciones CRUD de almacenes (warehouses) en la base de datos
 class WarehouseRepository
 {
     private PDO $db;
 
+    // Inicializa la conexion PDO mediante el singleton Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todos los almacenes ordenados alfabeticamente por nombre
     public function findAll(): array
     {
         try {
@@ -34,6 +37,7 @@ class WarehouseRepository
         }
     }
 
+    // Busca un almacen por su ID, retorna null si no existe
     public function findById(int $id): ?WarehouseModel
     {
         try {
@@ -49,6 +53,7 @@ class WarehouseRepository
         }
     }
 
+    // Verifica si ya existe un almacen con el codigo dado
     public function existsByCode(string $code): bool
     {
         try {
@@ -60,6 +65,7 @@ class WarehouseRepository
         }
     }
 
+    // Verifica si ya existe un almacen con el nombre dado, opcionalmente excluye un ID
     public function existsByName(string $name, ?int $excludeId = null): bool
     {
         try {
@@ -77,6 +83,7 @@ class WarehouseRepository
         }
     }
 
+    // Genera el siguiente codigo de almacen con formato ALM-XXX
     public function getNextCode(): string
     {
         try {
@@ -90,6 +97,7 @@ class WarehouseRepository
         }
     }
 
+    // Inserta un nuevo almacen en la base de datos
     public function save(WarehouseModel $warehouse): bool
     {
         try {
@@ -107,6 +115,7 @@ class WarehouseRepository
         }
     }
 
+    // Elimina un almacen solo si no tiene estantes asociados
     public function delete(int $id): bool
     {
         try {
@@ -122,6 +131,7 @@ class WarehouseRepository
         }
     }
 
+    // Retorna la cantidad de estantes registrados en un almacen
     public function getShelfCount(int $warehouseId): int
     {
         try {

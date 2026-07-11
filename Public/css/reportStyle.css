@@ -1,6 +1,7 @@
 /* reportStyle.css - Estilos específicos del módulo de Reportes */
 
 
+/* Barra de navegación superior del módulo */
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
@@ -20,6 +21,7 @@
   border-radius: 10px;
 }
 
+/* Título principal de la página */
 .page-title {
   font-size: 1.8rem;
   color: white;
@@ -47,6 +49,7 @@
   position: relative;
 }
 
+/* Borde dorado decorativo en tarjetas de reporte */
 .report-card::before {
   content: '';
   position: absolute;
@@ -60,6 +63,7 @@
   pointer-events: none;
 }
 
+/* Efecto hover en tarjetas de reporte */
 .report-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
@@ -77,17 +81,20 @@
   margin-bottom: 20px;
 }
 
+/* Icono font dentro del ícono circular */
 .report-icon i {
   font-size: 30px;
   color: var(--primary);
 }
 
+/* Título de la tarjeta de reporte */
 .report-title {
   font-size: 1.4rem;
   color: var(--primary);
   margin-bottom: 15px;
 }
 
+/* Descripción del reporte con crecimiento flexible */
 .report-description {
   color: var(--dark);
   margin-bottom: 25px;
@@ -101,6 +108,7 @@
   gap: 12px;
 }
 
+/* Botón base de reporte con estilos comunes */
 .report-btn {
   padding: 10px 15px;
   border-radius: 8px;
@@ -114,22 +122,26 @@
   border: none;
 }
 
+/* Botón primario de reporte */
 .report-btn.primary {
   background: var(--primary);
   color: white;
   flex: 1;
 }
 
+/* Efecto hover en botón primario */
 .report-btn.primary:hover {
   background: var(--primary-dark);
 }
 
+/* Botón outline (borde) de reporte */
 .report-btn.outline {
   background: transparent;
   color: var(--primary);
   border: 1px solid var(--primary);
 }
 
+/* Efecto hover en botón outline */
 .report-btn.outline:hover {
   background: rgba(13, 71, 161, 0.1);
 }
@@ -144,6 +156,7 @@
   position: relative;
 }
 
+/* Borde dorado decorativo en contenedor de contenido de reporte */
 .report-content::before {
   content: '';
   position: absolute;
@@ -157,6 +170,7 @@
   pointer-events: none;
 }
 
+/* Contenido de reporte activo visible con animación de entrada */
 .report-content.active {
   display: block;
   animation: fadeIn 0.5s ease;
@@ -178,12 +192,14 @@
   color: white;
 }
 
+/* Nombre del reporte en la cabecera */
 .report-name {
   font-size: 1.5rem;
   color: white;
   font-weight: 600;
 }
 
+/* Botones de herramientas del reporte (exportar, etc.) */
 .report-tools {
   display: flex;
   gap: 12px;
@@ -198,11 +214,13 @@
   border-bottom: 1px solid var(--gold-text);
 }
 
+/* Grupo de filtro individual (label + input) */
 .filter-group {
   display: flex;
   flex-direction: column;
 }
 
+/* Etiqueta de cada filtro */
 .filter-label {
   font-weight: 600;
   margin-bottom: 8px;
@@ -221,6 +239,7 @@
   box-sizing: border-box;
 }
 
+/* Estado focus en inputs y selects de filtros */
 .filter-select:focus,
 .filter-input:focus {
   outline: none;
@@ -228,6 +247,7 @@
   box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
+/* Contenedor de botón de acción de filtros */
 .filter-actions {
   display: flex;
   align-items: flex-end;
@@ -248,6 +268,7 @@
   transition: var(--transition);
 }
 
+/* Efecto hover en botón de generar reporte */
 .generate-btn:hover {
   background: var(--primary-dark);
   transform: translateY(-3px);
@@ -281,6 +302,7 @@
   min-height: 100px;
 }
 
+/* Borde dorado decorativo en tarjetas de estadística */
 .stat-card::before {
   content: '';
   position: absolute;
@@ -294,16 +316,19 @@
   pointer-events: none;
 }
 
+/* Texto blanco para valor y etiqueta dentro de tarjeta de estadística */
 .stat-card .stat-value,
 .stat-card .stat-label {
   color: #ffffff;
 }
 
+/* Efecto hover en tarjetas de estadística */
 .stat-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
+/* Valor numérico grande de la estadística */
 .stat-value {
   font-size: 2.2rem;
   font-weight: 700;
@@ -311,6 +336,7 @@
   margin: 10px 0;
 }
 
+/* Etiqueta descriptiva de la estadística */
 .stat-label {
   font-size: 1rem;
   color: var(--dark);
@@ -339,6 +365,7 @@
   border-collapse: collapse;
 }
 
+/* Encabezados de la tabla de reportes */
 .report-table th {
   background: rgba(13, 71, 161, 0.1);
   padding: 15px;
@@ -348,15 +375,18 @@
   border-bottom: 2px solid var(--dark);
 }
 
+/* Celdas del cuerpo de la tabla de reportes */
 .report-table td {
   padding: 12px 15px;
   border-bottom: 1px solid var(--light-gray);
 }
 
+/* Filas pares con fondo alternado */
 .report-table tr:nth-child(even) {
   background-color: rgba(233, 236, 239, 0.3);
 }
 
+/* Efecto hover en filas de la tabla */
 .report-table tr:hover {
   background-color: rgba(13, 71, 161, 0.05);
 }
@@ -364,6 +394,7 @@
 /* Estilos para exportación a PDF */
 /* Responsive */
 
+/* Responsive: tablet intermedia — encabezado apilado y stats más compactas */
 @media (max-width: 1024px) {
   .page-title {
     font-size: 1.4rem;
@@ -382,6 +413,7 @@
   }
 }
 
+/* Responsive: tablet — tarjetas más pequeñas, header apilado, gráfico reducido */
 @media (max-width: 768px) {
   .report-cards {
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -403,6 +435,7 @@
   }
 }
 
+/* Responsive: móvil — una sola columna, filtros apilados, gráfico pequeño */
 @media (max-width: 480px) {
   .report-cards {
     grid-template-columns: 1fr;

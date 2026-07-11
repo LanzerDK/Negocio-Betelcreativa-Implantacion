@@ -1,8 +1,14 @@
+// =============================================
+// register.js - Validación y envío del formulario de registro
+// =============================================
+
+// Valida un campo individual usando una función de validación personalizada
 function validateField(field, feedbackId, validationFn, errorMessage, successMessage) {
     if (!field) return false;
     const value = field.value.trim();
     const feedbackElement = document.getElementById(feedbackId);
 
+    // Si el campo está vacío, marcar como inválido con mensaje de obligatorio
     if (!value) {
         field.classList.remove('valid');
         field.classList.add('invalid');
@@ -14,6 +20,7 @@ function validateField(field, feedbackId, validationFn, errorMessage, successMes
         return false;
     }
 
+    // Aplicar la función de validación personalizada si se proporciona
     if (validationFn && !validationFn(value)) {
         field.classList.remove('valid');
         field.classList.add('invalid');
@@ -25,6 +32,7 @@ function validateField(field, feedbackId, validationFn, errorMessage, successMes
         return false;
     }
 
+    // Si pasa todas las validaciones, marcar como válido
     field.classList.remove('invalid');
     field.classList.add('valid');
     if (feedbackElement) {
@@ -35,6 +43,7 @@ function validateField(field, feedbackId, validationFn, errorMessage, successMes
     return true;
 }
 
+// Funciones de validación individuales con expresiones regulares
 function validateName(name) { return /^[a-zA-Z\u00C0-\u024F\s]{2,50}$/.test(name); }
 function validateUsername(username) { return /^[a-zA-Z0-9_]{3,20}$/.test(username); }
 function validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
@@ -46,17 +55,20 @@ function validatePhone(phone) {
 function validatePassword(password) { return password.length >= 6; }
 function isSecurityCodeFormat(code) { return /^[A-Za-z0-9]{3}-[A-Za-z0-9]{3}-[A-Za-z0-9]{3}$/.test(code.trim()); }
 
+// Valida que la contraseña y su confirmación coincidan
 function validatePasswordMatch() {
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('confirm-password').value;
     const feedback = document.getElementById('confirm-password-feedback');
     const confirmInput = document.getElementById('confirm-password');
 
+    // Si el campo de confirmación está vacío, ocultar feedback
     if (!confirmPassword) {
         if (feedback) feedback.style.display = 'none';
         return false;
     }
 
+    // Comparar ambas contraseñas y mostrar resultado
     if (password !== confirmPassword) {
         confirmInput.classList.remove('valid');
         confirmInput.classList.add('invalid');
@@ -78,10 +90,12 @@ function validatePasswordMatch() {
     }
 }
 
+// Calcula y muestra la fuerza de la contraseña en tiempo real
 function updatePasswordStrength(password) {
     const strengthBar = document.getElementById('passwordStrength');
     if (!strengthBar) return;
 
+    // Acumular puntos según complejidad de la contraseña
     let strength = 0;
     if (password.length >= 6) strength += 25;
     if (password.length >= 10) strength += 15;
@@ -89,6 +103,7 @@ function updatePasswordStrength(password) {
     if (/[0-9]/.test(password)) strength += 20;
     if (/[^a-zA-Z0-9]/.test(password)) strength += 20;
 
+    // Aplicar clase CSS según nivel de fortaleza
     strengthBar.className = 'password-strength-bar';
     if (strength < 50) {
         strengthBar.classList.add('weak');
@@ -99,6 +114,8 @@ function updatePasswordStrength(password) {
     }
     strengthBar.style.width = strength + "%";
 }
+
+// ── EVENTOS DE VALIDACIÓN EN TIEMPO REAL POR CAMPO ──────────
 
 document.getElementById('nombre').addEventListener('input', function() {
     validateField(this, 'nombre-feedback', validateName, "Nombre invalido (solo letras)", "Nombre valido");
@@ -128,21 +145,25 @@ document.getElementById('codigo_seguridad').addEventListener('input', function()
     validateField(this, 'codigo_seguridad-feedback', isSecurityCodeFormat, "Formato requerido: XXX-XXX-XXX", "Formato valido");
 });
 
+// Validar contraseña y actualizar indicador de fortaleza al escribir
 document.getElementById('password').addEventListener('input', function() {
     validateField(this, 'password-feedback', validatePassword, "Minimo 6 caracteres", "Contrasena valida");
     updatePasswordStrength(this.value);
     validatePasswordMatch();
 });
 
+// Revalidar coincidencia de contraseñas al modificar la confirmación
 document.getElementById('confirm-password').addEventListener('input', function() {
     validatePasswordMatch();
 });
 
+// Verifica unicidad de un campo contra la base de datos vía API
 function checkFieldUniqueness(field, value, feedbackId) {
     if (!value) return;
     var fd = new FormData();
     fd.append('field', field);
     fd.append('value', value);
+    // Si es cédula, incluir el tipo (V/E) para la validación
     if (field === 'cedula') {
         fd.append('tipo_cedula', document.getElementById('tipo-cedula').value);
     }
@@ -164,6 +185,8 @@ function checkFieldUniqueness(field, value, feedbackId) {
     });
 }
 
+// ── VERIFICACIÓN DE UNICIDAD AL PERDER FOCO (BLUR) ──────────
+
 document.getElementById('usuario').addEventListener('blur', function() {
     checkFieldUniqueness('usuario', this.value, 'usuario-feedback');
 });
@@ -176,6 +199,7 @@ document.getElementById('cedula').addEventListener('blur', function() {
     checkFieldUniqueness('cedula', this.value, 'cedula-feedback');
 });
 
+// Revalidar cédula si cambia el tipo (V/E) y ya hay un valor ingresado
 document.getElementById('tipo-cedula').addEventListener('change', function() {
     var cedulaInput = document.getElementById('cedula');
     if (cedulaInput.value.trim()) {
@@ -183,6 +207,9 @@ document.getElementById('tipo-cedula').addEventListener('change', function() {
     }
 });
 
+// ── TOGGLE VISIBILIDAD DE CONTRASEÑAS ───────────────────────
+
+// Alternar mostrar/ocultar contraseña principal
 document.getElementById('togglePassword').addEventListener('click', function() {
     const passwordInput = document.getElementById('password');
     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -191,6 +218,7 @@ document.getElementById('togglePassword').addEventListener('click', function() {
     this.classList.toggle('bi-eye');
 });
 
+// Alternar mostrar/ocultar confirmación de contraseña
 document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
     const confirmPasswordInput = document.getElementById('confirm-password');
     const type = confirmPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -199,11 +227,13 @@ document.getElementById('toggleConfirmPassword').addEventListener('click', funct
     this.classList.toggle('bi-eye');
 });
 
+// ── ENVÍO DEL FORMULARIO DE REGISTRO ────────────────────────
 document.getElementById('registerForm').addEventListener('submit', function (e) {
     e.preventDefault();
 
     const form = this;
 
+    // Ejecutar validación de todos los campos del formulario
     const isNombreValid = validateField(document.getElementById('nombre'), 'nombre-feedback', validateName, "Nombre invalido");
     const isApellidoValid = validateField(document.getElementById('apellido'), 'apellido-feedback', validateName, "Apellido invalido");
     const isUsuarioValid = validateField(document.getElementById('usuario'), 'usuario-feedback', validateUsername, "Usuario invalido");
@@ -214,9 +244,11 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
     const isTelefonoValid = validateField(document.getElementById('telefono'), 'telefono-feedback', validatePhone, "Telefono invalido");
     const isMatchValid = validatePasswordMatch();
 
+    // Verificar que todos los campos sean válidos
     let formIsValid = isNombreValid && isApellidoValid && isUsuarioValid && isCorreoValid &&
                       isCedulaValid && isPasswordValid && isCodigoValid && isTelefonoValid && isMatchValid;
 
+    // Validar que se haya seleccionado un tipo de cédula
     const tipoCedula = document.getElementById('tipo-cedula');
     if (tipoCedula && tipoCedula.value === "") {
         formIsValid = false;
@@ -228,6 +260,7 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
         }
     }
 
+    // Enviar datos al API solo si todo es válido
     if (formIsValid) {
         const formData = new FormData(form);
 
@@ -238,6 +271,7 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
         })
         .then(data => {
             if (data.success) {
+                // Redirigir al login tras registro exitoso
                 toast(data.message, 'success');
                 setTimeout(() => {
                     window.location.href = window.APP_URL + 'login';
@@ -247,6 +281,7 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
             }
         })
         .catch(error => {
+            // Mostrar errores de validación por campo si el API los retorna
             if (error.errors) {
                 for (var field in error.errors) {
                     if (error.errors.hasOwnProperty(field)) {

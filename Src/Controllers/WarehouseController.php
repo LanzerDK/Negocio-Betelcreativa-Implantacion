@@ -8,8 +8,11 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// WarehouseController — CRUD de almacenes (bodegas)
+// Cada almacén tiene un código único, capacidad máxima de estantes y ubicación física
 class WarehouseController
 {
+    // Punto de entrada: enruta según método HTTP (GET/POST/DELETE)
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -18,6 +21,8 @@ class WarehouseController
 
         switch ($method) {
             case 'GET':
+                // GET con ?id — detalle con conteo de estantes
+                // GET sin parámetros — lista completa con conteo de estantes por almacén
                 if (isset($_GET['id'])) {
                     $wh = $repo->findById((int)$_GET['id']);
                     if ($wh) {
@@ -50,9 +55,11 @@ class WarehouseController
                 $location = trim($input['location'] ?? '');
                 $maxShelves = (int)($input['max_shelves'] ?? 100);
 
+                // Auto-genera código si no se especifica
                 if (empty($code)) {
                     $code = $repo->getNextCode();
                 }
+                // Validaciones de campos
                 if (empty($name)) {
                     ApiResponse::error('El nombre del almacén es obligatorio.');
                 }
@@ -63,6 +70,7 @@ class WarehouseController
                     ApiResponse::error('El máximo de estantes debe estar entre 1 y 100.');
                 }
 
+                // Validación de unicidad
                 if ($repo->existsByCode($code)) {
                     ApiResponse::error('Ya existe un almacén con ese código.');
                 }
@@ -99,6 +107,7 @@ class WarehouseController
                 if (!$wh) {
                     ApiResponse::error('Almacén no encontrado.', 404);
                 }
+                // No permite eliminar si tiene estantes asignados
                 if ($repo->delete($id)) {
                     ApiResponse::success(null, 'Almacén eliminado exitosamente.');
                 } else {
@@ -111,6 +120,7 @@ class WarehouseController
         }
     }
 
+    // Convierte un WarehouseModel a array asociativo para respuesta JSON
     private static function toArray(WarehouseModel $w): array
     {
         return [

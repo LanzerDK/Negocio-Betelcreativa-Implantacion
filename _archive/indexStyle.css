@@ -28,7 +28,7 @@
             min-height: 100vh;
         }
         
-        /* Sidebar */
+        /* Barra lateral de navegacion */
         .sidebar {
             width: var(--sidebar-width);
             background: linear-gradient(180deg, var(--primary), var(--primary-dark));
@@ -93,14 +93,14 @@
             text-align: center;
         }
         
-        /* Main Content */
+        /* Contenido principal desplazado por la barra lateral */
         .main-content {
             flex: 1;
             margin-left: var(--sidebar-width);
             transition: all 0.3s;
         }
         
-        /* Header */
+        /* Encabezado superior con info del usuario */
         .header {
             display: flex;
             justify-content: space-between;
@@ -173,7 +173,7 @@
             transform: rotate(30deg);
         }
         
-        /* Content Area */
+        /* Area de contenido con grid de tarjetas */
         .content {
             padding: 30px;
         }
@@ -235,7 +235,7 @@
             padding: 20px;
         }
         
-        /* Accordion Gallery */
+        /* Galeria tipo acordeon para mostrar proyectos */
         .gallery-accordion {
             width: 100%;
         }
@@ -327,7 +327,7 @@
             line-height: 1.6;
         }
         
-        /* Stats Cards */
+        /* Tarjetas de estadisticas numericas */
         .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -391,7 +391,7 @@
             color: var(--info);
         }
         
-        /* Responsive */
+        /* Media queries para diseño responsive */
         @media (max-width: 992px) {
             .gallery-content {
                 flex-direction: column;

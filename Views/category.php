@@ -28,6 +28,7 @@
             </div>
             <div class="user-container">
                 <div class="imagenfoto">
+                    <!-- Avatar: usa el de sesión o el logo del sistema por defecto -->
                     <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
                     <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
@@ -92,6 +93,7 @@
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Facturación</span>
             </a>
+            <!-- Botón de Reportes visible solo para super_admin -->
             <?php if (($_SESSION['user_role'] ?? '') === 'super_admin'): ?>
             <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
@@ -195,10 +197,12 @@
 
 
     <script>
+        // Expone constantes de PHP al JS para peticiones AJAX
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
     <script>
+        // Toggle del menú de usuario y submenú de almacén
         document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
             e.stopPropagation();
             document.getElementById('settingsDropdown')?.classList.toggle('show');

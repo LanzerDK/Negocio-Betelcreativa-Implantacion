@@ -1,8 +1,14 @@
+// Identificador del material que se está editando (null si no hay edición activa)
 let editingMaterialId = null;
+
+// Mapas de búsqueda rápida: ID → nombre de categoría y ID → nombre de proveedor
 let categoriasMap = {};
 let suppliersMap = {};
+
+// Arreglo maestro con todos los materiales cargados desde la API
 let allMaterials = [];
 
+// Estado global de filtros aplicados sobre la tabla de materiales
 const FILTERS = {
   search: '',
   categoryId: null,
@@ -11,36 +17,45 @@ const FILTERS = {
   stockSinStock: false
 };
 
+// Evento principal: inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function () {
+  // Carga inicial de materiales, categorías y proveedores
   cargarMateriales();
 
+  // Auto-generación de código al escribir nombre o cambiar categoría
   document.getElementById('nuevoMaterial')?.addEventListener('input', autoGenerarCodigo);
   document.getElementById('nuevaCategoria')?.addEventListener('change', autoGenerarCodigo);
 
+  // Toggle del campo cantidad por mayor según tipo de costo (nuevo material)
   document.getElementById('nuevoCostType')?.addEventListener('change', function () {
     document.getElementById('wholesaleQtyGroup').style.display = this.value === 'wholesale' ? 'block' : 'none';
   });
+  // Toggle del campo cantidad por mayor según tipo de costo (edición)
   document.getElementById('costType')?.addEventListener('change', function () {
     document.getElementById('editWholesaleQtyGroup').style.display = this.value === 'wholesale' ? 'block' : 'none';
   });
 
+  // Botones de guardado: crear nuevo material y guardar edición
   document.getElementById('guardarMaterialBtn')?.addEventListener('click', agregarNuevoMaterial);
   document.getElementById('guardarCambiosBtn')?.addEventListener('click', guardarEdicionMaterial);
 
-  // Image preview handlers
+  // Preview de imagen al seleccionar archivo (nuevo material)
   document.getElementById('nuevaImagen')?.addEventListener('change', function (e) {
     mostrarPreview(e.target, 'nuevaImagenPreview');
   });
+  // Preview de imagen al seleccionar archivo (edición)
   document.getElementById('editImagen')?.addEventListener('change', function (e) {
     mostrarPreview(e.target, 'editImagenPreview');
   });
 
+  // Búsqueda por texto: filtra materiales en tiempo real
   const searchInput = document.querySelector('.search-box input');
   searchInput?.addEventListener('input', function () {
     FILTERS.search = this.value.toLowerCase();
     aplicarFiltros();
   });
 
+  // Checkboxes de filtro por estado de stock (En Stock / Bajo / Sin Stock)
   document.querySelectorAll('.stock-filter input').forEach(cb => {
     cb.addEventListener('change', function () {
       const text = this.closest('label')?.textContent.trim() || '';
@@ -51,8 +66,10 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Botón limpiar: resetea todos los filtros y refresca la tabla
   document.querySelector('.btn-limpiar')?.addEventListener('click', limpiarFiltros);
 
+  // Click en "Todas las categorías" (primer item del sidebar): quita filtro de categoría
   document.querySelector('.category-item:first-child')?.addEventListener('click', function () {
     document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
     this.classList.add('active');
@@ -60,6 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     aplicarFiltros();
   });
 
+  // Al abrir el modal de nuevo material: carga categorías y limpia campos
   const nuevoModal = document.getElementById('nuevoMaterialModal');
   if (nuevoModal) {
     nuevoModal.addEventListener('modal:shown', function () {
@@ -72,6 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+// Carga paralela de materiales, categorías y proveedores desde la API
 async function cargarMateriales() {
   try {
     const [matRes, catRes, supRes] = await Promise.all([
@@ -79,14 +98,17 @@ async function cargarMateriales() {
       fetch(APP_URL + 'Public/api/categories.php').then(r => r.json()),
       fetch(APP_URL + 'Public/api/admin/suppliers.php').then(r => r.json()).catch(() => ({ success: false, data: [] }))
     ]);
+    // Mapea categorías: ID → nombre, y carga los selects y el sidebar
     if (catRes && catRes.success) {
       catRes.data.forEach(c => { categoriasMap[c.id] = c.name; });
       try { cargarSelectCategorias(catRes.data); } catch (e) { console.error('Error en cargarSelectCategorias:', e); }
       try { cargarCategoriasSidebar(catRes.data); } catch (e) { console.error('Error en cargarCategoriasSidebar:', e); }
     }
+    // Mapea proveedores: ID → nombre de empresa
     if (supRes && supRes.success) {
       supRes.data.forEach(s => { suppliersMap[s.id] = s.company_name; });
     }
+    // Guarda el listado completo y aplica filtros activos
     if (matRes && matRes.success) {
       allMaterials = matRes.data;
       aplicarFiltros();
@@ -96,6 +118,7 @@ async function cargarMateriales() {
   }
 }
 
+// Recarga categorías desde la API y actualiza los selects y el mapa
 function cargarCategoriasParaSelect() {
   return callApi(APP_URL + 'Public/api/categories.php')
     .then(data => {
@@ -109,6 +132,7 @@ function cargarCategoriasParaSelect() {
     .catch(err => console.error('Error al cargar categorías:', err));
 }
 
+// Puebla los selects de categoría (nuevo y editar) con las opciones activas
 function cargarSelectCategorias(categorias) {
   const selects = ['nuevaCategoria', 'categoria'];
   for (const id of selects) {
@@ -129,6 +153,7 @@ function cargarSelectCategorias(categorias) {
 
 
 
+// Renderiza la lista de categorías en el sidebar lateral con evento de filtrado
 function cargarCategoriasSidebar(categorias) {
   const list = document.querySelector('.category-list');
   if (!list) return;
@@ -149,6 +174,7 @@ function cargarCategoriasSidebar(categorias) {
   }
 }
 
+// Genera una abreviatura de 1-3 letras a partir de un texto (para códigos automáticos)
 function abreviar(texto) {
   const words = texto.split(/\s+/).filter(w => w.length > 1);
   if (words.length === 1) {
@@ -160,6 +186,8 @@ function abreviar(texto) {
   }
 }
 
+// Auto-genera el código del material basado en nombre y categoría seleccionada
+// Formato: ABREV-NOMBRE-ABREVCAT-NNN (NNN es el consecutivo siguiente)
 function autoGenerarCodigo() {
   const nombre = document.getElementById('nuevoMaterial').value.trim();
   const catSelect = document.getElementById('nuevaCategoria');
@@ -171,6 +199,7 @@ function autoGenerarCodigo() {
   const catAbbrev = abreviar(catName);
   const prefix = `${catAbbrev}-`;
 
+  // Busca el número consecutivo más alto para esta categoría
   let maxNum = 0;
   for (const m of allMaterials) {
     if (!m.code || m.category_id !== catId) continue;
@@ -184,6 +213,7 @@ function autoGenerarCodigo() {
   document.getElementById('nuevoCodigo').value = `${nameAbbrev}-${prefix}${String(maxNum + 1).padStart(3, '0')}`;
 }
 
+// Aplica los filtros activos (búsqueda, categoría, stock) sobre allMaterials y renderiza
 function aplicarFiltros() {
   if (!allMaterials || !allMaterials.length) {
     renderizarMateriales([]);
@@ -191,6 +221,7 @@ function aplicarFiltros() {
   }
   let filtered = allMaterials;
 
+  // Filtro por texto de búsqueda (nombre o código)
   if (FILTERS.search) {
     const s = FILTERS.search.toLowerCase();
     filtered = filtered.filter(m =>
@@ -198,9 +229,11 @@ function aplicarFiltros() {
       (m.code && m.code.toLowerCase().includes(s))
     );
   }
+  // Filtro por categoría
   if (FILTERS.categoryId) {
     filtered = filtered.filter(m => m.category_id === FILTERS.categoryId);
   }
+  // Filtro por estado de stock: sin stock (≤0), stock bajo (≤10), en stock (>10)
   filtered = filtered.filter(m => {
     if (!FILTERS.stockEnStock && !FILTERS.stockBajo && !FILTERS.stockSinStock) return true;
     if (m.stock <= 0) return FILTERS.stockSinStock;
@@ -211,6 +244,7 @@ function aplicarFiltros() {
   renderizarMateriales(filtered);
 }
 
+// Resetea todos los filtros a su estado por defecto y re-renderiza
 function limpiarFiltros() {
   FILTERS.search = '';
   FILTERS.categoryId = null;
@@ -225,11 +259,13 @@ function limpiarFiltros() {
   aplicarFiltros();
 }
 
+// Renderiza las tarjetas de materiales en el grid del contenedor principal
 function renderizarMateriales(materials) {
   const container = document.getElementById('materialsContainer');
   if (!container) return;
   container.innerHTML = '';
 
+  // Estado vacío: no hay materiales para mostrar
   if (!materials || materials.length === 0) {
     container.innerHTML = '<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--gray);"><i class="fas fa-box-open" style="font-size:3rem;margin-bottom:15px;"></i><p>No hay materiales registrados</p></div>';
     return;
@@ -243,18 +279,21 @@ function renderizarMateriales(materials) {
     card.className = 'material-card' + (isInactive ? ' inhabilitado' : '');
     card.dataset.id = mat.id;
 
+    // Clase y texto del badge según nivel de stock
     const badgeClass = mat.stock <= 0 ? 'badge-out' : mat.stock <= 10 ? 'badge-low' : 'badge-stock';
     const badgeText = mat.stock <= 0 ? 'Sin Stock' : mat.stock <= 10 ? 'Stock Bajo' : 'En Stock';
     const progressClass = mat.stock <= 0 ? 'progress-low' : mat.stock <= 10 ? 'progress-medium' : 'progress-high';
     const categoriaNombre = categoriasMap[mat.category_id] || 'Sin categoría';
     const proveedorNombre = suppliersMap[mat.supplier_id] || null;
 
+    // Formato de precio: unitario o por mayor (con precio por unidad)
     let costDisplay = '$' + Number(mat.price).toFixed(2);
     if (mat.cost_type === 'wholesale' && mat.wholesale_qty) {
       const unitPrice = (Number(mat.price) / Number(mat.wholesale_qty)).toFixed(2);
       costDisplay = `$${Number(mat.price).toFixed(2)} / ${mat.wholesale_qty}uds ($${unitPrice}/ud)`;
     }
 
+    // HTML de la tarjeta de material: badge, imagen, datos, stock, acciones
     card.innerHTML = `
       <div class="card-badge ${badgeClass}">${badgeText}</div>
       ${isInactive ? '<div class="inactive-badge"><i class="fas fa-ban"></i> Inhabilitado</div>' : ''}
@@ -285,6 +324,7 @@ function renderizarMateriales(materials) {
       </div>
     `;
 
+    // Evento click en botón Editar: bloquea si está inhabilitado, abre modal de edición
     card.querySelector('.edit-btn').addEventListener('click', function () {
       if (isInactive) {
         toast('Material inhabilitado. Actívelo primero para editarlo.', 'warning');
@@ -301,6 +341,8 @@ function renderizarMateriales(materials) {
   container.appendChild(fragment);
 }
 
+// Alterna el estado activo/inactivo de un material (toggle)
+// Bloquea deshabilitar si el material tiene stock > 0
 async function toggleEstadoMaterial(boton, id) {
   const habilitar = boton.classList.contains('is-disabled');
 
@@ -331,6 +373,7 @@ async function toggleEstadoMaterial(boton, id) {
   }
 }
 
+// Llena el formulario de edición con los datos del material seleccionado
 function llenarFormularioEdicion(mat) {
   document.getElementById('codigo').value = mat.code || '';
   document.getElementById('material').value = mat.name || '';
@@ -344,11 +387,12 @@ function llenarFormularioEdicion(mat) {
   const wq = document.getElementById('wholesaleQty');
   if (wq) wq.value = (mat.cost_type === 'wholesale' && mat.wholesale_qty) ? mat.wholesale_qty : '';
 
+  // Campos de configuración de empaque
   document.getElementById('editUnidadCompra').value = mat.unidad_compra || 'Paquete';
   document.getElementById('editUnidadConsumo').value = mat.unidad_consumo || 'Unidad';
   document.getElementById('editFactorConversion').value = mat.factor_conversion || 1;
 
-  // Show existing image preview
+  // Muestra u oculta el preview de imagen existente
   const editPreview = document.getElementById('editImagenPreview');
   if (mat.imageUrl) {
     editPreview.querySelector('img').src = mat.imageUrl;
@@ -359,11 +403,13 @@ function llenarFormularioEdicion(mat) {
   }
 }
 
+// Cierra un modal y recarga la lista de materiales después de un breve delay
 function ocultarModalYRefrescar(modalId) {
   Modal.close(modalId);
   setTimeout(cargarMateriales, 500);
 }
 
+// Envía los datos del nuevo material a la API (POST)
 async function agregarNuevoMaterial() {
   clearErrors();
 
@@ -374,11 +420,13 @@ async function agregarNuevoMaterial() {
   const tipoMaterial = document.getElementById('nuevoTipoMaterial')?.value || 'consumible';
   const wholesaleQty = costType === 'wholesale' ? parseInt(document.getElementById('nuevoWholesaleQty')?.value) : null;
 
+  // Validación de campos obligatorios
   let valid = true;
   if (!codigo) { showError('nuevoCodigo', 'El código es obligatorio'); valid = false; }
   if (!nombre) { showError('nuevoMaterial', 'El nombre es obligatorio'); valid = false; }
   if (!valid) return;
 
+  // Validación de precio según tipo de costo (unitario vs por mayor)
   let price, dataWholesaleQty = null;
   if (costType === 'wholesale') {
     const totalCost = parseFloat(document.getElementById('nuevoPrecio')?.value);
@@ -397,12 +445,14 @@ async function agregarNuevoMaterial() {
     price = unitPrice;
   }
 
+  // Subida de imagen opcional antes de enviar el formulario
   let imageUrl = null;
   const fileInput = document.getElementById('nuevaImagen');
   if (fileInput?.files?.length > 0) {
     imageUrl = await subirImagenMaterial(fileInput.files[0]);
   }
 
+  // Envío POST a la API con todos los campos del material
   try {
     const res = await fetch(APP_URL + 'Public/api/materials.php', {
       method: 'POST',
@@ -421,6 +471,7 @@ async function agregarNuevoMaterial() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Error del servidor');
     if (data.success) {
+      // Resetear formulario y cerrar modal
       document.getElementById('nuevoMaterialForm').reset();
       document.getElementById('nuevoCodigo').value = '';
       document.getElementById('wholesaleQtyGroup').style.display = 'none';
@@ -437,6 +488,7 @@ async function agregarNuevoMaterial() {
   }
 }
 
+// Guarda los cambios de un material existente (PUT)
 async function guardarEdicionMaterial() {
   if (!editingMaterialId) return;
   clearErrors();
@@ -445,10 +497,12 @@ async function guardarEdicionMaterial() {
   const categoryId = parseInt(document.getElementById('categoria').value) || null;
   const costType = document.getElementById('costType')?.value || 'unit';
 
+  // Validación de nombre obligatorio
   let valid = true;
   if (!name) { showError('material', 'El nombre es obligatorio'); valid = false; }
   if (!valid) return;
 
+  // Validación de precio según tipo de costo
   let price, dataWholesaleQty = null;
   if (costType === 'wholesale') {
     const totalCost = parseFloat(document.getElementById('precio')?.value);
@@ -468,12 +522,14 @@ async function guardarEdicionMaterial() {
     price = unitPrice;
   }
 
+  // Subida de imagen opcional
   let imageUrl = null;
   const fileInput = document.getElementById('editImagen');
   if (fileInput?.files?.length > 0) {
     imageUrl = await subirImagenMaterial(fileInput.files[0]);
   }
 
+  // Envío PUT a la API con los campos actualizados
   try {
     const res = await fetch(APP_URL + 'Public/api/materials.php?id=' + editingMaterialId, {
       method: 'PUT',
@@ -505,6 +561,7 @@ async function guardarEdicionMaterial() {
   }
 }
 
+// Muestra un mensaje de error bajo un campo del formulario
 function showError(fieldId, message) {
   const field = document.getElementById(fieldId);
   if (!field) return;
@@ -519,10 +576,12 @@ function showError(fieldId, message) {
   errorEl.textContent = message;
 }
 
+// Elimina todas las marcas de error de validación del formulario
 function clearErrors() {
   document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 }
 
+// Muestra una vista previa de imagen seleccionada usando FileReader
 function mostrarPreview(input, previewId) {
   const preview = document.getElementById(previewId);
   const file = input.files[0];
@@ -539,6 +598,7 @@ function mostrarPreview(input, previewId) {
   }
 }
 
+// Sube una imagen del material al servidor y retorna la URL pública
 async function subirImagenMaterial(file) {
   const formData = new FormData();
   formData.append('material_image', file);
@@ -551,6 +611,4 @@ async function subirImagenMaterial(file) {
   if (!res.ok || !data.success) throw new Error(data.message || 'Error al subir imagen');
   return data.data.url;
 }
-
-
 

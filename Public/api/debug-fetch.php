@@ -1,5 +1,8 @@
 <?php
 
+// Endpoint de depuración para inspeccionar solicitudes HTTP
+// Muestra método, cabeceras y datos POST recibidos (requiere sesión activa)
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../Config/app.php';
 

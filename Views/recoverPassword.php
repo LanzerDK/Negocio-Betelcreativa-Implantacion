@@ -87,6 +87,7 @@
     </div>
 
     <script>
+        // Expone constantes de PHP al JS para el flujo de recuperación
         window.APP_URL = "<?php echo APP_URL; ?>";
         window.CSRF_TOKEN = "<?php echo $_SESSION['csrf_token'] ?? ''; ?>";
     </script>

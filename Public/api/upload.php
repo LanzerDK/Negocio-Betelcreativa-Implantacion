@@ -1,5 +1,9 @@
 <?php
 
+// Endpoint API para subir avatar de usuario
+// Valida tipo MIME, tamaño (2 MB) y guarda en uploads/avatars/
+// La ruta relativa se persiste en la BD a través de UserRepository
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../Config/app.php';
 

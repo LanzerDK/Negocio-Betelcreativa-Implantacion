@@ -1,5 +1,6 @@
 /* 404Style.css */
 
+/* Botón base con forma de cápsula, sin borde y transición suave */
 .btn {
   padding: 12px 25px;
   border-radius: 50px;
@@ -12,6 +13,7 @@
   transition: var(--transition);
 }
 
+/* Botón primario con color azul y elevación al hover */
 .btn-primary {
   background: var(--primary);
   color: white;
@@ -23,6 +25,7 @@
   box-shadow: var(--shadow);
 }
 
+/* Tarjeta principal con borde dorado gradiente y sombra dorada */
 .card {
   background: #ffffff;
   border-radius: 15px;
@@ -34,6 +37,7 @@
   flex-direction: column;
 }
 
+/* Borde gradiente dorado superpuesto usando máscara CSS */
 .card::before {
   content: '';
   position: absolute;
@@ -47,22 +51,26 @@
   pointer-events: none;
 }
 
+/* Tarjeta con elevación y sombra dorada intensificada al hover */
 .card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
+/* Contenedor de la aplicación con layout flex vertical */
 .app-container {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
+/* Contenido principal que ocupa el espacio restante */
 .main-content {
   flex: 1;
   padding: 25px;
 }
 
+/* Estilos base del body para la página 404 */
 body{
 	color: #333;
             line-height: 1.6;
@@ -72,12 +80,14 @@ body{
             background-color: #f5f7fa;
 }
 
+/* Imagen ilustrativa del error 404 en forma circular */
 img{
   	width: 80px;
   	height: 80px;
   	border-radius: 50%;
 }
 
+/* Navegación de la página 404 centrada vertical y horizontalmente */
 .nav-primary{
 	align-content: center;
 	display: flex;

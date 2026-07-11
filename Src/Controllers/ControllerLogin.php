@@ -9,11 +9,14 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use PDO;
 
+// ControllerLogin — Autenticación de usuarios
+// Inicio de sesión con protección anti-fuerza bruta (bloqueo por IP tras 5 intentos en 15 min)
 class ControllerLogin
 {
     private const MAX_ATTEMPTS = 5;
     private const BLOCK_MINUTES = 15;
 
+    // Procesa el inicio de sesión: valida CSRF, verifica bloqueo por IP, autentica credenciales
     public static function handleLogin(): void
     {
         header('Content-Type: application/json');
@@ -26,6 +29,7 @@ class ControllerLogin
 
         $ip = self::getClientIp();
 
+        // Verifica si la IP está bloqueada por demasiados intentos
         if (self::isIpBlocked($ip)) {
             ApiResponse::error('Demasiados intentos fallidos. Intente nuevamente en ' . self::BLOCK_MINUTES . ' minutos.', 429);
         }
@@ -33,6 +37,7 @@ class ControllerLogin
         $username = trim($input['username'] ?? '');
         $password = $input['password'] ?? '';
 
+        // Las respuestas de error no revelan si el usuario existe o no (seguridad)
         if (empty($username) || empty($password)) {
             self::recordAttempt($ip);
             ApiResponse::error('Usuario/Correo o Contraseña No Son Correctas');
@@ -51,6 +56,7 @@ class ControllerLogin
             ApiResponse::error('Usuario/Correo o Contraseña No Son Correctas', 401);
         }
 
+        // Autenticación exitosa: limpia intentos, regenera ID de sesión y establece datos
         self::clearAttempts($ip);
         session_regenerate_id(true);
 
@@ -69,6 +75,7 @@ class ControllerLogin
         ], 'Inicio de sesión exitoso.');
     }
 
+    // Obtiene la IP del cliente, soportando proxies (X-Forwarded-For)
     private static function getClientIp(): string
     {
         if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
@@ -78,6 +85,7 @@ class ControllerLogin
         return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
     }
 
+    // Verifica si la IP ha excedido el límite de intentos en la ventana de tiempo
     private static function isIpBlocked(string $ip): bool
     {
         $db = Database::getConnection();
@@ -90,6 +98,7 @@ class ControllerLogin
         return (int)$stmt->fetchColumn() >= self::MAX_ATTEMPTS;
     }
 
+    // Registra un intento fallido de inicio de sesión
     private static function recordAttempt(string $ip): void
     {
         $db = Database::getConnection();
@@ -97,6 +106,7 @@ class ControllerLogin
         $stmt->execute([':ip' => $ip]);
     }
 
+    // Limpia los intentos registrados para una IP (al iniciar sesión exitosamente)
     private static function clearAttempts(string $ip): void
     {
         $db = Database::getConnection();
@@ -104,6 +114,7 @@ class ControllerLogin
         $stmt->execute([':ip' => $ip]);
     }
 
+    // Cierra la sesión del usuario
     public static function handleLogout(): void
     {
         SessionHelpers::destroy();

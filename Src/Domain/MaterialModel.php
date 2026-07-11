@@ -2,27 +2,31 @@
 
 namespace BetelCreativa\Domain;
 
+// MaterialModel — Modelo de dominio para los materiales/inventario
+// Representa un artículo con código, nombre, precio, tipo, stock y configuración de empaque
 class MaterialModel
 {
-    private ?int $id;
-    private string $code;
-    private string $name;
-    private float $price;
-    private string $costType;
-    private ?int $wholesaleQty;
-    private int $stock;
-    private ?string $imageUrl;
-    private ?int $categoryId;
-    private string $materialType;
-    private ?int $supplierId;
-    private ?string $detalleComodin;
-    private ?int $locationId;
-    private bool $isActive;
-    private int $reservedStock;
-    private string $unidadCompra;
-    private string $unidadConsumo;
-    private int $factorConversion;
+    // Propiedades del material
+    private ?int $id;                      // ID único (null si es nuevo)
+    private string $code;                  // Código único del material (ej: MAT-001)
+    private string $name;                  // Nombre descriptivo
+    private float $price;                  // Precio unitario
+    private string $costType;              // Tipo de costo: 'unit' o 'wholesale'
+    private ?int $wholesaleQty;            // Cantidad para precio por mayoreo
+    private int $stock;                    // Stock actual disponible (calculado desde material_stock_locations)
+    private ?string $imageUrl;             // URL de la imagen del material
+    private ?int $categoryId;              // ID de la categoría a la que pertenece
+    private string $materialType;          // Tipo: 'consumible' o 'activo_retornable'
+    private ?int $supplierId;              // ID del proveedor asociado
+    private ?string $detalleComodin;       // Detalle si el proveedor es tipo 'comodín'
+    private ?int $locationId;              // ID de la ubicación predeterminada
+    private bool $isActive;                // Si el material está activo en el sistema
+    private int $reservedStock;            // Stock reservado para citas en curso
+    private string $unidadCompra;          // Unidad en la que se compra (ej: "Paquete", "Unidad")
+    private string $unidadConsumo;         // Unidad en la que se consume (ej: "Unidad")
+    private int $factorConversion;         // Cuántas unidades de consumo hay en una unidad de compra
 
+    // Constructor: recibe datos desde API o repositorio
     public function __construct(array $data = [])
     {
         $this->id = $data['id'] ?? null;
@@ -45,6 +49,7 @@ class MaterialModel
         $this->factorConversion = (int)($data['factorConversion'] ?? 1);
     }
 
+    // Getters
     public function getId(): ?int { return $this->id; }
     public function getCode(): string { return $this->code; }
     public function getName(): string { return $this->name; }
@@ -64,6 +69,7 @@ class MaterialModel
     public function getUnidadConsumo(): string { return $this->unidadConsumo; }
     public function getFactorConversion(): int { return $this->factorConversion; }
 
+    // Setters
     public function setCode(string $code): void { $this->code = $code; }
     public function setName(string $name): void { $this->name = $name; }
     public function setPrice(float $price): void { $this->price = $price; }

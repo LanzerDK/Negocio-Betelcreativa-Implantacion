@@ -8,8 +8,13 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// SupplierController — CRUD de proveedores
+// Soporta dos tipos: 'fijo' (proveedor regular) y 'comodin' (ocasional con notas y subtipo)
+// No permite eliminación física, solo inhabilitación lógica
 class SupplierController
 {
+    // Punto de entrada: enruta según método HTTP (GET/POST/PUT)
+    // DELETE no está implementado (solo inhabilitación lógica)
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -18,6 +23,7 @@ class SupplierController
 
         switch ($method) {
             case 'GET':
+                // GET con ?id — detalle de un proveedor; sin parámetros — lista completa
                 if (isset($_GET['id'])) {
                     $s = $repo->findById((int)$_GET['id']);
                     if ($s) {
@@ -38,6 +44,7 @@ class SupplierController
                 }
                 CsrfHelper::validateRequestOrFail();
 
+                // Crea modelo según el tipo de proveedor (fijo o comodín)
                 $supplierType = $input['supplier_type'] ?? 'fijo';
                 $supplier = new SupplierModel([
                     'company_name' => trim($input['company_name'] ?? ''),
@@ -50,6 +57,7 @@ class SupplierController
                     'subtype' => $supplierType === 'comodin' ? trim($input['subtype'] ?? '') : null
                 ]);
 
+                // Validaciones
                 if (empty($supplier->getCompanyName())) {
                     ApiResponse::error('El nombre de la empresa es obligatorio.');
                 }
@@ -85,6 +93,7 @@ class SupplierController
                 $newName = trim($input['company_name'] ?? $existing->getCompanyName());
                 $newStatus = array_key_exists('is_active', $input) ? (int)$input['is_active'] : ($existing->getIsActive() ? 1 : 0);
 
+                // No permitir deshabilitar si tiene materiales vinculados
                 if ($newStatus === 0 && $existing->getIsActive()) {
                     if ($repo->countMaterials($id) > 0) {
                         ApiResponse::error('No se puede deshabilitar este proveedor, tiene materiales vinculados.');
@@ -129,6 +138,7 @@ class SupplierController
         }
     }
 
+    // Convierte un SupplierModel a array asociativo para respuesta JSON
     private static function toArray(SupplierModel $s): array
     {
         return [

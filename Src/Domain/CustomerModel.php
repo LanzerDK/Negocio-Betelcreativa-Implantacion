@@ -2,29 +2,27 @@
 
 namespace BetelCreativa\Domain;
 
-// =============================================
-// Modelo de Cliente
-// Representa un cliente en el sistema con todos
-// sus datos de contacto, tipo, fuente y preferencias
-// =============================================
+// CustomerModel — Modelo de dominio para los clientes
+// Almacena datos personales, de contacto, tipo de cliente y preferencias
 class CustomerModel
 {
-    private ?int $id;
-    private string $firstName;
-    private string $lastName;
-    private string $idNumber;
-    private ?string $email;
-    private ?string $phone;
-    private ?string $address;
-    private string $clientType;
-    private string $source;
-    private ?string $notes;
-    private ?string $preferences;
-    private ?string $avatar;
-    private bool $isActive;
+    // Propiedades de un cliente
+    private ?int $id;               // ID único (null si es nuevo)
+    private string $firstName;      // Nombre del cliente
+    private string $lastName;       // Apellido del cliente
+    private string $idNumber;       // Cédula / documento de identidad
+    private ?string $email;         // Correo electrónico
+    private ?string $phone;         // Teléfono
+    private ?string $address;       // Dirección física
+    private string $clientType;     // Tipo de cliente (regular, premium, etc.)
+    private string $source;         // Cómo llegó (referido, red social, web, otro)
+    private ?string $notes;         // Notas internas
+    private ?string $preferences;   // Preferencias del cliente (JSON)
+    private ?string $avatar;        // URL del avatar
+    private bool $isActive;         // Si el cliente está activo en el sistema
 
     // Constructor: recibe array asociativo y asigna cada campo
-    // Los nombres de las keys coinciden con los alias SQL del Repository
+    // Los nombres de keys (camelCase) coinciden con los alias SQL del repositorio
     public function __construct(array $data = [])
     {
         $this->id = isset($data['id']) ? (int)$data['id'] : null;
@@ -39,10 +37,11 @@ class CustomerModel
         $this->notes = $data['notes'] ?? null;
         $this->preferences = $data['preferences'] ?? null;
         $this->avatar = $data['avatar'] ?? null;
+        // Convierte valores como "0", "1", "true", "false" a booleano real
         $this->isActive = isset($data['isActive']) ? filter_var($data['isActive'], FILTER_VALIDATE_BOOLEAN) : true;
     }
 
-    // Getters: permiten leer los datos desde fuera de la clase
+    // Getters — lectura controlada de propiedades
     public function getId(): ?int { return $this->id; }
     public function getFirstName(): string { return $this->firstName; }
     public function getLastName(): string { return $this->lastName; }
@@ -57,7 +56,7 @@ class CustomerModel
     public function getAvatar(): ?string { return $this->avatar; }
     public function isActive(): bool { return $this->isActive; }
 
-    // Setters: permiten modificar los datos del cliente
+    // Setters — modificación controlada de propiedades
     public function setFirstName(string $name): void { $this->firstName = $name; }
     public function setLastName(string $name): void { $this->lastName = $name; }
     public function setIdNumber(string $id): void { $this->idNumber = $id; }

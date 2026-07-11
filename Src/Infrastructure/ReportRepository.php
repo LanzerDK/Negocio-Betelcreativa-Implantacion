@@ -6,28 +6,36 @@ use BetelCreativa\Config\Database;
 use PDO;
 use PDOException;
 
+// ReportRepository — Consultas agregadas para reportes del sistema
+// Provee datos de inventario, movimientos, ingresos y compras con formato para chart.js
 class ReportRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Reporte de inventario por categoría y estado de stock
+    // Retorna datos para gráfico doughnut, estadísticas y tabla
     public function inventoryByCategory(?string $category = null, ?string $stockStatus = null, string $orderBy = 'name'): array
     {
         try {
             $where = 'WHERE m.is_active = 1';
             $params = [];
 
+            // Filtro por categoría
             if ($category) {
                 $where .= ' AND c.name = :category';
                 $params[':category'] = $category;
             }
 
+            // Subconsulta para calcular stock desde material_stock_locations
             $stockSubquery = "(SELECT COALESCE(SUM(quantity), 0) FROM material_stock_locations WHERE material_id = m.material_id)";
 
+            // Filtros por estado de stock
             if ($stockStatus === 'in-stock') {
                 $where .= " AND $stockSubquery > 0";
             } elseif ($stockStatus === 'low-stock') {
@@ -38,6 +46,7 @@ class ReportRepository
                 $where .= " AND $stockSubquery <= 0";
             }
 
+            // Ordenamiento
             $order = match ($orderBy) {
                 'stock' => 'stock DESC',
                 'category' => 'c.name ASC, m.name ASC',
@@ -55,6 +64,7 @@ class ReportRepository
             $stmt->execute($params);
             $rows = $stmt->fetchAll();
 
+            // Procesa los datos para generar arrays de salida
             $materials = [];
             $catCount = [];
             $catStock = [];
@@ -75,6 +85,7 @@ class ReportRepository
                     'category' => $cat,
                 ];
 
+                // Acumula conteos por categoría
                 $catCount[$cat] = ($catCount[$cat] ?? 0) + 1;
                 $catStock[$cat] = ($catStock[$cat] ?? 0) + $stock;
                 $totalStock += $stock;
@@ -84,6 +95,7 @@ class ReportRepository
                 if ($stock <= 0) $outOfStockCount++;
             }
 
+            // Prepara datos para gráfico doughnut
             $chartLabels = [];
             $chartData = [];
             foreach ($categoryNames as $name) {
@@ -124,18 +136,21 @@ class ReportRepository
         }
     }
 
+    // Reporte de movimientos de inventario en un rango de fechas
+    // Retorna datos para gráfico de barras, estadísticas y tabla detallada
     public function movements(string $from, string $to, string $type = ''): array
     {
         try {
             $where = 'WHERE im.movement_date BETWEEN :from AND :to';
             $params = [':from' => $from, ':to' => $to . ' 23:59:59'];
 
+            // Filtro opcional por tipo de movimiento
             if ($type) {
                 $where .= ' AND im.action_type = :type';
                 $params[':type'] = $type;
             }
 
-            // Movement detail
+            // Detalle de movimientos (últimos 100)
             $stmt = $this->db->prepare(
                 "SELECT im.movement_date, im.action_type, im.quantity,
                         m.name AS material_name,
@@ -150,7 +165,7 @@ class ReportRepository
             $stmt->execute($params);
             $movements = $stmt->fetchAll();
 
-            // Aggregated by date for chart
+            // Agregación por día para el gráfico
             $stmt2 = $this->db->prepare(
                 "SELECT DATE(im.movement_date) AS day,
                         im.action_type,
@@ -163,6 +178,7 @@ class ReportRepository
             $stmt2->execute($params);
             $agg = $stmt2->fetchAll();
 
+            // Construye arrays de labels, entradas y salidas
             $labels = [];
             $entries = [];
             $exits = [];
@@ -221,6 +237,8 @@ class ReportRepository
         }
     }
 
+    // Reporte de ingresos (facturación) en un rango de fechas
+    // Agrupa por mes con eventos, ingresos en USD y cantidad de facturas
     public function income(string $from, string $to): array
     {
         try {
@@ -239,6 +257,7 @@ class ReportRepository
             $stmt->execute([':from' => $from, ':to' => $to]);
             $rows = $stmt->fetchAll();
 
+            // Procesa los datos mensuales
             $labels = [];
             $eventos = [];
             $ingresos = [];
@@ -295,9 +314,12 @@ class ReportRepository
         }
     }
 
+    // Reporte de compras (entradas de inventario) en un rango de fechas
+    // Agrupa por día con valor total, estadísticas y tabla detallada
     public function purchases(string $from, string $to): array
     {
         try {
+            // Agregación diaria con valor total
             $stmt = $this->db->prepare(
                 "SELECT DATE(im.movement_date) AS day,
                         SUM(im.quantity) AS qty,
@@ -312,7 +334,7 @@ class ReportRepository
             $stmt->execute([':from' => $from, ':to' => $to . ' 23:59:59']);
             $agg = $stmt->fetchAll();
 
-            // Detail
+            // Detalle de compras (últimos 100 registros)
             $stmt2 = $this->db->prepare(
                 "SELECT im.movement_date, im.quantity,
                         m.name AS material_name, m.price,
@@ -328,6 +350,7 @@ class ReportRepository
             $stmt2->execute([':from' => $from, ':to' => $to . ' 23:59:59']);
             $details = $stmt2->fetchAll();
 
+            // Prepara datos para gráfico y estadísticas
             $labels = [];
             $data = [];
             $totalValue = 0;
@@ -375,6 +398,7 @@ class ReportRepository
         }
     }
 
+    // Genera URL para QuickChart.io con la configuración del gráfico
     public static function buildQuickChartUrl(array $chartConfig, int $width = 600, int $height = 300): string
     {
         if (!$chartConfig) return '';

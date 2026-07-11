@@ -1,6 +1,6 @@
 /* dashboardStyle.css - Estilos específicos del Dashboard */
 
-/* Grid de dashboard con tarjetas */
+/* Grid responsive de tarjetas del dashboard */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -8,7 +8,7 @@
   margin-top: 20px;
 }
 
-/* Título de página */
+/* Título principal de la página */
 .page-title {
   color: var(--gold-text);
   font-size: 1.6rem;
@@ -17,19 +17,19 @@
   padding: 5px;
 }
 
-/* Ícono dentro de la cabecera de tarjeta */
+/* Cabecera de tarjeta: layout flex con acciones a la derecha */
 .card-header i {
   margin-right: 10px;
   font-size: 1.2rem;
 }
 
-/* Acciones en la cabecera de tarjeta (derecha) */
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+/* Botones de acción en la cabecera (iconos circulares) */
 .card-header-actions {
   display: flex;
   gap: 6px;
@@ -56,7 +56,7 @@
   transform: scale(1.15);
 }
 
-/* Tarjeta de alertas */
+/* Tarjeta de alertas: grid interno para alertas individuales */
 .card-alert {
   background: #ffffff;
   display: grid;
@@ -65,6 +65,7 @@
   padding: 20px;
 }
 
+/* Textos placeholder cuando no hay contenido */
 .alert-placeholder,
 .event-placeholder,
 .task-placeholder {
@@ -74,7 +75,7 @@
   padding: 20px;
 }
 
-/* Grid de estadísticas */
+/* Grid de estadísticas resumen */
 .stats-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -82,7 +83,7 @@
   margin-bottom: 20px;
 }
 
-/* Tarjeta de estadística individual */
+/* Tarjeta individual de estadística con borde dorado y sombra */
 .stat-card {
   background: #ffffff;
   box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.08), 0px 2px 20px rgba(212, 175, 55, 0.25);
@@ -97,6 +98,7 @@
   min-height: 120px;
 }
 
+/* Borde gradiente dorado en tarjeta de estadística */
 .stat-card::before {
   content: '';
   position: absolute;
@@ -115,6 +117,7 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
+/* Valor numérico de la estadística */
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
@@ -122,23 +125,25 @@
   margin: 10px 0;
 }
 
+/* Etiqueta descriptiva de la estadística */
 .stat-label {
   font-size: 1rem;
   color: var(--dark);
 }
 
+/* Subtítulo o descripción secundaria de la tarjeta */
 .stat-card > div:last-child {
   color: var(--gold-text);
   font-size: 0.85rem;
 }
 
-/* Contenedor de gráficos */
+/* Contenedor para gráficos Chart.js */
 .chart-container {
   height: 250px;
   position: relative;
 }
 
-/* Alerta con borde lateral */
+/* Tarjeta de alerta con borde lateral izquierdo */
 .alert-card {
   background: #FEF9E7;
   border-left: 4px solid #B45309;
@@ -168,6 +173,7 @@
   color: var(--dark);
 }
 
+/* Variantes de alerta: crítica (rojo), advertencia (ámbar), info (azul), éxito (verde) */
 .alert-card.critical {
   background: #FDE8E8;
   border-left: 4px solid #C81E1E;
@@ -221,6 +227,8 @@
 }
 
 /* ── CARD FLIP ───────────────────── */
+
+/* Tarjeta con efecto flip 3D (perspectiva) para mostrar frente/dorso */
 .card-flip {
   perspective: 1000px;
   overflow: visible;
@@ -232,6 +240,7 @@
   display: none;
 }
 
+/* Contenedor interno grid que alterna entre frente y dorso */
 .card-inner {
   display: grid;
   grid-template: 1fr / 1fr;
@@ -244,6 +253,7 @@
   transform: rotateY(180deg);
 }
 
+/* Frente y dorso apilados en la misma celda de grid, ocultos cuando girados */
 .card-front,
 .card-back {
   grid-area: 1 / 1;
@@ -256,6 +266,7 @@
   box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
 }
 
+/* Borde gradiente dorado en caras del card-flip */
 .card-front::before,
 .card-back::before {
   content: '';
@@ -271,6 +282,7 @@
   z-index: 0;
 }
 
+/* Cabecera de las caras del flip */
 .card-front .card-header,
 .card-back .card-header {
   position: relative;
@@ -284,6 +296,7 @@
   border-radius: 12px 12px 0 0;
 }
 
+/* Cuerpo de las caras del flip con scroll vertical */
 .card-front .card-body,
 .card-back .card-body {
   position: relative;
@@ -293,20 +306,25 @@
   overflow-y: auto;
 }
 
+/* Dorso pre-rotado 180° para el efecto flip */
 .card-back {
   transform: rotateY(180deg);
 }
 
+/* Deshabilitar interacción en la cara oculta */
 .card-flip:not(.flipped) .card-back,
 .card-flip.flipped .card-front {
   pointer-events: none;
 }
 
 /* ── TASK LIST ───────────────────── */
+
+/* Lista de tareas sin viñetas */
 .task-list {
   list-style: none;
 }
 
+/* Fila individual de tarea con separador */
 .task-item {
   padding: 10px 0;
   border-bottom: 1px solid var(--light-gray);
@@ -319,6 +337,7 @@
   border-bottom: none;
 }
 
+/* Checkbox personalizado de tarea */
 .task-check {
   width: 22px;
   height: 22px;
@@ -336,12 +355,14 @@
   border-color: var(--primary);
 }
 
+/* Icono de check oculto hasta que la tarea se complete */
 .task-check i {
   display: none;
   font-size: 0.75rem;
   color: white;
 }
 
+/* Estado completado: fondo verde + tachado */
 .task-item.completed .task-check {
   background: var(--accent);
   border-color: var(--accent);
@@ -356,12 +377,13 @@
   color: var(--gray);
 }
 
+/* Texto de la tarea ocupa el espacio disponible */
 .task-text {
   flex: 1;
   font-size: 0.9rem;
 }
 
-/* Prioridad de tareas */
+/* Prioridad de tareas: badge con color según nivel */
 .task-priority {
   padding: 3px 10px;
   border-radius: 20px;
@@ -386,6 +408,8 @@
 }
 
 /* ── MODAL TASK ──────────────────── */
+
+/* Modal para crear/editar tareas */
 #taskModal {
   display: none;
 }
@@ -417,6 +441,8 @@
 }
 
 /* ── EVENTOS ─────────────────────── */
+
+/* Elemento de evento en la lista de eventos del dashboard */
 .event-item {
   padding: 12px 0;
   border-bottom: 1px solid var(--light-gray);
@@ -444,6 +470,8 @@
 }
 
 /* ── RESPONSIVE ──────────────────── */
+
+/* Tablet: alertas en columna única, padding reducido */
 @media (max-width: 768px) {
   .card-alert {
     grid-template-columns: 1fr;
@@ -456,6 +484,7 @@
   }
 }
 
+/* Móvil: dashboard en columna única, texto del menú más pequeño */
 @media (max-width: 480px) {
   .dashboard-grid {
     grid-template-columns: 1fr;

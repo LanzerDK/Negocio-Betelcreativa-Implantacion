@@ -1,4 +1,6 @@
-<?php
+﻿<?php
+// Vista del recibo/factura imprimible — renderiza un documento monospace listo para impresión
+// Recibe ?id=N (factura ID) y opcionalmente ?copia=1 para marca de agua
 $facturaId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$facturaId): ?>
 <!DOCTYPE html>
@@ -13,6 +15,7 @@ use BetelCreativa\Helpers\FacturaCalculadora;
 
 $db = Database::getConnection();
 
+// Consulta principal de la factura con datos de cita y cliente
 $stmt = $db->prepare(
     "SELECT f.id AS facturaId, f.costo_servicio AS costoServicio, f.total_factura AS totalFactura,
             f.notas_cuota AS notasCuota, f.estado, f.created_at AS createdAt,
@@ -34,10 +37,11 @@ $f = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$f) { echo '<p style="text-align:center;margin-top:50px;color:red;">Factura no encontrada.</p>'; exit; }
 if ($f['estado'] === 'anulada') { echo '<p style="text-align:center;margin-top:50px;color:red;">Esta factura fue anulada.</p>'; exit; }
 
+// Determina si es recibo y obtiene la factura padre para el estado de cuenta
 $esRecibo = ($f['tipo'] ?? 'factura') === 'recibo';
 $parentFacturaId = $esRecibo ? (int)($f['factura_origen_id'] ?? 0) : $facturaId;
 
-// For recibos, get the parent factura total for Estado de Cuenta
+// Para recibos, obtiene el total de la factura padre
 $totalContrato = (float)$f['totalFactura'];
 if ($esRecibo && $parentFacturaId) {
     $pStmt = $db->prepare("SELECT total_factura, descripcion_servicio, created_at FROM facturas WHERE id = :id");
@@ -51,6 +55,7 @@ if ($esRecibo && $parentFacturaId) {
 
 $conceptoPago = ($f['descripcionServicio'] ?? '') ?: ($esRecibo ? 'Abono registrado' : 'Servicio de decoración');
 
+// Materiales asociados a la cita de la factura
 $stmtMat = $db->prepare(
     "SELECT m.material_code AS codigo, m.name AS nombre, cm.cantidad_utilizada AS cantidad,
             COALESCE(cm.precio_unitario, m.price, 0) AS precio_unitario
@@ -62,6 +67,7 @@ $stmtMat = $db->prepare(
 $stmtMat->execute([':id' => $facturaId]);
 $materiales = $stmtMat->fetchAll(PDO::FETCH_ASSOC);
 
+// Pagos registrados en esta factura (o sus recibos hijos)
 $stmtPagos = $db->prepare(
     "SELECT p.monto, p.metodo_pago, p.tasa_usada, p.Ref_PagoMovil AS refPagoMovil, p.fecha
      FROM pagos_factura p
@@ -72,17 +78,19 @@ $stmtPagos = $db->prepare(
 $stmtPagos->execute([':id1' => $facturaId, ':id2' => $facturaId]);
 $pagos = $stmtPagos->fetchAll(PDO::FETCH_ASSOC);
 
+// Cálculo de totales usando la calculadora de facturación
 $totales = FacturaCalculadora::calcularTotales((float)$f['costoServicio'], $materiales);
 $totalMateriales = $totales['totalMateriales'];
 $ivaAmount = $totales['iva'];
 $totalConIva = $totales['total'];
 
+// Totales de pagos y saldo pendiente
 $totalPagadoVes = 0;
 foreach ($pagos as $p) $totalPagadoVes += (float)$p['monto'] * (float)$p['tasa_usada'];
 $saldoPendienteVes = $totalConIva - $totalPagadoVes;
 $cambio = $totalPagadoVes > $totalConIva ? $totalPagadoVes - $totalConIva : 0;
 
-// For Estado de Cuenta: total abonado across all facturas/recibos of this cita
+// Para recibos: total abonado histórico de todas las facturas de la misma cita
 $totalAbonadoHistory = $totalPagadoVes;
 if ($esRecibo) {
     $taStmt = $db->prepare(
@@ -97,7 +105,9 @@ if ($esRecibo) {
 
 $esCopia = !empty($_GET['copia']);
 
+// Helper de formato numérico
 function fmt($v) { return number_format($v, 2, ',', '.'); }
+// Helper para línea de dos columnas con padding dinámico
 function line($l, $r) {
     $pad = 76 - mb_strlen($l) - mb_strlen($r);
     $pad = max(1, $pad);
@@ -159,6 +169,7 @@ function line($l, $r) {
         </div>
         <hr class="sep">
 
+        <!-- Datos del documento y cliente -->
         <?php if ($esRecibo && $parentFacturaId): $parentFechaStr = isset($parentFecha) ? date('d/m/Y', strtotime($parentFecha)) : '—'; ?>
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;"><span style="font-weight:600;">Nro Recibo: <?= str_pad($parentFacturaId, 8, '0', STR_PAD_LEFT) ?></span><span style="font-weight:600;">Fecha: <?= $parentFechaStr ?></span></div>
         <div style="display:flex;justify-content:space-between;flex-wrap:wrap;"><span style="font-weight:600;">Nro Abono: <?= str_pad($f['facturaId'], 8, '0', STR_PAD_LEFT) ?></span><span style="font-weight:600;">Fecha: <?= date('d/m/Y', strtotime($f['createdAt'])) ?></span></div>
@@ -175,6 +186,7 @@ function line($l, $r) {
         <div><?= line('Evento:', htmlspecialchars($f['eventType'])) ?></div>
         <hr class="sep">
 
+        <!-- Detalle de materiales (solo en factura, no recibo) -->
         <?php if ($esRecibo): ?>
         <div class="st">CONCEPTO DE PAGO:</div>
         <div style="margin:2px 0 6px;"><?= htmlspecialchars($conceptoPago) ?></div>
@@ -192,18 +204,16 @@ function line($l, $r) {
                 <div class="v"><span>Valor Original: <?= fmt($precio) ?> Bs</span><span><?= fmt($total) ?> Bs</span></div>
             </div>
             <?php endforeach; ?>
-           
-            <div style="margin-top:2px;">Cantidad de Materiales: <?= count($materiales) ?> 
-            </div>
+            <div style="margin-top:2px;">Cantidad de Materiales: <?= count($materiales) ?></div>
         <?php else: ?>
             <div>Sin materiales asignados</div>
         <?php endif; ?>
         <hr class="sep">
         <?php endif; ?>
 
+        <!-- Totales -->
         <?php if (!$esRecibo): ?>
         <div class="st"></div>
-        
         <?= line('Sub-Total:', fmt($totalMateriales) . ' Bs') ?>
         <?= line('Mano de obra (' . htmlspecialchars($f['descripcionServicio'] ?? 'Servicio') . '):', fmt((float)$f['costoServicio']) . ' Bs') ?>
         <?= line('I.V.A (' . (IVA_RATE * 100) . '%):', fmt($ivaAmount) . ' Bs') ?>
@@ -212,6 +222,7 @@ function line($l, $r) {
         <hr class="sep">
         <?php endif; ?>
 
+        <!-- Formas de pago -->
         <div class="st"><?= $esRecibo ? 'DETALLE DEL PAGO' : 'FORMAS DE PAGO' ?>:</div>
         <?php if (!empty($pagos)): ?>
             <?php foreach ($pagos as $p):
@@ -241,10 +252,12 @@ function line($l, $r) {
             </div>
             <?php endforeach; ?>
             <hr class="sep">
+            <!-- Resumen de montos -->
             <?php if ($esRecibo): ?>
             <div class="l" style="font-weight:700;font-size:13px;"><span>MONTO RECIBIDO:</span><span><?= fmt($totalPagadoVes) ?> Bs</span></div>
             <?php else: ?>
             <?= line('Total Pagado:', fmt($totalPagadoVes) . ' Bs') ?>
+            <!-- Línea de devolución si hay sobrepago -->
             <?php if ($cambio > 0): ?>
                 <?= line('Devolución:', fmt($cambio) . ' Bs') ?>
             <?php endif; ?>
@@ -257,6 +270,7 @@ function line($l, $r) {
         <?php endif; ?>
         <hr class="sep">
 
+        <!-- Estado de cuenta para recibos -->
         <?php if ($esRecibo): ?>
         <div class="st">ESTADO DE CUENTA:</div>
         <div><?= line('Total Contrato:', fmt($totalContrato) . ' Bs') ?></div>
@@ -269,10 +283,12 @@ function line($l, $r) {
         <hr class="sep">
         <?php endif; ?>
 
+        <!-- Notas adicionales -->
         <?php if ($f['notasCuota']): ?>
         <div style="margin-top:8px;font-size:11px;">Nota: <?= htmlspecialchars($f['notasCuota']) ?></div>
         <?php endif; ?>
 
+        <!-- Términos y condiciones desde settings -->
         <?php
         $termStmt = $db->prepare("SELECT setting_value FROM settings WHERE setting_key = 'terminos_condiciones'");
         $termStmt->execute();
@@ -289,6 +305,7 @@ function line($l, $r) {
         </ul>
         <?php endif; ?>
 
+        <!-- Marca de agua en copias -->
         <?php if ($esCopia): ?>
         <div class="copia-wrapper">
             <div class="copia-watermark">C O P I A</div>

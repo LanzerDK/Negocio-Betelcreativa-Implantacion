@@ -1,11 +1,14 @@
+// Estado global: arrays de datos cargados desde la API
 let allMaterials = [];
 let allCategories = [];
 let allLocations = [];
 let allWarehouses = [];
 let allLocationStock = [];
+// Paginación del layout de almacenes
 let currentPage = 1;
 const ITEMS_PER_PAGE = 9;
 
+// Alternar estado de carga (deshabilitar/habilitar botón) para evitar envíos duplicados
 function setLoading(btnId, loading) {
   const btn = document.getElementById(btnId);
   if (!btn) return;
@@ -13,8 +16,10 @@ function setLoading(btnId, loading) {
   btn.classList.toggle('btn-loading', loading);
 }
 
+// Inicialización al cargar el DOM: cargar datos y registrar eventos
 document.addEventListener('DOMContentLoaded', function () {
   cargarDatosIniciales();
+  // Botón nuevo almacén: resetear formulario y abrir modal
   document.getElementById('addWarehouseBtn')?.addEventListener('click', function () {
     const form = document.getElementById('warehouseForm');
     const preview = document.getElementById('whNamePreview');
@@ -25,7 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
     maxEl.value = 100;
     Modal.open('warehouseModal');
   });
+  // Botón guardar almacén
   document.getElementById('guardarWarehouseBtn')?.addEventListener('click', guardarWarehouse);
+  // Botón nuevo estante: resetear formulario, llenar select de almacén y abrir modal
   document.getElementById('addShelfBtn')?.addEventListener('click', function () {
     const form = document.getElementById('shelfForm');
     const maxEl = document.getElementById('shelfMaxCapacity');
@@ -35,36 +42,49 @@ document.addEventListener('DOMContentLoaded', function () {
     llenarSelectAlmacen('shelfWarehouseId');
     Modal.open('shelfModal');
   });
+  // Botón guardar estante
   document.getElementById('guardarEstanteBtn')?.addEventListener('click', guardarEstante);
+  // Botón confirmar eliminación de estante
   document.getElementById('confirmDeleteShelfModalBtn')?.addEventListener('click', eliminarEstante);
+  // Botón guardar movimiento de material entre estantes
   document.getElementById('guardarMovimientoShelfBtn')?.addEventListener('click', guardarMovimientoShelf);
 });
 
+// Cargar datos iniciales al montar la página
 async function cargarDatosIniciales() {
   await recargarDatos();
 }
 
+// Renderizar el layout visual de almacenes con sus estantes y paginación
 function renderLayout() {
   const grid = document.getElementById('layoutGrid');
   if (!grid) return;
   grid.innerHTML = '';
   const paginationEl = document.getElementById('pagination');
   if (paginationEl) paginationEl.innerHTML = '';
+
+  // Filtrar estantes huérfanos (sin almacén asignado, distintos de "Almacén General")
   const orphanShelves = allLocations.filter(l => l.warehouse_id === null && l.name !== 'Almacén General');
   if (!allWarehouses.length && !orphanShelves.length) {
     grid.innerHTML = '<div class="empty-state"><p>No hay almacenes registrados. Cree un almacén para comenzar.</p></div>';
     return;
   }
+
+  // Calcular paginación de almacenes
   const totalPages = Math.max(1, Math.ceil(allWarehouses.length / ITEMS_PER_PAGE));
   if (currentPage > totalPages) currentPage = totalPages;
   const start = (currentPage - 1) * ITEMS_PER_PAGE;
   const pageWarehouses = allWarehouses.slice(start, start + ITEMS_PER_PAGE);
+
+  // Renderizar cada almacén con sus estantes asociados
   pageWarehouses.forEach(wh => {
     const shelves = allLocations.filter(l => l.warehouse_id === wh.id);
     const whDiv = document.createElement('div');
     whDiv.className = 'warehouse';
     const shelfCount = shelves.length;
     const maxShelves = wh.max_shelves || 100;
+
+    // Construir header del almacén con nombre, código y ubicación
     const whHeader = document.createElement('div');
     whHeader.className = 'warehouse-header';
     whHeader.innerHTML = `
@@ -81,6 +101,8 @@ function renderLayout() {
       </div>
     `;
     whDiv.appendChild(whHeader);
+
+    // Renderizar estantes del almacén o mensaje vacío
     const shelvesDiv = document.createElement('div');
     shelvesDiv.className = 'shelves';
     if (!shelves.length) {
@@ -93,6 +115,8 @@ function renderLayout() {
     whDiv.appendChild(shelvesDiv);
     grid.appendChild(whDiv);
   });
+
+  // Renderizar sección de estantes huérfanos (sin almacén asignado)
   if (orphanShelves.length) {
     const orphanDiv = document.createElement('div');
     orphanDiv.className = 'warehouse';
@@ -119,10 +143,15 @@ function renderLayout() {
     orphanDiv.appendChild(shelvesDiv);
     grid.appendChild(orphanDiv);
   }
+
+  // Mostrar paginación si hay más almacenes que el límite por página
   if (allWarehouses.length > ITEMS_PER_PAGE) {
     renderPagination(totalPages);
   }
+
+// Crear elemento DOM de un estante con nombre, capacidad y botones de acción
 function crearShelfElement(l) {
+  // Buscar stock actual del estante en el array de stock por ubicación
   const ls = allLocationStock.find(s => s.locationId === l.id);
   const itemCount = ls ? ls.currentStock : 0;
   const maxCap = l.max_capacity || 200;
@@ -142,6 +171,7 @@ function crearShelfElement(l) {
   return shelfDiv;
 }
 
+  // Vincular eventos de los botones de acción de estantes (ver, mover, eliminar)
   document.querySelectorAll('.shelf-view').forEach(btn => {
     btn.addEventListener('click', function () {
       const id = parseInt(this.dataset.id);
@@ -163,6 +193,7 @@ function crearShelfElement(l) {
   });
 }
 
+// Poblar select de almacenes con las opciones disponibles
 function llenarSelectAlmacen(selectId, selected) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
@@ -176,14 +207,17 @@ function llenarSelectAlmacen(selectId, selected) {
   });
 }
 
+// Poblar select de ubicaciones con capacidad disponible, excluyendo una ubicación específica
 function llenarSelectUbicacion(selectId, selected, excludeId) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
   sel.innerHTML = '<option value="">Seleccionar ubicación...</option>';
   allLocations.forEach(l => {
+    // Excluir la ubicación de origen en movimientos
     if (excludeId && l.id === excludeId) return;
     const opt = document.createElement('option');
     opt.value = l.id;
+    // Buscar almacén padre y stock de la ubicación para mostrar capacidad libre
     const wh = allWarehouses.find(w => w.id === l.warehouse_id);
     const ls = allLocationStock.find(s => s.locationId === l.id);
     if (ls && ls.maxCapacity > 0) {
@@ -197,22 +231,29 @@ function llenarSelectUbicacion(selectId, selected, excludeId) {
   });
 }
 
+// Renderizar controles de paginación del layout de almacenes
 function renderPagination(totalPages) {
   const paginationEl = document.getElementById('pagination');
   if (!paginationEl) return;
   paginationEl.innerHTML = '';
+
+  // Botón "Anterior"
   const prev = document.createElement('button');
   prev.className = 'page-btn' + (currentPage === 1 ? ' disabled' : '');
   prev.innerHTML = '<i class="fas fa-chevron-left"></i> Anterior';
   prev.disabled = currentPage === 1;
   prev.addEventListener('click', function () { if (currentPage > 1) { currentPage--; renderLayout(); } });
   paginationEl.appendChild(prev);
+
+  // Calcular rango de páginas visibles (máximo 5 botones)
   const maxVisible = 5;
   let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
   let endPage = Math.min(totalPages, startPage + maxVisible - 1);
   if (endPage - startPage + 1 < maxVisible) {
     startPage = Math.max(1, endPage - maxVisible + 1);
   }
+
+  // Botón de primera página + ellipsis si es necesario
   if (startPage > 1) {
     const first = document.createElement('button');
     first.className = 'page-btn';
@@ -226,6 +267,8 @@ function renderPagination(totalPages) {
       paginationEl.appendChild(dots);
     }
   }
+
+  // Botones de páginas intermedias
   for (let i = startPage; i <= endPage; i++) {
     const btn = document.createElement('button');
     btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
@@ -233,6 +276,8 @@ function renderPagination(totalPages) {
     btn.addEventListener('click', function () { currentPage = i; renderLayout(); });
     paginationEl.appendChild(btn);
   }
+
+  // Ellipsis + botón de última página si es necesario
   if (endPage < totalPages) {
     if (endPage < totalPages - 1) {
       const dots = document.createElement('span');
@@ -246,6 +291,8 @@ function renderPagination(totalPages) {
     last.addEventListener('click', function () { currentPage = totalPages; renderLayout(); });
     paginationEl.appendChild(last);
   }
+
+  // Botón "Siguiente"
   const next = document.createElement('button');
   next.className = 'page-btn' + (currentPage === totalPages ? ' disabled' : '');
   next.innerHTML = 'Siguiente <i class="fas fa-chevron-right"></i>';
@@ -254,6 +301,7 @@ function renderPagination(totalPages) {
   paginationEl.appendChild(next);
 }
 
+// Guardar nuevo almacén validando campos obligatorios y rangos
 async function guardarWarehouse() {
   const nameEl = document.getElementById('whName');
   const locEl = document.getElementById('whLocation');
@@ -268,6 +316,7 @@ async function guardarWarehouse() {
   if (!confirm(`¿Está seguro de agregar el almacén "${name}"?`)) return;
   setLoading('guardarWarehouseBtn', true);
   try {
+    // Enviar datos del almacén al servidor via POST
     const data = await callApi(APP_URL + 'Public/api/warehouses.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
@@ -288,6 +337,7 @@ async function guardarWarehouse() {
   }
 }
 
+// Guardar nuevo estante validando campos, capacidad y existencia del almacén
 async function guardarEstante() {
   const nameEl = document.getElementById('shelfName');
   const whEl = document.getElementById('shelfWarehouseId');
@@ -304,6 +354,7 @@ async function guardarEstante() {
   if (!confirm(`¿Está seguro de agregar el estante "${name}" en "${wh.name}"?`)) return;
   setLoading('guardarEstanteBtn', true);
   try {
+    // Enviar datos del estante al servidor via POST
     const data = await callApi(APP_URL + 'Public/api/locations.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
@@ -325,12 +376,14 @@ async function guardarEstante() {
   }
 }
 
+// Abrir modal de confirmación para eliminar un estante
 function confirmarEliminarEstante(locationId, name) {
   document.getElementById('deleteShelfId').value = locationId;
   document.getElementById('deleteShelfName').textContent = name;
   Modal.open('deleteShelfModal');
 }
 
+// Ejecutar eliminación de estante enviando DELETE al servidor
 async function eliminarEstante() {
   const id = parseInt(document.getElementById('deleteShelfId').value);
   if (!id) return;
@@ -355,12 +408,14 @@ async function eliminarEstante() {
   }
 }
 
+// Abrir modal para ver materiales almacenados en un estante específico
 async function abrirVerMateriales(shelfId, shelfName) {
   document.getElementById('viewShelfModalTitle').textContent = `Materiales en ${shelfName}`;
   const tbody = document.getElementById('viewShelfBody');
   tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--gray)">Cargando...</td></tr>';
   Modal.open('viewShelfModal');
   try {
+    // Consultar stock del estante al servidor
     const data = await callApi(APP_URL + 'Public/api/storage.php?action=stock&location_id=' + shelfId);
     const items = data.success ? data.data : [];
     tbody.innerHTML = '';
@@ -368,6 +423,7 @@ async function abrirVerMateriales(shelfId, shelfName) {
       tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--gray)">Este estante no tiene materiales.</td></tr>';
       return;
     }
+    // Renderizar filas de materiales con código, nombre y cantidad
     const frag = document.createDocumentFragment();
     items.forEach(item => {
       const tr = document.createElement('tr');
@@ -384,6 +440,7 @@ async function abrirVerMateriales(shelfId, shelfName) {
   }
 }
 
+// Abrir modal para mover material de un estante a otro
 async function abrirMoverShelf(shelfId, shelfName) {
   document.getElementById('moveShelfId').value = shelfId;
   document.getElementById('moveShelfOrigin').value = shelfName;
@@ -392,9 +449,11 @@ async function abrirMoverShelf(shelfId, shelfName) {
   matSelect.disabled = true;
   Modal.open('moveFromShelfModal');
   try {
+    // Consultar materiales disponibles en el estante de origen
     const data = await callApi(APP_URL + 'Public/api/storage.php?action=stock&location_id=' + shelfId);
     const items = data.success ? data.data : [];
     matSelect.innerHTML = '<option value="">Seleccionar material...</option>';
+    // Poblar select de materiales con stock disponible
     items.forEach(item => {
       const matId = item.materialId || item.material_id;
       const mat = allMaterials.find(m => m.id === matId);
@@ -406,6 +465,7 @@ async function abrirMoverShelf(shelfId, shelfName) {
       }
     });
     matSelect.disabled = false;
+    // Actualizar max del input de cantidad al seleccionar un material
     matSelect.addEventListener('change', function() {
       const opt = this.options[this.selectedIndex];
       const stockMatch = opt.text.match(/Stock:\s*(\d+)/);
@@ -414,11 +474,13 @@ async function abrirMoverShelf(shelfId, shelfName) {
       qtyInput.max = maxStock;
       qtyInput.placeholder = `Máx: ${maxStock}`;
     });
+    // Llenar select de ubicaciones destino excluyendo la origen
     llenarSelectUbicacion('moveShelfDestination', null, shelfId);
     document.getElementById('moveShelfQuantity').value = '';
     document.getElementById('moveShelfQuantity').max = 0;
     document.getElementById('moveShelfReason').value = 'reorganizacion';
     document.getElementById('moveShelfNotes').value = '';
+    // Limpiar estados de error previos
     document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   } catch (err) {
     matSelect.innerHTML = '<option value="">Error al cargar materiales</option>';
@@ -426,6 +488,7 @@ async function abrirMoverShelf(shelfId, shelfName) {
   }
 }
 
+// Validar y guardar movimiento de material entre estantes
 async function guardarMovimientoShelf() {
   const fromLocationId = parseInt(document.getElementById('moveShelfId').value);
   const materialId = parseInt(document.getElementById('moveShelfMaterial').value);
@@ -433,12 +496,16 @@ async function guardarMovimientoShelf() {
   const quantity = parseInt(document.getElementById('moveShelfQuantity').value);
   const reason = document.getElementById('moveShelfReason').value;
   const notes = document.getElementById('moveShelfNotes').value.trim();
+  // Limpiar errores de validación previos
   document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
   let valid = true;
+  // Validar campos obligatorios
   if (!materialId) { valid = false; toast('Seleccione un material.', 'error'); }
   if (!toLocationId) { document.getElementById('moveShelfDestination').classList.add('is-invalid'); valid = false; }
   if (!quantity || quantity <= 0) { document.getElementById('moveShelfQuantity').classList.add('is-invalid'); valid = false; }
+  // Validar que origen y destino sean diferentes
   if (fromLocationId === toLocationId) { toast('La ubicación de destino debe ser diferente.', 'error'); return; }
+  // Validar que la cantidad no exceda el stock disponible en origen
   const matSelect = document.getElementById('moveShelfMaterial');
   const selectedOpt = matSelect.options[matSelect.selectedIndex];
   const stockMatch = selectedOpt.text.match(/Stock:\s*(\d+)/);
@@ -452,6 +519,7 @@ async function guardarMovimientoShelf() {
   if (!confirm('¿Está seguro de mover ' + quantity + ' unidades?')) return;
   setLoading('guardarMovimientoShelfBtn', true);
   try {
+    // Enviar solicitud de movimiento al servidor via POST
     const data = await callApi(APP_URL + 'Public/api/storage.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
@@ -472,6 +540,7 @@ async function guardarMovimientoShelf() {
   }
 }
 
+// Recargar todos los datos del módulo de almacenes en paralelo
 async function recargarDatos() {
   try {
     const [mat, cat, loc, wh, ls] = await Promise.all([
@@ -481,17 +550,20 @@ async function recargarDatos() {
       fetch(APP_URL + 'Public/api/warehouses.php').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; })),
       fetch(APP_URL + 'Public/api/storage.php?action=locations-stock').then(r => r.json().then(d => { if (!r.ok) throw new Error(d.message); return d; }))
     ]);
+    // Actualizar arrays globales solo si la respuesta fue exitosa
     if (mat.success) allMaterials = mat.data;
     if (cat.success) allCategories = cat.data;
     if (loc.success) allLocations = loc.data;
     if (wh.success) allWarehouses = wh.data;
     if (ls.success) allLocationStock = ls.data;
+    // Re-renderizar el layout con los datos actualizados
     renderLayout();
   } catch (err) {
     console.error('Error al recargar:', err.message);
   }
 }
 
+// Marcar un campo con borde de error visual (clase CSS is-invalid)
 function marcarError(id) {
   const el = document.getElementById(id);
   if (el) el.classList.add('is-invalid');

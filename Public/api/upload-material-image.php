@@ -1,5 +1,8 @@
 <?php
 
+// Endpoint API para subir imagen de material
+// Valida MIME, tamaño, guarda en uploads/materials/ y devuelve la URL absoluta
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../Config/app.php';
 

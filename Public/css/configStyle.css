@@ -19,6 +19,7 @@
   flex-direction: column;
 }
 
+/* Borde dorado decorativo en la tarjeta de perfil */
 .profile-card::before {
   content: '';
   position: absolute;
@@ -47,6 +48,7 @@
   margin-right: 20px;
 }
 
+/* Imagen del avatar circular con borde semitransparente */
 .profile-avatar img {
   width: 80px;
   height: 80px;
@@ -55,7 +57,7 @@
   object-fit: cover;
 }
 
-/* Botón de subir foto de perfil */
+/* Botón de subir foto de perfil superpuesto al avatar */
 .avatar-upload {
   position: absolute;
   bottom: 2px;
@@ -71,16 +73,19 @@
   transition: var(--transition);
 }
 
+/* Efecto hover en el botón de subir foto */
 .avatar-upload:hover {
   transform: scale(1.1);
   background: #1976D2;
 }
 
+/* Icono dentro del botón de upload */
 .avatar-upload i {
   color: white;
   font-size: 1rem;
 }
 
+/* Nombre y email del usuario en el perfil */
 .profile-info h2 {
   font-size: 1.4rem;
   margin-bottom: 5px;
@@ -109,6 +114,7 @@
   padding: 0 30px;
 }
 
+/* Pestaña individual de configuración */
 .config-tab {
   padding: 18px 25px;
   background: none;
@@ -124,21 +130,25 @@
   align-items: center;
 }
 
+/* Icono dentro de cada pestaña */
 .config-tab i {
   margin-right: 10px;
   font-size: 1.1rem;
 }
 
+/* Efecto hover en pestañas de configuración */
 .config-tab:hover {
   color: var(--primary);
   background: rgba(13, 71, 161, 0.05);
 }
 
+/* Pestaña activa con fondo blanco y texto resaltado */
 .config-tab.active {
   color: var(--primary);
   background: white;
 }
 
+/* Indicador visual inferior en la pestaña activa */
 .config-tab.active:after {
   content: "";
   position: absolute;
@@ -154,15 +164,18 @@
   padding: 30px;
 }
 
+/* Sección de contenido oculta por defecto */
 .config-section {
   display: none;
   animation: fadeIn 0.3s ease;
 }
 
+/* Sección activa visible con animación */
 .config-section.active {
   display: block;
 }
 
+/* Animación de aparición suave */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -176,6 +189,7 @@
   margin-bottom: 30px;
 }
 
+/* Controles de formulario (botones Guardar / Cancelar) */
 .form-controls {
   display: flex;
   justify-content: flex-end;
@@ -193,10 +207,12 @@
   border-bottom: 1px solid var(--light-gray);
 }
 
+/* Última notificación sin borde inferior */
 .notification-item:last-child {
   border-bottom: none;
 }
 
+/* Título y descripción de cada notificación */
 .notification-info h4 {
   font-size: 1rem;
   margin-bottom: 5px;
@@ -215,12 +231,14 @@
   height: 26px;
 }
 
+/* Input oculto del switch */
 .switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
+/* Slider visual del switch (track) */
 .slider {
   position: absolute;
   cursor: pointer;
@@ -233,6 +251,7 @@
   border-radius: 34px;
 }
 
+/* Botón circular del slider (thumb) */
 .slider:before {
   position: absolute;
   content: "";
@@ -245,15 +264,17 @@
   border-radius: 50%;
 }
 
+/* Switch activado: track azul */
 input:checked + .slider {
   background-color: var(--primary);
 }
 
+/* Switch activado: thumb desplazado a la derecha */
 input:checked + .slider:before {
   transform: translateX(24px);
 }
 
-/* Items de seguridad */
+/* Items de configuración de seguridad */
 .security-item {
   background: var(--light-gray);
   border-radius: 10px;
@@ -264,6 +285,7 @@ input:checked + .slider:before {
   align-items: center;
 }
 
+/* Título y descripción del item de seguridad */
 .security-info h4 {
   font-size: 1rem;
   margin-bottom: 5px;
@@ -274,13 +296,14 @@ input:checked + .slider:before {
   color: var(--gray);
 }
 
+/* Contenedor del estado de seguridad (badge + acción) */
 .security-status {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* Badge de estado de seguridad */
+/* Badge de estado de seguridad (activo/inactivo) */
 .status-badge {
   padding: 5px 10px;
   border-radius: 20px;
@@ -288,11 +311,13 @@ input:checked + .slider:before {
   font-weight: 600;
 }
 
+/* Badge activo en verde */
 .status-active {
   background: #d4edda;
   color: #155724;
 }
 
+/* Badge inactivo en rojo */
 .status-inactive {
   background: #f8d7da;
   color: #721c24;
@@ -301,8 +326,10 @@ input:checked + .slider:before {
 /* ============================================
    Estilos de formulario unificados (estilo sistema)
    ============================================ */
+/* Grupo de campo de formulario */
 .form-group { margin-bottom: 20px; }
 
+/* Etiqueta del campo de formulario */
 .form-group label {
   display: block;
   font-size: 0.85rem;
@@ -311,8 +338,10 @@ input:checked + .slider:before {
   margin-bottom: 6px;
 }
 
+/* Icono dentro de la etiqueta del campo */
 .form-group label i { width: 18px; color: var(--primary); }
 
+/* Inputs, selects y textareas con estilo unificado del sistema */
 .form-input,
 .form-select,
 .form-textarea {
@@ -327,6 +356,7 @@ input:checked + .slider:before {
   box-sizing: border-box;
 }
 
+/* Estado focus con borde azul y sombra resaltada */
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
@@ -335,16 +365,19 @@ input:checked + .slider:before {
   box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
+/* Placeholder de inputs y textareas */
 .form-input::placeholder,
 .form-textarea::placeholder {
   color: #999;
 }
 
+/* Estado válido: borde verde */
 .form-input.valid,
 .form-select.valid {
   border-color: #28a745;
 }
 
+/* Estado inválido: borde rojo */
 .form-input.invalid,
 .form-select.invalid {
   border-color: #dc3545;
@@ -356,39 +389,44 @@ input:checked + .slider:before {
   gap: 8px;
 }
 
+/* Wrapper del select dentro del grupo de input */
 .input-group .select-wrapper {
   flex: 1;
 }
 
-/* Feedback de validacion */
+/* Feedback de validación */
 .feedback {
   font-size: 0.78rem;
   margin-top: 4px;
   display: none;
 }
 
+/* Feedback de error (texto rojo) */
 .feedback.invalid-feedback {
   color: #dc3545;
   display: block;
 }
 
+/* Feedback de éxito (texto verde) */
 .feedback.valid-feedback {
   color: #28a745;
   display: block;
 }
 
-/* Seccion logo del sistema */
+/* Sección de logo del sistema */
 .logo-upload-section {
   margin-top: 30px;
   padding-top: 25px;
   border-top: 1px solid var(--light-gray);
 }
 
+/* Título de la sección de logo */
 .logo-upload-section h4 {
   margin-bottom: 15px;
   color: var(--primary);
 }
 
+/* Vista previa del logo actual con botón de cambio */
 .logo-preview {
   display: flex;
   align-items: center;
@@ -396,6 +434,7 @@ input:checked + .slider:before {
   margin-bottom: 15px;
 }
 
+/* Imagen del logo actual */
 .logo-preview img {
   width: 80px;
   height: 80px;
@@ -406,6 +445,7 @@ input:checked + .slider:before {
   background: #fff;
 }
 
+/* Botón de subir logo nuevo con borde punteado */
 .logo-upload-btn {
   display: inline-flex;
   align-items: center;
@@ -421,6 +461,7 @@ input:checked + .slider:before {
   transition: var(--transition);
 }
 
+/* Efecto hover en el botón de subir logo */
 .logo-upload-btn:hover {
   border-color: var(--primary);
   color: var(--primary);
@@ -438,22 +479,25 @@ input:checked + .slider:before {
   align-items: center;
 }
 
+/* Título y dispositivo de la sesión activa */
 .session-info h4 {
   font-size: 0.95rem;
   margin-bottom: 5px;
 }
 
+/* Detalles de la sesión (IP, fecha, etc.) */
 .session-info p {
   font-size: 0.8rem;
   color: var(--gray);
 }
 
+/* Botones de acción de sesión (cerrar sesión) */
 .session-actions {
   display: flex;
   gap: 10px;
 }
 
-/* Información del sistema */
+/* Sección de información del sistema */
 .system-info {
   background: var(--light-gray);
   border-radius: 10px;
@@ -461,6 +505,7 @@ input:checked + .slider:before {
   margin-bottom: 25px;
 }
 
+/* Grid responsivo de datos del sistema */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -468,6 +513,7 @@ input:checked + .slider:before {
   margin-top: 15px;
 }
 
+/* Item individual de información del sistema */
 .info-item {
   padding: 15px;
   background: white;
@@ -475,19 +521,21 @@ input:checked + .slider:before {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
+/* Etiqueta del dato del sistema */
 .info-item h5 {
   font-size: 0.9rem;
   color: var(--gray);
   margin-bottom: 5px;
 }
 
+/* Valor del dato del sistema */
 .info-item p {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--dark);
 }
 
-/* Responsive específico */
+/* Responsive: tablet — perfil apilado, tabs flexibles, formularios en una columna */
 @media (max-width: 768px) {
   .profile-header {
     flex-direction: column;
@@ -522,6 +570,7 @@ input:checked + .slider:before {
   }
 }
 
+/* Responsive: móvil — avatar más grande, items de seguridad/sesión apilados */
 @media (max-width: 480px) {
   .profile-avatar img {
     width: 100px;

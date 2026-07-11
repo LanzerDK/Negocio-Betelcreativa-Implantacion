@@ -1,5 +1,6 @@
 /* loginStyle.css - Estilos específicos para la página de inicio de sesión */
 
+/* Fondo de página con imagen a pantalla completa y centrada */
 body {
   background: url("../images/inicio.jpg") no-repeat center center fixed;
   background-size: cover;
@@ -12,6 +13,7 @@ body {
   overflow-x: hidden;
 }
 
+/* Overlay oscuro semitransparente sobre la imagen de fondo */
 body::before {
   content: "";
   position: absolute;
@@ -23,6 +25,7 @@ body::before {
   z-index: 1;
 }
 
+/* Contenedor principal del formulario de login con efecto vidrio esmerilado */
 .login-container {
   position: relative;
   z-index: 2;
@@ -37,16 +40,19 @@ body::before {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Efecto hover elevando el contenedor */
 .login-container:hover {
   transform: translateY(-5px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
 }
 
+/* Cabecera centrada con logo, título y subtítulo */
 .login-header {
   text-align: center;
   margin-bottom: 30px;
 }
 
+/* Logo circular con brillo dorado animado */
 .login-header .logo-img {
   width: 150px;
   height: 150px;
@@ -62,10 +68,12 @@ body::before {
   transition: transform 0.3s ease;
 }
 
+/* Logo con efecto de escala al pasar el cursor */
 .login-header .logo-img:hover {
   transform: scale(1.05);
 }
 
+/* Animación del brillo dorado pulsante del logo */
 @keyframes logoGlow {
   0% {
     box-shadow:
@@ -82,6 +90,7 @@ body::before {
   }
 }
 
+/* Título principal del formulario */
 .login-header h1 {
   color: #fff;
   font-size: 2.5rem;
@@ -89,11 +98,13 @@ body::before {
   margin-bottom: 10px;
 }
 
+/* Subtítulo descriptivo del formulario */
 .login-header p {
   color: rgba(255, 255, 255, 0.8);
   font-size: 1.1rem;
 }
 
+/* Mensaje de error de credenciales incorrectas, oculto por defecto */
 .login-error {
   display: none;
   background: rgba(220, 53, 69, 0.25);
@@ -108,17 +119,20 @@ body::before {
   animation: shake 0.4s;
 }
 
+/* Grupo de campo de entrada con espacio para mensaje de validación */
 .input-group {
   position: relative;
   margin-bottom: 0;
   padding-bottom: 50px;
 }
 
+/* Wrapper del input con posición relativa para iconos absolutos */
 .input-wrap {
   position: relative;
   width: 100%;
 }
 
+/* Icono izquierdo del input (ej: usuario, candado) */
 .input-wrap .icon1 {
   position: absolute;
   left: 16px;
@@ -132,6 +146,7 @@ body::before {
   pointer-events: none;
 }
 
+/* Campo de texto del formulario */
 .input-wrap input {
   width: 100%;
   padding: 14px 50px 14px 48px;
@@ -145,15 +160,18 @@ body::before {
   outline: none;
 }
 
+/* Estado de foco del input con borde azul */
 .input-wrap input:focus {
   border-color: #0d47a1;
   box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
+/* Texto placeholder del input */
 .input-wrap input::placeholder {
   color: #6c757d;
 }
 
+/* Botón de mostrar/ocultar contraseña */
 .toggle-password {
   position: absolute;
   right: 14px;
@@ -167,10 +185,12 @@ body::before {
   line-height: 1;
 }
 
+/* Icono de contraseña en color primary al pasar el cursor */
 .toggle-password:hover {
   color: var(--primary);
 }
 
+/* Fila con checkbox "Recordar" y enlace "Olvidé mi contraseña" */
 .remember-forgot {
   display: flex;
   justify-content: space-between;
@@ -180,29 +200,34 @@ body::before {
   font-size: 0.95rem;
 }
 
+/* Contenedor del checkbox recordar sesión */
 .remember {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+/* Checkbox personalizado con color accent */
 .remember input {
   width: 18px;
   height: 18px;
   accent-color: var(--primary);
 }
 
+/* Enlace de recuperación de contraseña */
 .forgot {
   color: #ffffff;
   text-decoration: none;
   transition: color 0.3s;
 }
 
+/* Hover del enlace de recuperar contraseña */
 .forgot:hover {
   color: var(--secondary);
   text-decoration: underline;
 }
 
+/* Botón principal de enviar formulario */
 .login-button {
   width: 100%;
   padding: 15px;
@@ -217,21 +242,25 @@ body::before {
   box-shadow: 0 5px 15px rgba(13, 71, 161, 0.4);
 }
 
+/* Botón de login con elevación al hover */
 .login-button:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(13, 71, 161, 0.6);
 }
 
+/* Botón de login al hacer clic (pressed) */
 .login-button:active {
   transform: translateY(0);
 }
 
+/* Enlace de navegación hacia el formulario de registro */
 .register-link {
   text-align: center;
   margin-top: 25px;
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* Texto del enlace de registro */
 .register-link a {
   color: #ffffff;
   text-decoration: none;
@@ -240,11 +269,13 @@ body::before {
   transition: color 0.3s;
 }
 
+/* Hover del enlace de registro */
 .register-link a:hover {
   color: var(--secondary);
   text-decoration: underline;
 }
 
+/* Mensaje de feedback de validación de campos (éxito o error) */
 .feedback {
   position: absolute;
   left: 0;
@@ -256,42 +287,50 @@ body::before {
   display: none;
 }
 
+/* Feedback visible cuando es válido o inválido */
 .feedback.valid-feedback,
 .feedback.invalid-feedback {
   display: block;
 }
 
+/* Animación de entrada para feedback de éxito */
 .feedback.valid-feedback {
   animation: feedbackIn 0.35s ease;
 }
 
+/* Animación de entrada + sacudida para feedback de error */
 .feedback.invalid-feedback {
   animation: feedbackIn 0.35s ease, shake 0.4s;
 }
 
+/* Estilo del mensaje de validación exitosa */
 .valid-feedback {
   background: rgba(40, 167, 69, 0.2);
   color: #d4edda;
   border: 1px solid rgba(195, 230, 203, 0.3);
 }
 
+/* Estilo del mensaje de validación con error */
 .invalid-feedback {
   background: rgba(220, 53, 69, 0.2);
   color: #f8d7da;
   border: 1px solid rgba(245, 198, 203, 0.3);
 }
 
+/* Animación de aparición deslizante para mensajes de feedback */
 @keyframes feedbackIn {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Animación de sacudida horizontal para errores */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-5px); }
   75% { transform: translateX(5px); }
 }
 
+/* Mensaje de éxito tras registro exitoso, oculto por defecto */
 .success-message {
   background: rgba(40, 167, 69, 0.8);
   color: white;
@@ -303,7 +342,7 @@ body::before {
   animation: fadeIn 0.5s;
 }
 
-/* Responsive */
+/* Responsive: tablet — ajusta paddings y dirección del remember-forgot */
 @media (max-width: 768px) {
   .login-container {
     padding: 30px;
@@ -322,6 +361,7 @@ body::before {
   }
 }
 
+/* Responsive: móvil — reduce tamaños de fuente, paddings e iconos */
 @media (max-width: 480px) {
   .login-container {
     padding: 25px 20px;

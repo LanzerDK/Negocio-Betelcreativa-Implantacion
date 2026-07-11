@@ -8,8 +8,11 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// TaskController — CRUD de tareas operativas
+// Lista pendientes/completadas, permite cambio de estado y prioridad
 class TaskController
 {
+    // Punto de entrada: enruta según método HTTP (GET/POST/PUT/DELETE)
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -18,6 +21,7 @@ class TaskController
 
         switch ($method) {
             case 'GET':
+                // GET con ?completed=1 — tareas completadas; sin parámetro — pendientes
                 if (($_GET['completed'] ?? '') === '1') {
                     $tasks = $repo->findAllCompleted();
                 } else {
@@ -35,6 +39,7 @@ class TaskController
                 $title = trim($input['title'] ?? '');
                 $priority = $input['priority'] ?? 'medium';
 
+                // Validaciones
                 if (!$title) {
                     ApiResponse::error('El título de la tarea es requerido.');
                 }
@@ -74,6 +79,7 @@ class TaskController
                     ApiResponse::error('Tarea no encontrada.', 404);
                 }
 
+                // Cambio de estado: pending ↔ completed
                 $newStatus = $input['status'] ?? $existing->getStatus();
 
                 if (!in_array($newStatus, ['pending', 'completed'])) {
@@ -107,6 +113,7 @@ class TaskController
         }
     }
 
+    // Convierte un TaskModel a array asociativo para respuesta JSON
     private static function toArray(TaskModel $task): array
     {
         return [

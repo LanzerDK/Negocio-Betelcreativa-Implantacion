@@ -1,6 +1,7 @@
 /* facturasStyle.css - Módulo de Facturación */
 
 /* ─── Layout Principal ─── */
+/* Grid de dos columnas: sidebar de facturas + panel de detalle */
 .factura-layout {
     display: grid;
     grid-template-columns: 340px 1fr;
@@ -9,6 +10,7 @@
 }
 
 /* ─── Sidebar ─── */
+/* Panel lateral izquierdo con lista de facturas, sticky y scrollable */
 .factura-sidebar {
     background: #fff;
     border-radius: 12px;
@@ -21,12 +23,14 @@
     top: 20px;
 }
 
+/* Contenedor de pestañas de navegación del sidebar */
 .sidebar-tabs {
     display: flex;
     border-bottom: 1px solid #eee;
     flex-shrink: 0;
 }
 
+/* Pestaña individual del sidebar */
 .sidebar-tab {
     flex: 1;
     padding: 12px 6px;
@@ -42,21 +46,25 @@
     position: relative;
 }
 
+/* Icono dentro de cada pestaña */
 .sidebar-tab i {
     display: block;
     font-size: 1rem;
     margin-bottom: 3px;
 }
 
+/* Efecto hover en pestañas del sidebar */
 .sidebar-tab:hover {
     color: var(--primary);
     background: rgba(13,71,161,0.04);
 }
 
+/* Pestaña activa con texto resaltado */
 .sidebar-tab.active {
     color: var(--primary);
 }
 
+/* Indicador visual inferior en la pestaña activa */
 .sidebar-tab.active::after {
     content: '';
     position: absolute;
@@ -68,12 +76,14 @@
     border-radius: 3px 3px 0 0;
 }
 
+/* Barra de búsqueda en el sidebar */
 .sidebar-search {
     padding: 10px 12px;
     border-bottom: 1px solid #eee;
     flex-shrink: 0;
 }
 
+/* Input de búsqueda con icono a la izquierda */
 .sidebar-search input {
     width: 100%;
     padding: 8px 12px 8px 34px;
@@ -86,15 +96,18 @@
     box-sizing: border-box;
 }
 
+/* Estado focus del input de búsqueda */
 .sidebar-search input:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(13,71,161,0.1);
 }
 
+/* Posicionamiento relativo para el ícono de búsqueda */
 .sidebar-search {
     position: relative;
 }
 
+/* Ícono de lupa posicionado sobre el input */
 .sidebar-search .search-icon {
     position: absolute;
     left: 22px;
@@ -104,6 +117,7 @@
     font-size: 0.85rem;
 }
 
+/* Lista scrolleable de facturas en el sidebar */
 .sidebar-list {
     flex: 1;
     overflow-y: auto;
@@ -111,6 +125,7 @@
     max-height: 440px;
 }
 
+/* Scrollbar personalizado para webkit */
 .sidebar-list::-webkit-scrollbar {
     width: 4px;
 }
@@ -120,6 +135,7 @@
     border-radius: 4px;
 }
 
+/* Item individual de factura en la lista */
 .factura-item {
     padding: 10px 14px;
     cursor: pointer;
@@ -128,15 +144,18 @@
     border-bottom: 1px solid #f5f5f5;
 }
 
+/* Efecto hover en item de factura */
 .factura-item:hover {
     background: #f8f9ff;
 }
 
+/* Item de factura seleccionada/activa */
 .factura-item.active {
     background: #eef2ff;
     border-left-color: var(--primary);
 }
 
+/* Cabecera del item (ID + fecha) */
 .factura-item .fi-header {
     display: flex;
     justify-content: space-between;
@@ -144,17 +163,20 @@
     margin-bottom: 4px;
 }
 
+/* Identificador de la factura */
 .factura-item .fi-id {
     font-weight: 700;
     font-size: 0.85rem;
     color: var(--dark);
 }
 
+/* Fecha de la factura */
 .factura-item .fi-date {
     font-size: 0.72rem;
     color: var(--gray);
 }
 
+/* Nombre del cliente con truncado por texto largo */
 .factura-item .fi-client {
     font-size: 0.82rem;
     color: #555;
@@ -162,11 +184,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+/* Cédula del cliente */
 .factura-item .fi-cedula {
     font-size: 0.7rem;
     color: #888;
 }
 
+/* Badge de estado de la factura en el sidebar */
 .factura-item .fi-status {
     font-size: 0.65rem;
     padding: 2px 8px;
@@ -174,6 +198,7 @@
     font-weight: 600;
 }
 
+/* Mensaje de lista vacía */
 .sidebar-empty {
     padding: 30px 20px;
     text-align: center;
@@ -182,12 +207,14 @@
 }
 
 /* ─── Detail Panel ─── */
+/* Panel de detalle de la factura seleccionada */
 .factura-detail {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
+/* Grid de dos columnas para las tarjetas de detalle */
 .detail-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -196,6 +223,7 @@
 }
 
 /* ─── Factura Cards ─── */
+/* Tarjeta genérica de información de factura */
 .factura-card {
     background: #fff;
     border-radius: 12px;
@@ -205,11 +233,13 @@
     flex-direction: column;
 }
 
+/* Efecto hover en tarjeta de factura */
 .factura-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.08), 0 2px 20px rgba(212,175,55,0.2);
 }
 
+/* Cabecera de la tarjeta con degradado */
 .factura-card-header {
     padding: 14px 18px;
     font-weight: 600;
@@ -223,16 +253,19 @@
     gap: 8px;
 }
 
+/* Icono dentro de la cabecera de tarjeta */
 .factura-card-header i {
     font-size: 1rem;
 }
 
+/* Cuerpo de la tarjeta con contenido principal */
 .factura-card-body {
     padding: 16px 18px;
     flex: 1;
 }
 
 /* ─── Info Rows ─── */
+/* Fila de información clave-valor (etiqueta + valor) */
 .info-row {
     display: flex;
     justify-content: space-between;
@@ -241,17 +274,20 @@
     font-size: 0.88rem;
 }
 
+/* Etiqueta de la fila de información */
 .info-label {
     color: var(--gray);
     font-weight: 500;
 }
 
+/* Valor de la fila de información */
 .info-value {
     font-weight: 600;
     text-align: right;
 }
 
 /* ─── Estado Badge ─── */
+/* Badge de estado de la factura (activa, cerrada, anulada, pendiente) */
 .estado-badge {
     display: inline-block;
     padding: 3px 12px;
@@ -261,33 +297,39 @@
     margin-left: auto;
 }
 
+/* Estado: factura activa */
 .estado-activa {
     background: #e8f4fd;
     color: #0066cc;
 }
 
+/* Estado: factura cerrada */
 .estado-cerrada {
     background: #d4edda;
     color: #155724;
 }
 
+/* Estado: factura anulada */
 .estado-anulada {
     background: #f8d7da;
     color: #721c24;
 }
 
+/* Estado: factura pendiente */
 .estado-pendiente {
     background: #fff3cd;
     color: #856404;
 }
 
 /* ─── Desglose Table ─── */
+/* Tabla de desglose de servicios y materiales de la factura */
 .desglose-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.82rem;
 }
 
+/* Encabezados de la tabla de desglose */
 .desglose-table th {
     text-align: left;
     padding: 7px 6px;
@@ -298,31 +340,37 @@
     white-space: nowrap;
 }
 
+/* Celdas del cuerpo de la tabla de desglose */
 .desglose-table td {
     padding: 6px;
     border-bottom: 1px solid #f0f0f0;
     vertical-align: top;
 }
 
+/* Alineación de texto a la derecha en celdas numéricas */
 .desglose-table .text-right {
     text-align: right;
 }
 
+/* Alineación centrada en celdas */
 .desglose-table .text-center {
     text-align: center;
 }
 
+/* Efecto hover en filas del desglose */
 .desglose-table tbody tr:hover {
     background: #fafbfc;
 }
 
 /* ─── Total Section ─── */
+/* Sección de totales al pie de la tabla de desglose */
 .factura-total-section {
     margin-top: 12px;
     padding-top: 10px;
     border-top: 2px solid #eee;
 }
 
+/* Fila individual de subtotal, IVA, etc. */
 .total-row {
     display: flex;
     justify-content: space-between;
@@ -330,6 +378,7 @@
     font-size: 0.88rem;
 }
 
+/* Total final con línea superior más marcada */
 .total-final {
     border-top: 2px solid #333;
     margin-top: 6px;
@@ -338,6 +387,7 @@
 }
 
 /* ─── Factura Actions ─── */
+/* Botones de acción de la factura (pagar, cerrar, anular) */
 .factura-actions {
     display: flex;
     gap: 10px;
@@ -345,6 +395,7 @@
 }
 
 /* ─── Payment Progress ─── */
+/* Resumen de pagos en grid de dos columnas */
 .pago-resumen {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -352,6 +403,7 @@
     margin-bottom: 15px;
 }
 
+/* Item individual de resumen de pago (pagado / pendiente) */
 .pago-item {
     background: #f8f9fa;
     border-radius: 10px;
@@ -359,10 +411,12 @@
     text-align: center;
 }
 
+/* Item de pago pendiente con fondo amarillo */
 .pago-item.pendiente {
     background: #fff8e1;
 }
 
+/* Etiqueta del item de pago */
 .pago-label {
     display: block;
     font-size: 0.78rem;
@@ -370,6 +424,7 @@
     margin-bottom: 4px;
 }
 
+/* Monto del item de pago */
 .pago-monto {
     display: block;
     font-size: 1.1rem;
@@ -377,10 +432,12 @@
 }
 
 /* ─── Progress Bar ─── */
+/* Contenedor de la barra de progreso de pago */
 .pago-progress-container {
     margin-bottom: 15px;
 }
 
+/* Barra de progreso de pago */
 .pago-progress-bar {
     height: 10px;
     background: #e9ecef;
@@ -389,6 +446,7 @@
     margin-bottom: 6px;
 }
 
+/* Relleno de la barra de progreso */
 .pago-progress-fill {
     height: 100%;
     border-radius: 5px;
@@ -396,14 +454,17 @@
     min-width: 2px;
 }
 
+/* Barra de progreso completa (verde) */
 .pago-progress-fill.ok {
     background: linear-gradient(to right, #4caf50, #66bb6a);
 }
 
+/* Barra de progreso parcial (naranja) */
 .pago-progress-fill.warning {
     background: linear-gradient(to right, #ff9800, #ffb74d);
 }
 
+/* Etiquetas porcentuales debajo de la barra de progreso */
 .pago-progress-labels {
     display: flex;
     justify-content: space-between;
@@ -412,6 +473,7 @@
 }
 
 /* ─── Pago Status ─── */
+/* Indicador visual del estado de pago (pagada o pendiente) */
 .pago-status {
     border-radius: 6px;
     padding: 8px 12px;
@@ -421,23 +483,27 @@
     margin-bottom: 12px;
 }
 
+/* Estado de factura pagada */
 .pago-status.pagada {
     background: #d4edda;
     color: #155724;
 }
 
+/* Estado de factura con pago pendiente */
 .pago-status.pendiente-pago {
     background: #fff3cd;
     color: #856404;
 }
 
 /* ─── Historial Table ─── */
+/* Tabla de historial de pagos realizados */
 .historial-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.8rem;
 }
 
+/* Encabezados del historial de pagos */
 .historial-table th {
     text-align: left;
     padding: 5px 6px;
@@ -447,12 +513,14 @@
     font-size: 0.72rem;
 }
 
+/* Celdas del historial de pagos */
 .historial-table td {
     padding: 5px 6px;
     border-bottom: 1px solid #f0f0f0;
 }
 
 /* ─── Términos Section ─── */
+/* Sección de términos y condiciones de la factura */
 .terms-section {
     background: #fff;
     border-radius: 12px;
@@ -460,10 +528,12 @@
     overflow: hidden;
 }
 
+/* Cuerpo de la sección de términos */
 .terms-body {
     padding: 16px 18px;
 }
 
+/* Lista de términos y condiciones */
 .terms-body ul {
     margin: 0;
     padding-left: 20px;
@@ -472,10 +542,12 @@
     line-height: 1.7;
 }
 
+/* Elemento individual de la lista de términos */
 .terms-body ul li {
     margin-bottom: 4px;
 }
 
+/* Texto placeholder cuando no hay términos configurados */
 .terms-body .terms-placeholder {
     color: var(--gray);
     font-style: italic;
@@ -483,12 +555,14 @@
 }
 
 /* ─── Selector Section (hidden by default in new layout) ─── */
+/* Selector de factura legado (oculto en el nuevo layout) */
 .factura-selector {
     max-width: 500px;
     margin-bottom: 10px;
 }
 
 /* ─── Detail Empty State ─── */
+/* Estado vacío cuando no hay factura seleccionada */
 .detail-empty {
     background: #fff;
     border-radius: 12px;
@@ -498,29 +572,34 @@
     color: var(--gray);
 }
 
+/* Icono del estado vacío */
 .detail-empty i {
     font-size: 3rem;
     color: #ddd;
     margin-bottom: 15px;
 }
 
+/* Título del estado vacío */
 .detail-empty h3 {
     font-size: 1.1rem;
     color: #999;
     margin-bottom: 8px;
 }
 
+/* Descripción del estado vacío */
 .detail-empty p {
     font-size: 0.85rem;
 }
 
 /* ─── Responsive ─── */
+/* Responsive: sidebar se reduce de ancho */
 @media (max-width: 1100px) {
     .factura-layout {
         grid-template-columns: 280px 1fr;
     }
 }
 
+/* Responsive: móvil — layout de una columna, sidebar se apila, detalle completo */
 @media (max-width: 900px) {
     .factura-layout {
         grid-template-columns: 1fr;
@@ -537,6 +616,7 @@
 }
 
 /* ─── Cancelada Detail ─── */
+/* Fila de información en la vista de factura cancelada */
 #detailCancelada .cancelada-grid .info-row {
     display: flex;
     justify-content: space-between;
@@ -545,11 +625,13 @@
     border-bottom: 1px solid #f5f5f5;
 }
 
+/* Última fila sin borde inferior */
 #detailCancelada .cancelada-grid .info-row:last-child {
     border-bottom: none;
 }
 
 /* ─── Estado badge for canceladas ─── */
+/* Badge de estado "cancelada" en rojo para el sidebar */
 .fi-status.estado-cancelada {
     background: #dc3545;
     color: #fff;
@@ -561,35 +643,42 @@
 }
 
 /* ─── Anticipo progress bar in modal ─── */
+/* Barra de progreso del anticipo en el modal de generación */
 #genProgressFill {
     transition: width 0.3s ease;
 }
 
+/* Progreso completo del anticipo */
 #genProgressFill.ok {
     background: var(--success, #28a745);
 }
 
+/* Progreso parcial del anticipo */
 #genProgressFill.warning {
     background: var(--warning, #ffc107);
 }
 
 /* ─── Conversion rows ─── */
+/* Filas de conversión de moneda con animación de entrada */
 #genConversionRow,
 #pagoConversionRow {
     animation: fadeIn 0.2s ease;
 }
 
+/* Animación de aparición suave */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 /* ─── Canceladas sidebar item ─── */
+/* Borde rojo lateral para facturas canceladas en el sidebar */
 #sidebarList .factura-item[data-factura-id]:has(.estado-cancelada) {
     border-left: 3px solid #dc3545;
 }
 
 /* ─── Form Inputs (estilo login) ─── */
+/* Etiqueta de campo de formulario */
 .form-label {
     display: block;
     margin-bottom: 8px;
@@ -597,12 +686,14 @@
     color: var(--dark);
     font-size: 0.88rem;
 }
+/* Texto de ayuda debajo de un campo de formulario */
 .form-help {
     display: block;
     margin-top: 4px;
     font-size: 0.78rem;
     color: var(--gray);
 }
+/* Inputs, selects y textareas con estilo unificado del sistema */
 .form-input,
 .form-select,
 .form-textarea {
@@ -618,22 +709,26 @@
     outline: none;
     font-family: "Poppins", sans-serif;
 }
+/* Estado focus con borde azul y sombra resaltada */
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
     border-color: #0d47a1;
     box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
+/* Placeholder de inputs y textareas */
 .form-input::placeholder,
 .form-textarea::placeholder {
     color: #555;
 }
+/* Textarea con altura mínima y redimensionamiento vertical */
 .form-textarea {
     min-height: 100px;
     resize: vertical;
 }
 
 /* ─── Devolución Row (sobrepago) ─── */
+/* Fila de devolución por sobrepago con estilo rojo destacado */
 .devolucion-row td {
     border-top: 2px solid #dc3545;
     color: #dc3545;
@@ -642,6 +737,7 @@
 }
 
 /* ─── Modal: Generar Factura (estilos del sistema) ─── */
+/* Vista previa de la factura a generar en el modal */
 .gen-preview {
     margin-top: 12px;
     padding: 14px 16px;
@@ -650,6 +746,7 @@
     border: 1px solid #e9ecef;
 }
 
+/* Título de la vista previa */
 .gen-preview-title {
     text-align: center;
     font-weight: 700;
@@ -659,10 +756,12 @@
     letter-spacing: 0.3px;
 }
 
+/* Icono del título de vista previa */
 .gen-preview-title i {
     margin-right: 6px;
 }
 
+/* Fila de detalle (servicio, materiales) en la vista previa */
 .gen-preview-row {
     display: flex;
     justify-content: space-between;
@@ -671,6 +770,7 @@
     color: #333;
 }
 
+/* Total de la vista previa con línea superior */
 .gen-preview-total {
     border-top: 2px solid #333;
     margin-top: 4px;
@@ -679,6 +779,7 @@
     font-size: 1rem;
 }
 
+/* Monto mínimo del anticipo con línea punteada */
 .gen-preview-min {
     margin-top: 6px;
     padding-top: 6px;
@@ -688,6 +789,7 @@
 }
 
 /* ─── Anticipo Section ─── */
+/* Sección de anticipo en el modal con fondo amarillo claro */
 .gen-anticipo {
     margin-top: 14px;
     padding: 14px 16px;
@@ -696,6 +798,7 @@
     border-radius: 10px;
 }
 
+/* Etiqueta de la sección de anticipo */
 .gen-anticipo-label {
     font-weight: 600;
     font-size: 0.82rem;
@@ -703,17 +806,20 @@
     margin-bottom: 10px;
 }
 
+/* Icono de la etiqueta de anticipo */
 .gen-anticipo-label i {
     margin-right: 6px;
     color: #856404;
 }
 
+/* Fila de inputs de anticipo (moneda, monto, método) */
 .gen-anticipo-row {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
 }
 
+/* Fila de conversión de moneda (USD ↔ VES) */
 .gen-conversion {
     margin-top: 8px;
     padding: 8px 12px;
@@ -724,6 +830,7 @@
     animation: fadeIn 0.2s ease;
 }
 
+/* Mensaje de error de validación del anticipo */
 .gen-error {
     color: #dc3545;
     font-size: 0.78rem;
@@ -731,14 +838,17 @@
     display: none;
 }
 
+/* Error visible cuando se muestra */
 .gen-error.show {
     display: block;
 }
 
+/* Contenedor de la barra de progreso del anticipo */
 .gen-progress-wrap {
     margin-top: 8px;
 }
 
+/* Etiquetas porcentuales de la barra de progreso del anticipo */
 .gen-progress-labels {
     display: flex;
     justify-content: space-between;

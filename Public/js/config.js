@@ -1,6 +1,8 @@
+// Base URL para las llamadas a la API
 const API = APP_URL + 'Public/api/';
 
 // ── Tabs ────────────────────────────────────────────────
+// Cambia entre pestañas de configuración mostrando/ocultando secciones
 document.querySelectorAll('.config-tab').forEach(tab => {
     tab.addEventListener('click', function () {
         document.querySelectorAll('.config-tab').forEach(t => t.classList.remove('active'));
@@ -11,10 +13,12 @@ document.querySelectorAll('.config-tab').forEach(tab => {
 });
 
 // ── Avatar ──────────────────────────────────────────────
+// Dispara el input file oculto al hacer clic en el área de avatar
 document.querySelector('.avatar-upload')?.addEventListener('click', () => {
     document.getElementById('avatarInput').click();
 });
 
+// Sube un nuevo archivo de avatar al seleccionarlo
 document.getElementById('avatarInput').addEventListener('change', async function (e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -38,6 +42,7 @@ document.getElementById('avatarInput').addEventListener('change', async function
 });
 
 // ── Logo del Sistema ────────────────────────────────────
+// Sube un nuevo logo del sistema
 document.getElementById('logoInput')?.addEventListener('change', async function (e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -60,6 +65,7 @@ document.getElementById('logoInput')?.addEventListener('change', async function 
     }
 });
 
+// Restaura el logo del sistema a su valor por defecto
 document.getElementById('btnRestaurarLogo')?.addEventListener('click', async function () {
     if (!confirm('¿Restaurar el logo original del sistema?')) return;
 
@@ -82,6 +88,7 @@ document.getElementById('btnRestaurarLogo')?.addEventListener('click', async fun
 });
 
 // ── Cargar perfil ───────────────────────────────────────
+// Obtiene los datos del usuario logueado y llena el formulario
 async function loadProfile() {
     try {
         const json = await callApi(API + 'users.php?action=profile', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
@@ -95,6 +102,7 @@ async function loadProfile() {
 }
 
 // ── Guardar perfil ──────────────────────────────────────
+// Envía los cambios del formulario de perfil al servidor
 document.getElementById('saveProfile')?.addEventListener('click', async function () {
     const body = JSON.stringify({
         name: document.getElementById('name').value.trim(),
@@ -121,6 +129,7 @@ document.getElementById('saveProfile')?.addEventListener('click', async function
 });
 
 // ── Notificaciones: cargar ──────────────────────────────
+// Obtiene las preferencias de notificación del usuario
 async function loadPreferences() {
     try {
         const json = await callApi(API + 'users.php?action=preferences', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
@@ -134,6 +143,7 @@ async function loadPreferences() {
 }
 
 // ── Notificaciones: guardar ─────────────────────────────
+// Envía las preferencias de notificación actualizadas
 document.getElementById('saveNotifications')?.addEventListener('click', async function () {
     const body = JSON.stringify({
         notify_low_stock: document.getElementById('notify_low_stock').checked,
@@ -159,11 +169,13 @@ document.getElementById('saveNotifications')?.addEventListener('click', async fu
 });
 
 // ── Seguridad ───────────────────────────────────────────
+// Valida y envía la solicitud de cambio de contraseña
 document.getElementById('savePassword')?.addEventListener('click', async function () {
     const current = document.getElementById('currentPassword').value;
     const newPass = document.getElementById('newPassword').value;
     const confirm = document.getElementById('confirmPassword').value;
 
+    // Validaciones del lado del cliente
     if (!current || !newPass || !confirm) {
         toast('Completa todos los campos', 'error');
         return;
@@ -197,6 +209,7 @@ document.getElementById('savePassword')?.addEventListener('click', async functio
 });
 
 // ── Facturacion: cargar terminos ─────────────────────────
+// Obtiene los términos y condiciones de facturación desde el servidor
 async function loadBillingSettings() {
     try {
         const json = await callApi(API + 'facturas.php?action=terminos', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
@@ -208,6 +221,7 @@ async function loadBillingSettings() {
 }
 
 // ── Facturacion: guardar ─────────────────────────────────
+// Guarda los términos y condiciones de facturación
 document.getElementById('saveBilling')?.addEventListener('click', async function () {
     const terminos = document.getElementById('set_terminos_condiciones')?.value.trim() || '';
     try {
@@ -230,6 +244,7 @@ document.getElementById('saveBilling')?.addEventListener('click', async function
 let usersPage = 1;
 let usersSearch = '';
 
+// Carga la lista paginada de usuarios con búsqueda opcional
 async function loadUsers(page = 1) {
     usersPage = page;
     const search = document.getElementById('userSearch')?.value.trim() || '';
@@ -242,17 +257,20 @@ async function loadUsers(page = 1) {
     } catch (_) { /* ignore */ }
 }
 
+// Renderiza la tabla de usuarios y los controles de paginación
 function renderUsers(data) {
     const tbody = document.getElementById('usersTableBody');
     const pagination = document.getElementById('usersPagination');
     if (!tbody) return;
 
+    // Mensaje cuando no hay resultados
     if (!data.users.length) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--gray);">No se encontraron usuarios.</td></tr>';
         if (pagination) pagination.innerHTML = '';
         return;
     }
 
+    // Genera las filas de la tabla con nombre, correo, rol, estado y acciones
     tbody.innerHTML = data.users.map(u => `
         <tr>
             <td><strong>${escapeHtml(u.name + ' ' + u.last_name)}</strong><br><small style="color:var(--gray);">@${escapeHtml(u.username)}</small></td>
@@ -279,6 +297,7 @@ function renderUsers(data) {
         </tr>
     `).join('');
 
+    // Construye los botones de paginación
     if (pagination) {
         pagination.innerHTML = '';
         for (let i = 1; i <= data.total_pages; i++) {
@@ -291,6 +310,7 @@ function renderUsers(data) {
         }
     }
 
+    // Asigna evento para cambio de rol en cada selector
     document.querySelectorAll('.role-select').forEach(sel => {
         sel.addEventListener('change', async function () {
             const userId = this.dataset.userId;
@@ -313,6 +333,7 @@ function renderUsers(data) {
         });
     });
 
+    // Asigna evento para activar/desactivar usuarios
     document.querySelectorAll('.toggle-active-btn').forEach(btn => {
         btn.addEventListener('click', async function () {
             const userId = this.dataset.userId;
@@ -337,12 +358,14 @@ function renderUsers(data) {
 
 
 // ── Users: búsqueda con debounce ─────────────────────────
+// Retrasa la búsqueda 400ms después de que el usuario termina de escribir
 document.getElementById('userSearch')?.addEventListener('input', function () {
     clearTimeout(this._timer);
     this._timer = setTimeout(() => loadUsers(1), 400);
 });
 
 // ── Crear Usuario (modal) ────────────────────────────────
+// Abre el modal de creación de usuario y limpia el formulario
 function abrirModalCrearUsuario() {
     document.getElementById('modalCrearUsuario').style.display = 'flex';
     document.getElementById('formCrearUsuario').reset();
@@ -355,18 +378,22 @@ function abrirModalCrearUsuario() {
     });
 }
 
+// Cierra el modal de creación de usuarios
 function cerrarModalCrearUsuario() {
     document.getElementById('modalCrearUsuario').style.display = 'none';
 }
 
+// Eventos para abrir y cerrar el modal de creación
 document.getElementById('btnCrearUsuario')?.addEventListener('click', abrirModalCrearUsuario);
 document.getElementById('cerrarModalUsuario')?.addEventListener('click', cerrarModalCrearUsuario);
 document.getElementById('cancelarCrearUsuario')?.addEventListener('click', cerrarModalCrearUsuario);
 
+// Cierra el modal si se hace clic fuera del contenido del mismo
 document.getElementById('modalCrearUsuario')?.addEventListener('click', function (e) {
     if (e.target === this) cerrarModalCrearUsuario();
 });
 
+// Guarda un nuevo usuario validando los campos y enviándolos al servidor
 document.getElementById('guardarCrearUsuario')?.addEventListener('click', async function () {
     const fields = {
         name: document.getElementById('cu_name'),
@@ -378,6 +405,7 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
         password: document.getElementById('cu_password'),
     };
 
+    // Validar cada campo del formulario
     let valid = true;
     Object.entries(fields).forEach(([key, el]) => {
         const fb = document.getElementById('cu_' + key + '-feedback');
@@ -391,6 +419,7 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
         }
     });
 
+    // Si hay campos inválidos, detener el envío
     if (!valid) {
         toast('Corrige los campos marcados', 'error');
         return;
@@ -399,6 +428,7 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
     const tipoCi = document.getElementById('cu_tipoCi').value;
     const ciCompleta = tipoCi + '-' + fields.ci.value.trim();
 
+    // Armar payload con datos del nuevo usuario
     const body = JSON.stringify({
         name: fields.name.value.trim(),
         last_name: fields.last_name.value.trim(),
@@ -421,6 +451,7 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
             loadUsers(usersPage);
         } else {
             toast(json.message, 'error');
+            // Mapea errores específicos del servidor a los campos correspondientes
             if (json.errors) {
                 Object.entries(json.errors).forEach(([field, msg]) => {
                     const fb = document.getElementById('cu_' + field + '-feedback');
@@ -439,6 +470,7 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
 });
 
 // ── Init ─────────────────────────────────────────────────
+// Inicializa todos los componentes al cargar la página
 loadProfile();
 loadPreferences();
 if (document.getElementById('billing-section')) loadBillingSettings();

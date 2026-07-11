@@ -4,29 +4,17 @@ namespace BetelCreativa\Helpers;
 
 use Resend;
 
-/**
- * EmailService — Envío de correos vía Resend API
- * ------------------------------------------------------------
- * Resend (https://resend.com) es un servicio de email para desarrolladores.
- * 
- * Plan gratuito: 100 emails/día, requiere verificar un dominio propio
- * o usar onboarding@resend.dev para pruebas.
- * 
- * API key: obtener en https://resend.com/api-keys
- * Documentación: https://resend.com/docs/send-with-php
- */
+// EmailService — Envío de correos electrónicos vía Resend API
+// Resend (https://resend.com) es un servicio moderno de email para desarrolladores.
+// Plan gratuito: 100 emails/día. Requiere verificar un dominio propio en Resend.
+// Para pruebas se puede usar onboarding@resend.dev como remitente.
 class EmailService
 {
-    /**
-     * Envía un código de verificación por correo electrónico
-     *
-     * @param string $email  Dirección de correo del destinatario
-     * @param string $code   Código de 6 dígitos
-     * @return array ['success' => bool, 'message' => string]
-     */
+    // Envía un código de verificación de 6 dígitos por correo electrónico
+    // Devuelve un array con 'success' (bool) y 'message' (string)
     public static function sendCode(string $email, string $code): array
     {
-        // ── 1. Validar que la API key esté configurada ───────────────
+        // ── 1. Validar que la API key de Resend esté configurada en .env ──
         $apiKey = defined('RESEND_API_KEY') ? RESEND_API_KEY : '';
         if (empty($apiKey)) {
             Logger::warning("Email no enviado a {$email}: RESEND_API_KEY no configurada");
@@ -36,12 +24,13 @@ class EmailService
             ];
         }
 
-        // ── 2. Configurar remitente ──────────────────────────────────
+        // ── 2. Configurar el remitente del correo ─────────────────────────
         $appName = defined('APP_NAME') ? APP_NAME : 'Betel Creativa';
+        // Si no hay RESEND_FROM_EMAIL configurado, usa la dirección por defecto de Resend para pruebas
         $fromEmail = defined('RESEND_FROM_EMAIL') ? RESEND_FROM_EMAIL : 'onboarding@resend.dev';
         $from = "{$appName} <{$fromEmail}>";
 
-        // ── 3. Construir HTML del correo ─────────────────────────────
+        // ── 3. Construir el HTML del correo con estilo visual ─────────────
         $html = <<<HTML
 <!DOCTYPE html>
 <html>
@@ -69,10 +58,12 @@ class EmailService
 </html>
 HTML;
 
-        // ── 4. Enviar vía Resend SDK ─────────────────────────────────
+        // ── 4. Enviar el correo a través del SDK de Resend ───────────────
         try {
+            // Crea el cliente de Resend con la API key
             $resend = Resend::client($apiKey);
 
+            // Envía el correo: remitente, destinatario, asunto y cuerpo HTML
             $result = $resend->emails->send([
                 'from'    => $from,
                 'to'      => [$email],
@@ -88,6 +79,7 @@ HTML;
             ];
 
         } catch (\Throwable $e) {
+            // Captura cualquier error (key inválida, dominio no verificado, etc.)
             Logger::warning("Email falló para {$email}: {$e->getMessage()}");
             return [
                 'success' => false,

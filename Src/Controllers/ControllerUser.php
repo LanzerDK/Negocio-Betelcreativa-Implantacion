@@ -9,18 +9,12 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
-/**
- * ControllerUser
- * 
- * Gestiona perfil, contraseña y preferencias del usuario autenticado.
- * Todos los métodos requieren sesión activa.
- */
+// ControllerUser — Gestión del perfil del usuario autenticado
+// Perfil, cambio de contraseña y preferencias de notificación
+// Todos los métodos requieren sesión activa
 class ControllerUser
 {
-    /**
-     * GET /api/users.php?action=profile
-     * Devuelve los datos del perfil del usuario logueado
-     */
+    // GET /api/users.php?action=profile — Devuelve los datos del perfil del usuario logueado
     public static function getProfile(): void
     {
         SessionHelpers::requireAuth();
@@ -47,10 +41,7 @@ class ControllerUser
         ]);
     }
 
-    /**
-     * PUT /api/users.php?action=profile
-     * Actualiza nombre, email y teléfono del perfil
-     */
+    // PUT /api/users.php?action=profile — Actualiza nombre, email y teléfono del perfil
     public static function updateProfile(): void
     {
         SessionHelpers::requireAuth();
@@ -99,7 +90,6 @@ class ControllerUser
         ]);
 
         if ($repo->update($user)) {
-            // Actualizar sesión
             SessionHelpers::set('user_name', $name . ' ' . $lastName);
             SessionHelpers::set('user_email', $email);
 
@@ -109,10 +99,7 @@ class ControllerUser
         }
     }
 
-    /**
-     * PUT /api/users.php?action=change-password
-     * Cambia la contraseña (requiere contraseña actual)
-     */
+    // PUT /api/users.php?action=change-password — Cambia la contraseña (requiere contraseña actual)
     public static function changePassword(): void
     {
         SessionHelpers::requireAuth();
@@ -155,10 +142,7 @@ class ControllerUser
         }
     }
 
-    /**
-     * GET /api/users.php?action=preferences
-     * Devuelve las preferencias de notificación
-     */
+    // GET /api/users.php?action=preferences — Devuelve las preferencias de notificación
     public static function getPreferences(): void
     {
         SessionHelpers::requireAuth();
@@ -175,10 +159,7 @@ class ControllerUser
         ]);
     }
 
-    /**
-     * PUT /api/users.php?action=preferences
-     * Guarda las preferencias de notificación
-     */
+    // PUT /api/users.php?action=preferences — Guarda las preferencias de notificación
     public static function savePreferences(): void
     {
         SessionHelpers::requireAuth();

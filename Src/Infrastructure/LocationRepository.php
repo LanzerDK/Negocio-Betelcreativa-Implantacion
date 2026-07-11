@@ -8,15 +8,19 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// LocationRepository — Acceso a datos de la tabla `locations`
+// CRUD con verificación de stock asociado antes de eliminar
 class LocationRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todas las ubicaciones ordenadas por ID ascendente
     public function findAll(): array
     {
         try {
@@ -34,6 +38,7 @@ class LocationRepository
         }
     }
 
+    // Busca una ubicación por su ID
     public function findById(int $id): ?LocationModel
     {
         try {
@@ -49,6 +54,7 @@ class LocationRepository
         }
     }
 
+    // Obtiene las zonas disponibles (descripciones únicas)
     public function findZones(): array
     {
         try {
@@ -62,6 +68,7 @@ class LocationRepository
         }
     }
 
+    // Inserta una nueva ubicación
     public function save(LocationModel $location): bool
     {
         try {
@@ -79,6 +86,7 @@ class LocationRepository
         }
     }
 
+    // Verifica si ya existe una ubicación con el mismo nombre
     public function existsByName(string $name): bool
     {
         try {
@@ -90,6 +98,7 @@ class LocationRepository
         }
     }
 
+    // Verifica si una ubicación tiene stock asignado (evita eliminación si tiene)
     public function hasStock(int $locationId): bool
     {
         try {
@@ -103,9 +112,12 @@ class LocationRepository
         }
     }
 
+    // Elimina una ubicación y limpia referencias en otras tablas
+    // No permite eliminar si tiene stock > 0 asociado
     public function delete(int $id): bool
     {
         try {
+            // Verifica stock existente antes de eliminar
             $check = $this->db->prepare(
                 "SELECT COUNT(*) FROM material_stock_locations WHERE location_id = :id AND quantity > 0"
             );
@@ -116,11 +128,13 @@ class LocationRepository
 
             $this->db->beginTransaction();
 
+            // Limpia referencias en tablas relacionadas
             $this->db->prepare("DELETE FROM material_stock_locations WHERE location_id = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE materials SET current_location_id = NULL WHERE current_location_id = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE inventory_movements SET origin_location_id = NULL WHERE origin_location_id = :id")->execute([':id' => $id]);
             $this->db->prepare("UPDATE inventory_movements SET destination_location_id = NULL WHERE destination_location_id = :id")->execute([':id' => $id]);
 
+            // Elimina la ubicación
             $stmt = $this->db->prepare("DELETE FROM locations WHERE location_id = :id");
             $ok = $stmt->execute([':id' => $id]);
 

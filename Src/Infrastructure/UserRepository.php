@@ -8,15 +8,19 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// UserRepository — Acceso a datos de la tabla `users` con JOIN a `roles`
+// CRUD completo, autenticación, administración de usuarios y gestión de roles
 class UserRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Cuenta el total de usuarios registrados
     public function countAll(): int
     {
         try {
@@ -26,6 +30,7 @@ class UserRepository
         }
     }
 
+    // Verifica si ya existe un usuario con el mismo username
     public function existsByUsername(string $username): bool
     {
         try {
@@ -38,6 +43,7 @@ class UserRepository
         }
     }
 
+    // Verifica si ya existe un usuario con el mismo teléfono
     public function existsByPhone(string $phone): bool
     {
         try {
@@ -50,6 +56,7 @@ class UserRepository
         }
     }
 
+    // Verifica si ya existe un usuario con el mismo email
     public function existsByEmail(string $email): bool
     {
         try {
@@ -62,6 +69,7 @@ class UserRepository
         }
     }
 
+    // Verifica si ya existe un usuario con la misma cédula
     public function existsByIdNumber(string $idNumber): bool
     {
         try {
@@ -74,6 +82,7 @@ class UserRepository
         }
     }
 
+    // Registra un nuevo usuario con hash de contraseña y rol por defecto
     public function save(UserModel $user): bool
     {
         try {
@@ -100,6 +109,7 @@ class UserRepository
         }
     }
 
+    // Busca un usuario por username o email (para login)
     public function findByUsernameOrEmail(string $identifier): ?UserModel
     {
         try {
@@ -136,6 +146,7 @@ class UserRepository
         }
     }
 
+    // Busca un usuario por email (para recuperación de contraseña)
     public function findByEmail(string $email): ?UserModel
     {
         try {
@@ -168,9 +179,7 @@ class UserRepository
         }
     }
 
-    /**
-     * Busca un usuario por su ID
-     */
+    // Busca un usuario por su ID
     public function findById(int $id): ?UserModel
     {
         try {
@@ -207,9 +216,7 @@ class UserRepository
         }
     }
 
-    /**
-     * Actualiza los datos del perfil de un usuario
-     */
+    // Actualiza los datos del perfil de un usuario
     public function update(UserModel $user): bool
     {
         try {
@@ -236,9 +243,7 @@ class UserRepository
         }
     }
 
-    /**
-     * Actualiza solo la contraseña
-     */
+    // Actualiza solo la contraseña del usuario
     public function updatePassword(int $userId, string $newHash): bool
     {
         try {
@@ -250,9 +255,7 @@ class UserRepository
         }
     }
 
-    /**
-     * Actualiza la ruta del avatar
-     */
+    // Actualiza la ruta del avatar del usuario
     public function updateAvatar(int $userId, string $avatarPath): bool
     {
         try {
@@ -264,7 +267,7 @@ class UserRepository
         }
     }
 
-    // ── Admin: listar usuarios ──────────────────────────────────
+    // Lista usuarios paginados con búsqueda (para panel de administración)
     public function findAll(int $page = 1, int $perPage = 20, string $search = ''): array
     {
         try {
@@ -272,6 +275,7 @@ class UserRepository
             $where = '';
             $params = [':limit' => $perPage, ':offset' => $offset];
 
+            // Filtro opcional de búsqueda por nombre, email o username
             if ($search !== '') {
                 $where = "WHERE (u.first_name LIKE :q OR u.last_name LIKE :q2 OR u.email LIKE :q3 OR u.username LIKE :q4)";
                 $params[':q'] = "%{$search}%";
@@ -280,6 +284,7 @@ class UserRepository
                 $params[':q4'] = "%{$search}%";
             }
 
+            // Cuenta total de resultados para paginación
             $countSql = "SELECT COUNT(*) FROM users u $where";
             $countStmt = $this->db->prepare($countSql);
             if ($search !== '') {
@@ -289,6 +294,7 @@ class UserRepository
             }
             $total = (int)$countStmt->fetchColumn();
 
+            // Consulta principal con JOIN a roles
             $sql = "SELECT 
                         u.user_id AS id, 
                         u.first_name AS name, 
@@ -314,6 +320,7 @@ class UserRepository
             $stmt->execute();
             $rows = $stmt->fetchAll();
 
+            // Mapea resultados a array asociativo
             $users = [];
             foreach ($rows as $r) {
                 $users[] = [
@@ -343,9 +350,7 @@ class UserRepository
         }
     }
 
-    /**
-     * Admin: actualizar rol de un usuario
-     */
+    // Actualiza el rol de un usuario buscando el ID del rol por nombre
     public function updateRole(int $userId, string $roleName): bool
     {
         try {
@@ -363,9 +368,7 @@ class UserRepository
         }
     }
 
-    /**
-     * Admin: activar/desactivar usuario
-     */
+    // Activa o desactiva un usuario (toggle)
     public function toggleActive(int $userId): bool
     {
         try {
@@ -378,9 +381,7 @@ class UserRepository
         }
     }
 
-    /**
-     * Obtiene el rol de un usuario
-     */
+    // Obtiene el nombre del rol de un usuario
     public function getRole(int $userId): string
     {
         try {

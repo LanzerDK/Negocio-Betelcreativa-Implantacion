@@ -7,18 +7,12 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
-/**
- * ControllerSystem
- * 
- * Gestiona la configuración global del sistema (tabla `settings`).
- * Solo usuarios con rol `admin` pueden modificar settings.
- */
+// ControllerSystem — Gestión de la configuración global del sistema (tabla `settings`)
+// Solo administradores (super_admin, admin) pueden consultar y modificar settings
+// Soporta actualización individual y por lotes (batch)
 class ControllerSystem
 {
-    /**
-     * GET /api/settings.php?action=list
-     * Devuelve todos los settings del sistema
-     */
+    // GET /api/settings.php?action=list — Devuelve todos los settings del sistema
     public static function list(): void
     {
         SessionHelpers::requireAuth();
@@ -42,10 +36,7 @@ class ControllerSystem
         ApiResponse::success($result);
     }
 
-    /**
-     * GET /api/settings.php?action=get&key=xxx
-     * Devuelve un setting específico
-     */
+    // GET /api/settings.php?action=get&key=xxx — Devuelve un setting específico
     public static function get(): void
     {
         SessionHelpers::requireAuth();
@@ -68,10 +59,7 @@ class ControllerSystem
         ]);
     }
 
-    /**
-     * PUT /api/settings.php?action=update
-     * Actualiza un setting (solo admin)
-     */
+    // PUT /api/settings.php?action=update — Actualiza un setting individual (solo admin)
     public static function update(): void
     {
         SessionHelpers::requireAuth();
@@ -101,11 +89,8 @@ class ControllerSystem
         }
     }
 
-    /**
-     * PUT /api/settings.php?action=batch-update
-     * Body: { "settings": { "key1": "value1", "key2": "value2" } }
-     * Actualiza múltiples settings en una sola llamada (solo admin)
-     */
+    // PUT /api/settings.php?action=batch-update — Actualiza múltiples settings en una sola llamada (solo admin)
+    // Body: { "settings": { "key1": "value1", "key2": "value2" } }
     public static function batchUpdate(): void
     {
         SessionHelpers::requireAuth();

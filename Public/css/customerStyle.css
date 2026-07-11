@@ -1,6 +1,6 @@
 /* customerStyle.css - Estilos específicos del módulo de Clientes */
 
-
+/* Cabecera de la vista con degradado */
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
@@ -15,6 +15,7 @@
   margin-bottom: 20px;
 }
 
+/* Input de búsqueda con padding para ícono */
 .search-box input {
   width: 100%;
   padding: 12px 15px 12px 45px;
@@ -23,6 +24,7 @@
   font-size: 1rem;
 }
 
+/* Ícono de búsqueda posicionado a la izquierda */
 .search-box i {
   position: absolute;
   left: 15px;
@@ -38,7 +40,7 @@
   gap: 20px;
 }
 
-/* Sidebar de clientes con lista */
+/* Sidebar de clientes con borde dorado gradiente */
 .clients-sidebar {
   background: #ffffff;
   border-radius: 10px;
@@ -48,6 +50,7 @@
   position: relative;
 }
 
+/* Borde gradiente dorado en el sidebar */
 .clients-sidebar::before {
   content: '';
   position: absolute;
@@ -61,6 +64,7 @@
   pointer-events: none;
 }
 
+/* Títulos e íconos del sidebar en color dorado */
 .clients-sidebar h2,
 .clients-sidebar h3 {
   color: var(--gold-text);
@@ -70,12 +74,14 @@
   color: var(--gold-text);
 }
 
+/* Filtros de estado: grid de 2 columnas (Todos/Activos/Inactivos/Busqueda) */
 .status-filter {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 
+/* Botón de filtro individual */
 .status-btn {
   padding: 10px;
   border-radius: 8px;
@@ -100,7 +106,7 @@
   margin-top: 20px;
 }
 
-/* Item individual de cliente en la lista */
+/* Item individual de cliente en la lista lateral */
 .client-item {
   display: flex;
   align-items: center;
@@ -115,6 +121,7 @@
   background-color: rgba(13, 71, 161, 0.05);
 }
 
+/* Estado inactivo: opacidad reducida y escala de grises */
 .client-item.inactive {
   opacity: 0.55;
   filter: grayscale(0.6);
@@ -124,6 +131,7 @@
   color: var(--gray);
 }
 
+/* Badge inline de "Inactivo" dentro del item */
 .inactive-badge {
   display: inline-block;
   background: var(--danger);
@@ -135,7 +143,7 @@
   margin-top: 4px;
 }
 
-/* Avatar del cliente */
+/* Avatar del cliente en la lista */
 .client-avatar {
   width: 50px;
   height: 50px;
@@ -145,10 +153,12 @@
   border: 2px solid var(--light-gray);
 }
 
+/* Información del cliente: ocupa el espacio restante */
 .client-info {
   flex: 1;
 }
 
+/* Banner de aviso de cliente inactivo en el detalle */
 .client-inactive-banner {
   background: var(--danger);
   color: white;
@@ -171,7 +181,7 @@
   color: var(--gray);
 }
 
-/* Panel de detalle del cliente */
+/* Panel de detalle del cliente con borde dorado gradiente */
 .client-detail {
   background: #ffffff;
   border-radius: 10px;
@@ -181,6 +191,7 @@
   position: relative;
 }
 
+/* Borde gradiente dorado en panel de detalle */
 .client-detail::before {
   content: '';
   position: absolute;
@@ -194,10 +205,12 @@
   pointer-events: none;
 }
 
+/* Detalle visible cuando tiene clase .active */
 .client-detail.active {
   display: block;
 }
 
+/* Overlay oscuro cuando el cliente está inactivo */
 .client-detail.inactive::after {
   content: '';
   position: absolute;
@@ -208,12 +221,13 @@
   pointer-events: none;
 }
 
+/* Cabecera del detalle con z-index por encima del overlay */
 .client-detail.inactive .client-header {
   position: relative;
   z-index: 3;
 }
 
-/* Cabecera del detalle con avatar grande */
+/* Cabecera del detalle con avatar grande e info del cliente */
 .client-header {
   display: flex;
   align-items: center;
@@ -224,6 +238,7 @@
   color: white;
 }
 
+/* Avatar grande del cliente en el detalle */
 .client-main-avatar {
   width: 90px;
   height: 90px;
@@ -233,6 +248,7 @@
   margin-right: 20px;
 }
 
+/* Nombre, email y datos del cliente */
 .client-main-info {
   flex: 1;
 }
@@ -250,7 +266,7 @@
   margin-bottom: 5px;
 }
 
-/* Tags del cliente */
+/* Tags/categorías asignadas al cliente */
 .client-tags {
   display: flex;
   gap: 10px;
@@ -267,7 +283,7 @@
   color: var(--primary);
 }
 
-/* Tabs de información del cliente */
+/* Tabs de navegación de información del cliente */
 .client-tabs {
   display: flex;
   border-bottom: 1px solid var(--light-gray);
@@ -275,6 +291,7 @@
   flex-wrap: wrap;
 }
 
+/* Cada tab individual con indicador inferior */
 .client-tab {
   padding: 12px 20px;
   cursor: pointer;
@@ -283,11 +300,13 @@
   border-bottom: 3px solid transparent;
 }
 
+/* Tab activo: borde inferior primario */
 .client-tab.active {
   border-bottom: 3px solid var(--primary);
   color: var(--primary);
 }
 
+/* Contenido de tab: oculto por defecto */
 .tab-content {
   display: none;
 }
@@ -296,7 +315,7 @@
   display: block;
 }
 
-/* Grid de información general */
+/* Grid responsive de información general del cliente */
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -304,7 +323,7 @@
   margin-bottom: 30px;
 }
 
-/* Tarjeta de información */
+/* Tarjeta de información con borde dorado gradiente */
 .info-card {
   background-color: #ffffff;
   border-radius: 10px;
@@ -316,6 +335,7 @@
   flex-direction: column;
 }
 
+/* Borde gradiente dorado en tarjeta de información */
 .info-card::before {
   content: '';
   position: absolute;
@@ -334,6 +354,7 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
+/* Título de la tarjeta con borde inferior */
 .info-card h4 {
   color: var(--primary);
   margin-bottom: 15px;
@@ -341,7 +362,7 @@
   border-bottom: 1px solid var(--light-gray);
 }
 
-/* Item de información con ícono */
+/* Item de información con ícono alineado */
 .info-item {
   display: flex;
   margin-bottom: 12px;
@@ -356,7 +377,7 @@
   flex: 1;
 }
 
-/* Botón de editar información */
+/* Botón de editar información: posición absoluta arriba-derecha */
 .edit-info {
   position: absolute;
   top: 15px;
@@ -371,7 +392,7 @@
   transform: scale(1.1);
 }
 
-/* Tarjeta de evento en el timeline */
+/* Tarjeta de evento en el historial/timeline del cliente */
 .event-card {
   display: flex;
   margin-bottom: 20px;
@@ -384,6 +405,7 @@
   box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
 }
 
+/* Borde gradiente dorado en tarjeta de evento */
 .event-card::before {
   content: '';
   position: absolute;
@@ -403,17 +425,20 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
+/* Imagen del evento a la izquierda */
 .event-image {
   width: 120px;
   background-size: cover;
   background-position: center;
 }
 
+/* Información del evento a la derecha */
 .event-info {
   flex: 1;
   padding: 15px;
 }
 
+/* Cabecera del evento con degradado */
 .event-header {
   display: flex;
   justify-content: space-between;
@@ -435,12 +460,14 @@
   font-size: 0.9rem;
 }
 
+/* Detalles y descripción del evento */
 .event-details {
   color: var(--gray);
   font-size: 0.95rem;
   margin-bottom: 10px;
 }
 
+/* Badge de estado del evento */
 .event-status {
   padding: 5px 15px;
   border-radius: 20px;
@@ -449,6 +476,7 @@
   display: inline-block;
 }
 
+/* Variantes de estado: completado, próximo, cancelado */
 .status-completed {
   background-color: rgba(76, 175, 80, 0.15);
   color: var(--success);
@@ -464,7 +492,7 @@
   color: var(--danger);
 }
 
-/* Grid de preferencias */
+/* Grid de tarjetas de preferencias del cliente */
 .preferences-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -472,6 +500,7 @@
   margin-top: 20px;
 }
 
+/* Tarjeta individual de preferencia con borde dorado */
 .preference-card {
   background: #ffffff;
   border-radius: 10px;
@@ -482,6 +511,7 @@
   box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
 }
 
+/* Borde gradiente dorado en tarjeta de preferencia */
 .preference-card::before {
   content: '';
   position: absolute;
@@ -500,6 +530,7 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
+/* Ícono grande de la preferencia */
 .preference-icon {
   font-size: 2.5rem;
   color: var(--primary);
@@ -516,7 +547,7 @@
   color: var(--gray);
 }
 
-/* Filas de estadísticas */
+/* Filas de estadísticas del cliente en grid de 2 columnas */
 .stats-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -524,7 +555,7 @@
   margin-top: 20px;
 }
 
-/* Estado sin cliente seleccionado */
+/* Estado vacío cuando no hay cliente seleccionado */
 .no-client-selected {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 10px;
@@ -557,7 +588,7 @@
 
 /* Modal de clientes - hereda .modal-content de _base.css */
 
-/* Botón de editar en detalle */
+/* Botón de editar en detalle: amarillo */
 .btn-edit {
   background: var(--warning);
   color: white;
@@ -579,6 +610,7 @@
   background: #cccccc;
 }
 
+/* Botón de eliminar: rojo */
 .btn-delete {
   background: var(--danger);
   color: white;
@@ -590,6 +622,7 @@
   background: #d32f2f;
 }
 
+/* Botón de habilitar: verde */
 .btn-enable {
   background: var(--success);
   color: white;
@@ -601,7 +634,7 @@
   background: #388e3c;
 }
 
-/* Botón nuevo cliente alineado a la derecha */
+/* Contenedor del botón nuevo cliente alineado a la derecha */
 .new-client-top {
   display: flex;
   justify-content: flex-end;
@@ -610,12 +643,15 @@
 }
 
 /* Responsive */
+
+/* Tablet: sidebar y detalle en columna única */
 @media (max-width: 1024px) {
   .clients-container {
     grid-template-columns: 1fr;
   }
 }
 
+/* Móvil grande: cabecera vertical, stats y eventos apilados */
 @media (max-width: 768px) {
   .client-header {
     flex-direction: column;
@@ -640,6 +676,7 @@
   }
 }
 
+/* Móvil pequeño: filtros y cabeceras en columna */
 @media (max-width: 480px) {
   .status-filter {
     grid-template-columns: 1fr;
@@ -650,7 +687,7 @@
   }
 }
 
-/* Paginación de preferencias */
+/* Paginación de preferencias centrada */
 .pref-pagination {
   display: flex;
   justify-content: center;
@@ -659,6 +696,8 @@
   margin-top: 20px;
   grid-column: 1 / -1;
 }
+
+/* Botones de paginación con degradado dorado */
 .pref-pagination button {
   background: linear-gradient(135deg, #D4AF37, #F5D76E);
   border: none;
@@ -669,13 +708,17 @@
   font-weight: 500;
   transition: opacity 0.2s;
 }
+
 .pref-pagination button:hover:not(:disabled) {
   opacity: 0.85;
 }
+
 .pref-pagination button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Texto de información de página actual */
 .pref-page-info {
   font-weight: 600;
   color: var(--dark);

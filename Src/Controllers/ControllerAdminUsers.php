@@ -8,14 +8,12 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
-/**
- * ControllerAdminUsers
- * 
- * CRUD de usuarios para administradores.
- * Todos los métodos requieren rol 'admin'.
- */
+// ControllerAdminUsers — CRUD de usuarios para administradores
+// Listar, consultar, crear, cambiar rol y activar/desactivar usuarios
+// Todos los métodos requieren rol 'admin' y protegen contra auto-modificación
 class ControllerAdminUsers
 {
+    // Verifica que el usuario tenga permisos de administrador
     private static function requireAdmin(): void
     {
         SessionHelpers::requireAuth();
@@ -24,9 +22,7 @@ class ControllerAdminUsers
         }
     }
 
-    /**
-     * GET /api/admin/users.php?action=list&page=1&search=...
-     */
+    // GET /api/admin/users.php?action=list&page=1&search=... — Lista paginada de usuarios
     public static function list(): void
     {
         self::requireAdmin();
@@ -40,9 +36,7 @@ class ControllerAdminUsers
         ApiResponse::success($result);
     }
 
-    /**
-     * GET /api/admin/users.php?action=get&id=xxx
-     */
+    // GET /api/admin/users.php?action=get&id=xxx — Detalle de un usuario
     public static function get(): void
     {
         self::requireAdmin();
@@ -71,10 +65,8 @@ class ControllerAdminUsers
         ]);
     }
 
-    /**
-     * PUT /api/admin/users.php?action=role
-     * Body: { "user_id": 1, "role": "admin"|"user" }
-     */
+    // PUT /api/admin/users.php?action=role — Cambia el rol de un usuario (no permite auto-cambio)
+    // Body: { "user_id": 1, "role": "admin"|"user" }
     public static function updateRole(): void
     {
         self::requireAdmin();
@@ -91,7 +83,6 @@ class ControllerAdminUsers
             ApiResponse::error('Datos inválidos. Role debe ser "super_admin", "admin" o "user".');
         }
 
-        // No permitir auto-desescalarse
         if ($userId === (int)SessionHelpers::get('user_id')) {
             ApiResponse::error('No puedes cambiar tu propio rol.', 403);
         }
@@ -104,10 +95,7 @@ class ControllerAdminUsers
         }
     }
 
-    /**
-     * POST /api/admin/users.php?action=create
-     * Crea un nuevo usuario desde el panel de administración
-     */
+    // POST /api/admin/users.php?action=create — Crea un nuevo usuario desde el panel de administración
     public static function create(): void
     {
         self::requireAdmin();
@@ -139,6 +127,7 @@ class ControllerAdminUsers
 
         $repo = new UserRepository();
 
+        // Validaciones de unicidad
         $errors = [];
         if ($repo->existsByUsername($username)) {
             $errors['username'] = 'El nombre de usuario ya está registrado.';
@@ -172,10 +161,8 @@ class ControllerAdminUsers
         }
     }
 
-    /**
-     * PUT /api/admin/users.php?action=toggle-active
-     * Body: { "user_id": 1 }
-     */
+    // PUT /api/admin/users.php?action=toggle-active — Activa/desactiva un usuario (no permite auto-desactivarse)
+    // Body: { "user_id": 1 }
     public static function toggleActive(): void
     {
         self::requireAdmin();
@@ -191,7 +178,6 @@ class ControllerAdminUsers
             ApiResponse::error('ID de usuario inválido.');
         }
 
-        // No permitir auto-desactivarse
         if ($userId === (int)SessionHelpers::get('user_id')) {
             ApiResponse::error('No puedes desactivar tu propia cuenta.', 403);
         }

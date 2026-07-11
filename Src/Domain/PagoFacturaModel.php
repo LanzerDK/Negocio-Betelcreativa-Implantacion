@@ -2,15 +2,18 @@
 
 namespace BetelCreativa\Domain;
 
+// PagoFacturaModel — Modelo para los abonos/cuotas aplicados a una factura
+// Almacena el monto (siempre en USD), método de pago y tasa BCV usada para auditoría
 class PagoFacturaModel
 {
-    private ?int $id;
-    private int $facturaId;
-    private float $monto;
-    private string $metodoPago;
-    private float $tasaUsada;
-    private ?string $fecha;
+    private ?int $id;                // ID único del pago
+    private int $facturaId;          // ID de la factura a la que se aplica
+    private float $monto;            // Monto del pago en USD (base contable)
+    private string $metodoPago;      // Método: divisas, efectivo, pagomovil
+    private float $tasaUsada;        // Tasa BCV del momento del pago
+    private ?string $fecha;          // Fecha y hora del pago
 
+    // Constructor: recibe datos desde la API o repositorio
     public function __construct(array $data = [])
     {
         $this->id = isset($data['id']) ? (int)$data['id'] : null;
@@ -21,6 +24,7 @@ class PagoFacturaModel
         $this->fecha = $data['fecha'] ?? null;
     }
 
+    // Getters
     public function getId(): ?int { return $this->id; }
     public function getFacturaId(): int { return $this->facturaId; }
     public function getMonto(): float { return $this->monto; }
@@ -28,6 +32,7 @@ class PagoFacturaModel
     public function getTasaUsada(): float { return $this->tasaUsada; }
     public function getFecha(): ?string { return $this->fecha; }
 
+    // Convierte a array para enviar como JSON
     public function toArray(): array
     {
         return [

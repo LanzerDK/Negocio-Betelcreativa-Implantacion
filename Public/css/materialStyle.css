@@ -1,4 +1,6 @@
 /* materialStyle.css - Estilos específicos del módulo de Materiales */
+
+/* Barra de navegación superior con gradiente */
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
@@ -109,6 +111,7 @@
   height: 100%;
 }
 
+/* Borde dorado decorativo con gradiente via mask */
 .material-card::before {
   content: '';
   position: absolute;
@@ -139,6 +142,7 @@
   display: none;
 }
 
+/* Overlay oscuro sobre tarjeta inhabilitada */
 .material-card.inhabilitado::after {
   content: '';
   position: absolute;
@@ -244,6 +248,7 @@
   background-color: #e8eaed;
 }
 
+/* Placeholder cuando no hay imagen */
 .material-image.no-image {
   display: flex;
   align-items: center;
@@ -499,6 +504,7 @@
   }
 }
 
+/* Pantallas medianas - grid de tarjetas más compacto e imagen reducida */
 @media (max-width: 768px) {
   .materials-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -509,6 +515,7 @@
   }
 }
 
+/* Pantallas pequeñas - tarjetas a una sola columna */
 @media (max-width: 480px) {
   .materials-grid {
     grid-template-columns: 1fr;
@@ -537,7 +544,4 @@
   overflow-y: auto;
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-}
-
-
 }

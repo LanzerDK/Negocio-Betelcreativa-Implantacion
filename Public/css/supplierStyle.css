@@ -72,6 +72,7 @@
   margin-top: 16px;
 }
 
+/* Borde dorado decorativo con gradiente via mask */
 .stats-section::before {
   content: '';
   position: absolute;
@@ -99,6 +100,7 @@
   gap: 8px;
 }
 
+/* Tarjeta individual de estadistica con borde dorado */
 .stat-card {
   background: #ffffff;
   box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.08), 0px 2px 20px rgba(212, 175, 55, 0.25);
@@ -157,6 +159,7 @@
   align-items: stretch;
 }
 
+/* Tarjeta individual de proveedor con borde dorado */
 .supplier-card {
   background: #ffffff;
   border-radius: 10px;
@@ -187,7 +190,7 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
-/* Estado inhabilitado */
+/* Estado inhabilitado - escala reducida, borde rojo y overlay oscuro */
 .supplier-card.inhabilitado {
   transform: scale(0.98);
   border: 2px solid var(--danger);
@@ -199,6 +202,7 @@
   display: none;
 }
 
+/* Overlay oscuro sobre tarjeta inhabilitada */
 .supplier-card.inhabilitado::after {
   content: '';
   position: absolute;
@@ -213,6 +217,7 @@
   transform: scale(0.98);
 }
 
+/* Contenido y acciones por encima del overlay */
 .supplier-card.inhabilitado .supplier-body,
 .supplier-card.inhabilitado .supplier-actions {
   position: relative;
@@ -239,6 +244,7 @@
   color: white;
 }
 
+/* Cabecera de tarjeta: avatar + nombre + badge de estado */
 .supplier-header {
   display: flex;
   align-items: center;
@@ -246,6 +252,7 @@
   padding: 20px 20px 0;
 }
 
+/* Avatar circular con gradiente del proveedor */
 .supplier-avatar {
   width: 50px;
   height: 50px;
@@ -291,6 +298,7 @@
   color: var(--gray);
 }
 
+/* Cuerpo de tarjeta con detalles del proveedor */
 .supplier-body {
   padding: 15px 20px;
   flex: 1;
@@ -313,6 +321,7 @@
   text-align: center;
 }
 
+/* Dirección con truncado a 2 líneas */
 .supplier-detail.address {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -320,6 +329,7 @@
   overflow: hidden;
 }
 
+/* Acciones de la tarjeta (editar, toggle) alineadas al fondo */
 .supplier-actions {
   display: flex;
   gap: 10px;
@@ -327,6 +337,7 @@
   margin-top: auto;
 }
 
+/* Botón de acción base dentro de tarjeta */
 .action-btn {
   flex: 1;
   padding: 10px;
@@ -366,6 +377,7 @@
   transform: translateY(-2px);
 }
 
+/* Badge del tipo de proveedor (fijo / comodín) */
 .supplier-type-badge {
   display: inline-flex;
   align-items: center;
@@ -389,6 +401,7 @@
   color: #b8860b;
 }
 
+/* Etiqueta de subtipo debajo del badge */
 .subtype-label {
   font-size: 0.8rem;
   color: var(--gray);
@@ -416,12 +429,14 @@
   }
 }
 
+/* Pantallas medianas - grid de tarjetas más compacto */
 @media (max-width: 768px) {
   .suppliers-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
 }
 
+/* Pantallas pequeñas - tarjetas a una sola columna */
 @media (max-width: 480px) {
   .suppliers-grid {
     grid-template-columns: 1fr;

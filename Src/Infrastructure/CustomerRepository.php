@@ -8,17 +8,13 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
-// =============================================
-// Repositorio de Clientes
-// Capa de acceso a datos para la tabla `customers`
-// Traduce columnas de la BD (snake_case) a alias
-// que el modelo entiende (camelCase)
-// =============================================
+// CustomerRepository — Acceso a datos de la tabla `customers`
+// CRUD completo con verificación de unicidad por email y teléfono
 class CustomerRepository
 {
     private PDO $db;
 
-    // Inicializa la conexión PDO usando el singleton de Database
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
@@ -65,7 +61,7 @@ class CustomerRepository
         }
     }
 
-    // Inserta un nuevo cliente en la BD y devuelve true si tuvo éxito
+    // Inserta un nuevo cliente en la BD
     public function save(CustomerModel $customer): bool
     {
         try {
@@ -129,7 +125,7 @@ class CustomerRepository
         }
     }
 
-    // Verifica si ya existe un cliente con el mismo email (excluyendo el ID opcional)
+    // Verifica si ya existe un cliente con el mismo email (excluyendo el ID opcional para edición)
     public function existsByEmail(string $email, ?int $excludeId = null): bool
     {
         try {
@@ -147,7 +143,7 @@ class CustomerRepository
         }
     }
 
-    // Verifica si ya existe un cliente con el mismo teléfono (excluyendo el ID opcional)
+    // Verifica si ya existe un cliente con el mismo teléfono (excluyendo el ID opcional para edición)
     public function existsByPhone(string $phone, ?int $excludeId = null): bool
     {
         try {

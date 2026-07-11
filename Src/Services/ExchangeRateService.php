@@ -4,6 +4,8 @@ namespace BetelCreativa\Services;
 
 use BetelCreativa\Infrastructure\SettingsRepository;
 
+// ExchangeRateService — Obtención de la tasa de cambio BCV (Bolívar ↔ Dólar)
+// Intenta obtener la tasa desde la API de DolarAPI, con fallback al último valor guardado en settings
 class ExchangeRateService
 {
     private SettingsRepository $settings;
@@ -13,6 +15,7 @@ class ExchangeRateService
         $this->settings = new SettingsRepository();
     }
 
+    // Devuelve la tasa efectiva: primero intenta API en vivo, si falla usa el valor persistido en BD
     public function getEffectiveRate(): float
     {
         $newRate = $this->fetchFromApi();
@@ -24,6 +27,7 @@ class ExchangeRateService
         return (float)$saved;
     }
 
+    // Consulta la tasa oficial desde DolarAPI con timeout de 3 segundos
     private function fetchFromApi(): float
     {
         try {

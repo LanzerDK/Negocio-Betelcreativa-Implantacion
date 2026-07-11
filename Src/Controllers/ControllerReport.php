@@ -6,8 +6,11 @@ use BetelCreativa\Infrastructure\ReportRepository;
 use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// ControllerReport — Reportes del sistema (solo super_admin)
+// Inventario, movimientos, ingresos y compras con filtros de fecha y generación de gráficos
 class ControllerReport
 {
+    // Valida que una fecha tenga formato YYYY-MM-DD
     private static function validateDate(string $date, string $label): ?string
     {
         $d = trim($date);
@@ -18,16 +21,19 @@ class ControllerReport
         return $d;
     }
 
+    // Fecha por defecto: 30 días atrás
     private static function getDefaultFrom(): string
     {
         return date('Y-m-d', strtotime('-30 days'));
     }
 
+    // Fecha por defecto: hoy
     private static function getDefaultTo(): string
     {
         return date('Y-m-d');
     }
 
+    // Verifica que el usuario tenga rol super_admin
     private static function requireSuperAdmin(): void
     {
         SessionHelpers::requireAuth();
@@ -36,6 +42,7 @@ class ControllerReport
         }
     }
 
+    // GET /api/reports.php?action=inventory — Reporte de inventario con filtros y gráfico
     public static function inventory(): void
     {
         self::requireSuperAdmin();
@@ -63,6 +70,7 @@ class ControllerReport
         ApiResponse::success($data);
     }
 
+    // GET /api/reports.php?action=movements — Reporte de movimientos de inventario
     public static function movements(): void
     {
         self::requireSuperAdmin();
@@ -89,6 +97,7 @@ class ControllerReport
         ApiResponse::success($data);
     }
 
+    // GET /api/reports.php?action=income — Reporte de ingresos desde facturas
     public static function income(): void
     {
         self::requireSuperAdmin();
@@ -109,6 +118,7 @@ class ControllerReport
         ApiResponse::success($data);
     }
 
+    // GET /api/reports.php?action=purchases — Reporte de compras a proveedores
     public static function purchases(): void
     {
         self::requireSuperAdmin();

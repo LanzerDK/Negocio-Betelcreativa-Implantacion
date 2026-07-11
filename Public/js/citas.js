@@ -1,18 +1,40 @@
+// Lista de citas activas (no canceladas) cargadas desde la API
 let citasList = [];
+
+// Todas las citas (incluye finalizadas) para el calendario
 let todasLasCitas = [];
+
+// Lista de citas canceladas para el historial
 let canceladasList = [];
+
+// Listas maestras de clientes, tipos de evento y materiales disponibles
 let clientesList = [];
 let tiposEventoList = [];
 let materialesDisponibles = [];
+
+// Materiales asignados a la cita actual (nueva o en edición)
 let materialesAsignados = [];
+
+// Paginación de la tabla principal
 let paginaActual = 1;
 const itemsPorPagina = 10;
-let calendario = null;
-let modoMaterial = 'nuevo'; // 'nuevo' | 'editar'
-let citaEditandoId = null;
-let facturaEstadoCita = null;
-let citaMaterialesOriginales = []; // snapshot al abrir edición (para cálculo de stock disponible)
 
+// Instancia del calendario FullCalendar
+let calendario = null;
+
+// Modo actual del panel de materiales: 'nuevo' o 'editar'
+let modoMaterial = 'nuevo';
+
+// ID de la cita que se está editando
+let citaEditandoId = null;
+
+// Estado de la factura asociada a la cita en edición (para bloquear materiales)
+let facturaEstadoCita = null;
+
+// Snapshot de materiales originales al abrir edición (para cálculo de stock disponible)
+let citaMaterialesOriginales = [];
+
+// Escapado de HTML para prevenir inyección de XSS
 function escapeHtml(str) {
     if (!str) return '';
     const d = document.createElement('div');
@@ -22,10 +44,12 @@ function escapeHtml(str) {
 
 // ==================== HELPERS TIMEZONE VET ====================
 
+// Retorna la fecha/hora actual en la zona horaria de Caracas
 function ahoraEnCaracas() {
     return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Caracas' }));
 }
 
+// Suma N días hábiles (excluye sábados y domingos) a una fecha
 function sumarDiasHabiles(desde, dias) {
     const result = new Date(desde);
     let contados = 0;
@@ -38,6 +62,7 @@ function sumarDiasHabiles(desde, dias) {
     return result;
 }
 
+// Verifica si una cita cancelada puede ser restaurada (dentro de 3 días hábiles)
 function esRestaurable(fechaCancelacion, fechaHoraInicio) {
     if (!fechaCancelacion) return false;
     const ahora = ahoraEnCaracas();
@@ -48,6 +73,7 @@ function esRestaurable(fechaCancelacion, fechaHoraInicio) {
 
 // ==================== CARGA INICIAL ====================
 
+// Carga los tipos de evento disponibles desde la API
 async function fetchTiposEvento()
 {
     try {
@@ -61,6 +87,7 @@ async function fetchTiposEvento()
     }
 }
 
+// Puebla los selects de tipo de evento (nuevo, editar, filtro)
 function poblarSelectoresTipoEvento()
 {
     const selects = [
@@ -71,6 +98,7 @@ function poblarSelectoresTipoEvento()
     selects.forEach(sel => {
         if (!sel) return;
         const valActual = sel.value;
+        // El filtro tiene opción "Todos" por defecto
         if (sel.id === 'eventTypeFilter') {
             sel.innerHTML = '<option value="">Todos</option>';
         } else {
@@ -82,12 +110,14 @@ function poblarSelectoresTipoEvento()
             opt.textContent = et.name;
             sel.appendChild(opt);
         });
+        // Mantener el valor seleccionado previamente si existe
         if (valActual && sel.querySelector(`option[value="${valActual}"]`)) {
             sel.value = valActual;
         }
     });
 }
 
+// Carga la lista de clientes desde la API
 async function fetchClientes()
 {
     try {
@@ -101,6 +131,7 @@ async function fetchClientes()
     }
 }
 
+// Puebla los selects de cliente (nuevo y editar) con solo clientes activos
 function poblarSelectoresCliente()
 {
     const selects = [
@@ -124,6 +155,7 @@ function poblarSelectoresCliente()
     });
 }
 
+// Carga las citas activas (no canceladas) y actualiza tabla y calendario
 async function fetchCitas()
 {
     try {
@@ -138,6 +170,7 @@ async function fetchCitas()
     }
 }
 
+// Carga todas las citas (incluye finalizadas) para el calendario
 async function fetchTodasLasCitas()
 {
     try {
@@ -151,6 +184,7 @@ async function fetchTodasLasCitas()
     }
 }
 
+// Carga las citas canceladas para el historial
 async function fetchCanceladas()
 {
     try {
@@ -166,39 +200,46 @@ async function fetchCanceladas()
 
 // ==================== UTILIDADES ====================
 
+// Retorna el nombre completo de un cliente por su ID
 function obtenerNombreCliente(id)
 {
     const c = clientesList.find(c => c.id === id);
     return c ? (c.firstName + ' ' + c.lastName).trim() : 'Cliente #' + id;
 }
 
+// Retorna la URL del avatar de un cliente por su ID (con fallback por defecto)
 function obtenerAvatarCliente(id)
 {
     const c = clientesList.find(c => c.id === id);
     return c?.avatar || 'https://i.imgur.com/1As0akH.jpg';
 }
 
+// Retorna el teléfono de un cliente por su ID
 function obtenerTelefonoCliente(id)
 {
     const c = clientesList.find(c => c.id === id);
     return c?.phone || '';
 }
 
+// Retorna el texto del estado de una cita o guion si está vacío
 function textoEstado(estado)
 {
     return estado || '—';
 }
 
+// Convierte el nombre del estado a CSS class (reemplaza espacios por guiones, minúsculas)
 function classNameEstado(estado)
 {
     return (estado || '').replace(/\s+/g, '-').toLowerCase();
 }
 
+// Calcula la cantidad máxima disponible de un material considerando stock y reserva
 function calcularMaxDisponible(material, yaAsignado)
 {
     return Math.min(material.stock, material.stock - (material.reservedStock || 0) + (yaAsignado || 0));
 }
 
+// Formatea una fecha/hora en formato español (dd/mm/yyyy HH:mm)
 function formatearFechaHora(datetime)
 {
     if (!datetime) return '—';
@@ -208,6 +249,7 @@ function formatearFechaHora(datetime)
 
 // ==================== TABLA PRINCIPAL ====================
 
+// Renderiza la tabla de citas con paginación
 function renderizarTabla(pagina)
 {
     const tbody = document.querySelector('.appointments-table tbody');
@@ -215,12 +257,14 @@ function renderizarTabla(pagina)
 
     tbody.innerHTML = '';
 
+    // Cálculo de paginación
     const total = citasList.length;
     const totalPaginas = Math.ceil(total / itemsPorPagina) || 1;
     const inicio = (pagina - 1) * itemsPorPagina;
     const fin = Math.min(inicio + itemsPorPagina, total);
     const itemsPagina = citasList.slice(inicio, fin);
 
+    // Actualizar indicadores de paginación
     const mostrarInicio = document.getElementById('showingStart');
     const mostrarFin = document.getElementById('showingEnd');
     const totalSpan = document.getElementById('totalAppointments');
@@ -228,6 +272,7 @@ function renderizarTabla(pagina)
     if (mostrarFin) mostrarFin.textContent = fin;
     if (totalSpan) totalSpan.textContent = total;
 
+    // Generar botones de páginas
     const contPaginas = document.getElementById('pageButtons');
     if (contPaginas) {
         contPaginas.innerHTML = '';
@@ -244,6 +289,7 @@ function renderizarTabla(pagina)
     if (prevBtn) prevBtn.disabled = pagina <= 1;
     if (nextBtn) nextBtn.disabled = pagina >= totalPaginas;
 
+    // Renderizar cada fila de la tabla
     itemsPagina.forEach(cita => {
         const nombre = obtenerNombreCliente(cita.clienteId);
         const telefono = obtenerTelefonoCliente(cita.clienteId);
@@ -254,6 +300,7 @@ function renderizarTabla(pagina)
         fila.dataset.id = cita.id;
         fila.dataset.estado = cita.estado;
 
+        // Determinar si la fila debe bloquear acciones (edición/cancelación)
         const esCancelado = cita.estado === 'Cancelado';
         const esFinalizada = cita.estado === 'Finalizada';
         const facturaPagadaCompleta = cita.facturaEstado === 'cerrada'
@@ -261,6 +308,7 @@ function renderizarTabla(pagina)
                 && parseFloat(cita.totalPagadoVes) >= parseFloat(cita.totalFactura) - 0.01);
         const bloqueado = esCancelado || esFinalizada || facturaPagadaCompleta;
 
+        // HTML de la fila: ID, cliente, fecha, tipo, ubicación, notas, estado, acciones
         fila.innerHTML = `
             <td class="col-1">#${cita.id}</td>
             <td class="col-2">
@@ -289,6 +337,7 @@ function renderizarTabla(pagina)
     });
 }
 
+// Vincula eventos click a los botones de acción de cada fila
 function agregarListenersFila(fila, id)
 {
     const editBtn = fila.querySelector('.action-btn.edit');
@@ -312,6 +361,7 @@ function agregarListenersFila(fila, id)
 
 // ==================== FILTROS ====================
 
+// Filtra las filas de la tabla según búsqueda, tipo, estado y rango de fechas
 function filtrarCitas()
 {
     const searchVal = document.getElementById('searchInput')?.value?.toLowerCase() || '';
@@ -336,6 +386,7 @@ function filtrarCitas()
 
 // ==================== CALENDARIO ====================
 
+// Inicializa el calendario FullCalendar con las citas como eventos
 function initCalendar()
 {
     const el = document.getElementById('calendar');
@@ -346,6 +397,7 @@ function initCalendar()
         locale: 'es',
         headerToolbar: false,
         editable: false,
+        // Genera eventos dinámicamente desde las citas cargadas
         events: function(fetchInfo, successCallback) {
             const lista = todasLasCitas.length > 0 ? todasLasCitas : citasList;
             const eventos = lista
@@ -360,11 +412,13 @@ function initCalendar()
             }));
             successCallback(eventos);
         },
+        // Toast informativo al hacer clic en un evento del calendario
         eventClick: function(info) {
             const nombre = info.event.title;
             const ubicacion = info.event.extendedProps.ubicacion || 'Sin ubicación';
             toast(`${nombre} | Ubicación: ${ubicacion}`, 'info');
         },
+        // Actualizar título del calendario al cambiar de vista
         datesSet: function() { actualizarTituloCalendario(); }
     });
 
@@ -372,6 +426,7 @@ function initCalendar()
     actualizarTituloCalendario();
 }
 
+// Actualiza el título del encabezado del calendario (mes y año)
 function actualizarTituloCalendario()
 {
     const titulo = document.getElementById('calendarTitle');
@@ -383,12 +438,15 @@ function actualizarTituloCalendario()
 
 // ==================== MODAL NUEVA CITA ====================
 
+// Abre el modal para crear una nueva cita
 function abrirModalNueva()
 {
+    // Verificar que al menos haya un cliente registrado
     if (clientesList.length === 0) {
         toast('Debe registrar al menos un cliente.', 'warning');
         return;
     }
+    // Resetear materiales asignados y estado del modal
     materialesAsignados = [];
     document.getElementById('newMaterialCount').textContent = '';
     document.getElementById('newSubmitBtn').disabled = false;
@@ -396,7 +454,7 @@ function abrirModalNueva()
     poblarSelectoresCliente();
     const form = document.getElementById('newAppointmentForm');
     if (form) form.reset();
-    // Bloquear fechas pasadas y futuro > 1 año
+    // Limitar fechas: mínimo hoy, máximo 1 año adelante
     const hoy = new Date().toISOString().slice(0, 10);
     const maxDate = new Date();
     maxDate.setFullYear(maxDate.getFullYear() + 1);
@@ -405,7 +463,7 @@ function abrirModalNueva()
     if (fechaInicio) { fechaInicio.min = hoy; fechaInicio.max = maxStr; }
     const fechaFin = document.getElementById('newFechaFin');
     if (fechaFin) { fechaFin.min = hoy; fechaFin.max = maxStr; }
-    // Resetear hora a 8:00 AM por defecto
+    // Resetear hora por defecto a 8:00 AM
     ['newHoraInicio_h','newHoraFin_h'].forEach(id => { const s=document.getElementById(id); if(s) s.value='8'; });
     ['newHoraInicio_m','newHoraFin_m'].forEach(id => { const s=document.getElementById(id); if(s) s.value='00'; });
     ['newHoraInicio_a','newHoraFin_a'].forEach(id => { const s=document.getElementById(id); if(s) s.value='AM'; });
@@ -413,6 +471,7 @@ function abrirModalNueva()
 
 // ==================== MODAL EDICIÓN ====================
 
+// Abre el modal de edición con los datos de la cita seleccionada
 async function abrirModalEdicion(cita)
 {
     citaEditandoId = cita.id;
@@ -425,9 +484,12 @@ async function abrirModalEdicion(cita)
     poblarSelectoresCliente();
     poblarSelectoresTipoEvento();
 
+    // Helper para asignar valor a un campo del formulario
     const asignar = (id, valor) => { const el = document.getElementById(id); if (el) el.value = valor ?? ''; };
     asignar('editId', cita.id);
     asignar('editClient', cita.clienteId);
+
+    // Parsear fecha/hora de inicio y convertir de 24h a formato 12h
     if (cita.fechaHoraInicio) {
         const p = cita.fechaHoraInicio.replace(' ', 'T').split('T');
         asignar('editFechaInicio', p[0] || '');
@@ -438,6 +500,7 @@ async function abrirModalEdicion(cita)
             asignar('editHoraInicio_a', t.ap);
         }
     }
+    // Parsear fecha/hora de fin
     if (cita.fechaHoraFin) {
         const p = cita.fechaHoraFin.replace(' ', 'T').split('T');
         asignar('editFechaFin', p[0] || '');
@@ -452,7 +515,7 @@ async function abrirModalEdicion(cita)
     asignar('editUbicacion', cita.ubicacion);
     asignar('editNotas', cita.notas);
 
-    // Motivo sin materiales
+    // Restaurar checkbox y textarea de "sin materiales" si la cita tiene motivo
     const sinMatCheck = document.getElementById('editSinMateriales');
     const sinMatTextarea = document.getElementById('editMotivoSinMateriales');
     if (cita.motivoSinMateriales) {
@@ -461,6 +524,7 @@ async function abrirModalEdicion(cita)
         toggleSinMateriales('editar');
     }
 
+    // Bloquear selección de cliente en edición (no se puede cambiar)
     const clientSelect = document.getElementById('editClient');
     if (clientSelect) {
         clientSelect.disabled = true;
@@ -472,6 +536,7 @@ async function abrirModalEdicion(cita)
     document.getElementById('editMaterialCount').textContent = '';
     const mats = await cargarMaterialesCita(cita.id);
     materialesAsignados = mats;
+    // Guardar snapshot para cálculo de stock disponible en edición
     citaMaterialesOriginales = JSON.parse(JSON.stringify(mats));
     actualizarContadorMateriales('edit');
     const panel = document.getElementById('editMaterialPanel');
@@ -503,6 +568,7 @@ async function abrirModalEdicion(cita)
     if (editFin) editFin.max = maxStr;
 }
 
+// Carga los materiales asignados a una cita específica desde la API
 async function cargarMaterialesCita(citaId)
 {
     try {
@@ -510,6 +576,7 @@ async function cargarMaterialesCita(citaId)
         if (res.success && res.data) {
             facturaEstadoCita = res.data.facturaEstado || null;
             const mats = res.data.materiales || [];
+            // Normalizar formato de materiales (compatibilidad con múltiples nombres de campo)
             return mats.map(m => ({
                 materialId: m.materialId || m.materialid,
                 cantidad: m.cantidad || m.cantidadUtilizada || m.cantidadutilizada || 0
@@ -522,13 +589,16 @@ async function cargarMaterialesCita(citaId)
 
 // ==================== MATERIALES (panel lateral con select + "+") ====================
 
-let todosMateriales = []; // todos los materiales activos (cargados una vez)
+// Todos los materiales activos (cargados una vez para evitar múltiples llamadas)
+let todosMateriales = [];
 
+// Carga todos los materiales activos para los selects de asignación
 async function cargarSelectMateriales()
 {
     try {
         const res = await callApi(APP_URL + 'Public/api/materials.php?_=' + Date.now());
         if (!res.success) return;
+        // Filtrar solo materiales activos
         todosMateriales = res.data.filter(m => m.is_active == 1 || m.is_active === true);
         const selects = [
             document.getElementById('newMaterialSelect'),
@@ -549,13 +619,14 @@ async function cargarSelectMateriales()
     }
 }
 
+// Abre el panel lateral de materiales en modo nuevo o editar
 function abrirModalMateriales(modo)
 {
     modoMaterial = modo;
     const prefix = modo === 'nuevo' ? 'new' : 'edit';
     const panel = document.getElementById(prefix + 'MaterialPanel');
     if (!panel) return;
-    // Cargar el select si está vacío
+    // Cargar el select si está vacío (fallback)
     const sel = document.getElementById(prefix + 'MaterialSelect');
     if (sel && sel.options.length <= 1 && todosMateriales.length > 0) {
         sel.innerHTML = '<option value="">Seleccionar material...</option>';
@@ -566,7 +637,7 @@ function abrirModalMateriales(modo)
             sel.appendChild(opt);
         });
     }
-    // Limpiar filtro
+    // Limpiar campo de filtro
     const filter = document.getElementById(prefix + 'MaterialFilter');
     if (filter) filter.value = '';
     panel.style.display = 'flex';
@@ -574,6 +645,7 @@ function abrirModalMateriales(modo)
     renderizarListaMateriales(modo);
 }
 
+// Agrega un material seleccionado del dropdown a la lista de asignados
 function agregarMaterial(modo)
 {
     const prefix = modo === 'nuevo' ? 'new' : 'edit';
@@ -583,18 +655,21 @@ function agregarMaterial(modo)
     if (!materialId) { toast('Seleccione un material.', 'warning'); return; }
     const material = todosMateriales.find(m => m.id === materialId);
     if (!material) return;
+    // Verificar que no esté duplicado
     const existente = materialesAsignados.find(a => a.materialId === materialId);
     if (existente) {
         toast('Este material ya fue agregado.', 'warning');
         sel.value = '';
         return;
     }
+    // Agregar con cantidad mínima de 1
     materialesAsignados.push({ materialId: materialId, cantidad: 1 });
     sel.value = '';
     actualizarSelectMateriales(modo);
     renderizarListaMateriales(modo);
 }
 
+// Elimina un material de la lista de asignados
 function eliminarMaterial(modo, materialId)
 {
     materialesAsignados = materialesAsignados.filter(a => a.materialId !== materialId);
@@ -604,6 +679,7 @@ function eliminarMaterial(modo, materialId)
     actualizarSelectMateriales(modo);
 }
 
+// Deshabilita en el select los materiales que ya están asignados
 function actualizarSelectMateriales(modo)
 {
     const prefix = modo === 'nuevo' ? 'new' : 'edit';
@@ -621,6 +697,7 @@ function actualizarSelectMateriales(modo)
     });
 }
 
+// Renderiza la lista visual de materiales asignados con inputs de cantidad
 function renderizarListaMateriales(modo)
 {
     const prefix = modo === 'nuevo' ? 'new' : 'edit';
@@ -629,6 +706,7 @@ function renderizarListaMateriales(modo)
     const filtro = (document.getElementById(prefix + 'MaterialFilter')?.value || '').toLowerCase();
 
     const idsAsignados = materialesAsignados.map(a => a.materialId);
+    // Aplicar filtro de búsqueda sobre materiales asignados
     let aRenderizar = materialesAsignados.filter(a => {
         const m = todosMateriales.find(mat => mat.id === a.materialId);
         if (!m) return false;
@@ -636,6 +714,7 @@ function renderizarListaMateriales(modo)
         return texto.includes(filtro);
     });
 
+    // Estado vacío: mensaje según haya filtro o no
     if (aRenderizar.length === 0) {
         cont.innerHTML = '<p class="material-empty">' +
             (filtro ? 'No se encontraron materiales.' : 'Presione <strong>+</strong> para agregar materiales.') +
@@ -643,15 +722,17 @@ function renderizarListaMateriales(modo)
         return;
     }
 
+    // Generar HTML de cada material asignado con controls de cantidad
     cont.innerHTML = aRenderizar.map(asig => {
         const m = todosMateriales.find(mat => mat.id === asig.materialId);
         if (!m) return '';
+        // En edición, calcular stock disponible considerando lo que ya tenía asignado
         const yaAsignado = modo === 'editar'
             ? (citaMaterialesOriginales.find(o => o.materialId === asig.materialId)?.cantidad || 0)
             : 0;
         const maxDisponible = calcularMaxDisponible(m, yaAsignado);
         const excede = asig.cantidad > maxDisponible;
-        // NEW: mostrar stock real de BD; EDIT: mostrar valores simulados (lo que quedará tras guardar)
+        // En nuevo: mostrar stock real; en editar: simular lo que quedará tras guardar
         let dispText, reservText;
         if (modo === 'nuevo') {
             dispText = m.stock - (m.reservedStock || 0);
@@ -677,7 +758,7 @@ function renderizarListaMateriales(modo)
         `;
     }).join('');
 
-    // Eventos: cantidad
+    // Vincular evento input a cada campo de cantidad para validación en tiempo real
     cont.querySelectorAll('.material-cantidad').forEach(input => {
         input.addEventListener('input', function() {
             const item = this.closest('.material-item');
@@ -689,14 +770,16 @@ function renderizarListaMateriales(modo)
             const warning = item.querySelector('.stock-warning');
             const asig = materialesAsignados.find(a => a.materialId === parseInt(item.dataset.id));
             if (asig) asig.cantidad = cant;
-            // Actualizar display en tiempo real (solo en edición, en nuevo se muestra stock real)
+            // Actualizar display de stock en tiempo real (solo en edición)
             if (modo === 'editar') {
                 const nuevoReservado = reserved - yaAsignado + cant;
                 const nuevoDisponible = stock - nuevoReservado;
                 const stockEl = item.querySelector('.material-stock');
                 if (stockEl) stockEl.innerHTML = 'Disponible: <strong>' + nuevoDisponible + '</strong> | Reservado: ' + nuevoReservado;
             }
+            // Validaciones de cantidad
             if (cant < 1) {
+                // Cantidad mínima: 1
                 this.style.background = '#ffcccc';
                 this.style.borderColor = 'red';
                 warning.textContent = 'La cantidad mínima es 1.';
@@ -704,6 +787,7 @@ function renderizarListaMateriales(modo)
                 item.classList.add('excede');
                 deshabilitarSubmit(true);
             } else if (cant > maxDisponible) {
+                // Stock insuficiente
                 this.style.background = '#ffcccc';
                 this.style.borderColor = 'red';
                 warning.textContent = '¡Stock Insuficiente!';
@@ -711,6 +795,7 @@ function renderizarListaMateriales(modo)
                 item.classList.add('excede');
                 deshabilitarSubmit(true);
             } else {
+                // Cantidad válida: limpiar estilos de error
                 this.style.background = '';
                 this.style.borderColor = '';
                 warning.style.display = 'none';
@@ -720,7 +805,7 @@ function renderizarListaMateriales(modo)
             actualizarContadorMateriales(prefix);
         });
     });
-    // Eventos: eliminar
+    // Vincular eventos click a botones de eliminar material
     cont.querySelectorAll('.material-remove').forEach(btn => {
         btn.addEventListener('click', function() {
             const id = parseInt(this.closest('.material-item').dataset.id);
@@ -730,6 +815,7 @@ function renderizarListaMateriales(modo)
     actualizarTotalMateriales(prefix);
 }
 
+// Habilita/deshabilita el botón de submit del formulario de cita
 function deshabilitarSubmit(deshabilitado)
 {
     const btnNuevo = document.getElementById('newSubmitBtn');
@@ -738,10 +824,11 @@ function deshabilitarSubmit(deshabilitado)
     if (btnEditar) btnEditar.disabled = deshabilitado;
 }
 
+// Valida stock de todos los materiales asignados antes de confirmar el panel
 function confirmarMateriales(modo)
 {
     const prefix = modo === 'nuevo' ? 'new' : 'edit';
-    // Validar stock antes de confirmar
+    // Iterar cada material asignado y validar cantidades
     for (const asig of materialesAsignados) {
         const m = todosMateriales.find(mat => mat.id === asig.materialId);
         if (!m) continue;
@@ -749,7 +836,7 @@ function confirmarMateriales(modo)
             toast('La cantidad mínima para "' + (m.code || m.name) + '" es 1.', 'warning');
             return;
         }
-        // Para nueva cita, yaAsignado = 0; para editar, usar la cantidad original que tenía esta cita
+        // Para nueva cita, yaAsignado = 0; para editar, usar la cantidad original
         const orig = citaMaterialesOriginales.find(o => o.materialId === asig.materialId);
         const yaAsignado = orig ? orig.cantidad : 0;
         const maxDisponible = calcularMaxDisponible(m, yaAsignado);
@@ -767,11 +854,13 @@ function confirmarMateriales(modo)
     deshabilitarSubmit(false);
 }
 
+// Verifica si hay cantidades inválidas (< 1) en materiales asignados
 function hayCantidadInvalida()
 {
     return materialesAsignados.some(a => a.cantidad < 1);
 }
 
+// Cierra el panel de materiales después de validar cantidades
 function cerrarPanelMateriales(modo)
 {
     if (hayCantidadInvalida()) {
@@ -783,6 +872,7 @@ function cerrarPanelMateriales(modo)
     deshabilitarSubmit(false);
 }
 
+// Actualiza el contador visual de materiales asignados (items y unidades)
 function actualizarContadorMateriales(prefix)
 {
     const span = document.getElementById(prefix + 'MaterialCount');
@@ -792,6 +882,7 @@ function actualizarContadorMateriales(prefix)
     }
 }
 
+// Actualiza el total de materiales distintos asignados
 function actualizarTotalMateriales(prefix)
 {
     const el = document.getElementById(prefix + 'MaterialTotal');
@@ -803,8 +894,10 @@ function actualizarTotalMateriales(prefix)
 
 // ==================== CANCELACIÓN ====================
 
+// ID de la cita que se está cancelando
 let cancelandoId = null;
 
+// Abre el modal de cancelación de cita
 function abrirModalCancelacion(id)
 {
     cancelandoId = id;
@@ -812,6 +905,7 @@ function abrirModalCancelacion(id)
     document.getElementById('cancelModal').style.display = 'flex';
 }
 
+// Confirma la cancelación enviando motivo a la API
 async function confirmarCancelacion()
 {
     const motivo = document.getElementById('cancelMotivo')?.value?.trim();
@@ -829,6 +923,7 @@ async function confirmarCancelacion()
             toast('Cita cancelada exitosamente.', 'success');
             document.getElementById('cancelModal').style.display = 'none';
             paginaActual = 1;
+            // Recargar todos los datos: citas activas, todas, canceladas y materiales
             await fetchCitas();
             await fetchTodasLasCitas();
             await fetchCanceladas();
@@ -843,6 +938,7 @@ async function confirmarCancelacion()
 
 // ==================== RESTAURACIÓN ====================
 
+// Restaura una cita cancelada (verifica disponibilidad de materiales en backend)
 async function restaurarCita(id)
 {
     if (!confirm('¿Restaurar esta cita? Se verificará disponibilidad de materiales.')) return;
@@ -868,6 +964,7 @@ async function restaurarCita(id)
 
 // ==================== API CALLS ====================
 
+// Crea una nueva cita enviando datos completos a la API (POST)
 async function crearCita(datos)
 {
     try {
@@ -889,6 +986,7 @@ async function crearCita(datos)
     }
 }
 
+// Actualiza una cita existente con datos modificados (PUT)
 async function actualizarCita(id, datos)
 {
     try {
@@ -912,6 +1010,7 @@ async function actualizarCita(id, datos)
 
 // ==================== HISTORIAL ====================
 
+// Renderiza la tabla de historial de citas canceladas
 function renderizarHistorial()
 {
     const tbody = document.getElementById('historyBody');
@@ -922,6 +1021,7 @@ function renderizarHistorial()
         return;
     }
 
+    // Filtrar solo canceladas y renderizar cada fila
     tbody.innerHTML = canceladasList.filter(c => c.estado === 'Cancelado').map(c => {
         const nombre = obtenerNombreCliente(c.clienteId);
         const telefono = obtenerTelefonoCliente(c.clienteId);
@@ -943,6 +1043,7 @@ function renderizarHistorial()
         </tr>`;
     }).join('');
 
+    // Vincular eventos click a botones de restaurar
     tbody.querySelectorAll('.btn-reactivate').forEach(btn => {
         btn.addEventListener('click', () => restaurarCita(parseInt(btn.dataset.id)));
     });
@@ -950,6 +1051,7 @@ function renderizarHistorial()
 
 // ==================== HISTORIAL DE MATERIALES POR CITA ====================
 
+// Carga el historial de cambios de materiales de una cita específica
 async function fetchHistorialCita(citaId)
 {
     try {
@@ -959,6 +1061,7 @@ async function fetchHistorialCita(citaId)
     return [];
 }
 
+// Renderiza el timeline de historial de materiales en el modal
 function renderHistorialCitaModal(data)
 {
     const cont = document.getElementById('citaHistorialContent');
@@ -967,10 +1070,12 @@ function renderHistorialCitaModal(data)
         cont.innerHTML = '<p style="text-align:center;color:var(--gray);padding:20px;">Sin historial de materiales.</p>';
         return;
     }
+    // Generar timeline con cada acción registrada
     cont.innerHTML = '<div class="historial-timeline">' + data.map(h => {
         const fecha = h.created_at ? formatearFechaHora(h.created_at) : '—';
         const usuario = (h.first_name || '') + ' ' + (h.last_name || '');
         const matNombre = h.materialCode ? (h.materialCode + ' - ' + h.materialName) : (h.materialName || 'Material #' + h.material_id);
+        // Descripción legible según tipo de acción
         let detalle = '';
         if (h.accion === 'Asignado') {
             detalle = 'Asignado <strong>' + h.cantidad_nueva + '</strong> uds.';
@@ -994,6 +1099,7 @@ function renderHistorialCitaModal(data)
     }).join('') + '</div>';
 }
 
+// Abre el modal de historial de materiales de una cita
 function abrirHistorialCita(citaId)
 {
     const modal = document.getElementById('citaHistorialModal');
@@ -1005,6 +1111,7 @@ function abrirHistorialCita(citaId)
 
 // ==================== TIPOS DE EVENTO (gestión) ====================
 
+// Renderiza la lista de tipos de evento en el modal de gestión
 async function renderizarListaTiposEvento()
 {
     const cont = document.getElementById('eventTypeList');
@@ -1017,6 +1124,7 @@ async function renderizarListaTiposEvento()
             cont.innerHTML = '<p style="color:var(--gray);text-align:center;">No hay tipos de evento registrados.</p>';
             return;
         }
+        // Renderizar cada tipo de evento con botón de eliminar
         cont.innerHTML = tipos.map(et => `
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);">
                 <span>${et.name}</span>
@@ -1025,6 +1133,7 @@ async function renderizarListaTiposEvento()
                 </button>
             </div>
         `).join('');
+        // Vincular eventos de eliminar a cada botón
         cont.querySelectorAll('button[data-id]').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = parseInt(btn.dataset.id);
@@ -1051,6 +1160,7 @@ async function renderizarListaTiposEvento()
 
 // ==================== UTILIDADES DE HORA ====================
 
+// Puebla los selects de hora (horas 1-12, minutos 00-59, AM/PM)
 function poblarSelectoresHora()
 {
     const ids = [
@@ -1086,6 +1196,7 @@ function poblarSelectoresHora()
     });
 }
 
+// Convierte hora formato 24h (HH:MM) a formato 12h (h, m, AM/PM)
 function hora24a12(hhmm)
 {
     const p = hhmm.split(':');
@@ -1097,6 +1208,7 @@ function hora24a12(hhmm)
     return { h: h.toString(), m: m, ap: ap };
 }
 
+// Convierte hora formato 12h (h, m, AM/PM) a formato 24h (HH:MM)
 function hora12a24(h, m, ap)
 {
     h = parseInt(h, 10);
@@ -1107,6 +1219,7 @@ function hora12a24(h, m, ap)
 
 // ==================== VALIDACIÓN ====================
 
+// Alterna la vista del checkbox "Sin materiales" y su textarea de motivo
 function toggleSinMateriales(mode)
 {
     const prefix = mode === 'nuevo' ? 'new' : 'edit';
@@ -1117,6 +1230,7 @@ function toggleSinMateriales(mode)
     const panel = document.getElementById(prefix + 'MaterialPanel');
     if (!checkbox) return;
     if (checkbox.checked) {
+        // Sin materiales: mostrar textarea, deshabilitar botón de asignar, limpiar lista
         group.style.display = 'block';
         textarea.setAttribute('required', 'false');
         btn.style.opacity = '0.5';
@@ -1125,6 +1239,7 @@ function toggleSinMateriales(mode)
         materialesAsignados = [];
         actualizarContadorMateriales(prefix);
     } else {
+        // Con materiales: ocultar textarea, habilitar botón de asignar
         group.style.display = 'none';
         textarea.removeAttribute('required');
         textarea.value = '';
@@ -1133,21 +1248,25 @@ function toggleSinMateriales(mode)
     }
 }
 
+// Valida los datos de una cita antes de enviar (campos obligatorios y reglas de negocio)
 function validarDatosCita(datos)
 {
     if (!datos.clienteId) { toast('Debe seleccionar un cliente.', 'warning'); return false; }
     if (!datos.fechaHoraInicio) { toast('La fecha y hora de inicio es obligatoria.', 'warning'); return false; }
     if (!datos.fechaHoraFin) { toast('La fecha y hora de fin es obligatoria.', 'warning'); return false; }
+    // La fecha de fin debe ser posterior a la de inicio
     if (datos.fechaHoraInicio >= datos.fechaHoraFin) {
         toast('La fecha de fin debe ser posterior a la de inicio.', 'warning');
         return false;
     }
+    // No más de 1 año de anticipación
     const unAno = new Date();
     unAno.setFullYear(unAno.getFullYear() + 1);
     if (new Date(datos.fechaHoraInicio) > unAno) {
         toast('No se pueden agendar citas con más de 1 año de anticipación.', 'warning');
         return false;
     }
+    // Debe haber materiales asignados o un motivo de "sin materiales"
     if (!datos.materiales || datos.materiales.length === 0) {
         if (!datos.motivoSinMateriales) {
             toast('Debe asignar al menos un material o indicar el motivo.', 'warning');
@@ -1159,9 +1278,11 @@ function validarDatosCita(datos)
 
 // ==================== INICIALIZACIÓN ====================
 
+// Inicialización principal: configura selectores, carga datos y vincula eventos
 function initApp()
 {
     poblarSelectoresHora();
+    // Cargar clientes primero, luego el resto en paralelo
     fetchClientes().then(() => {
         fetchTiposEvento();
         cargarSelectMateriales();
@@ -1170,14 +1291,14 @@ function initApp()
         fetchCanceladas();
     });
 
-    // Toggle sin materiales
+    // Toggle checkbox "sin materiales" (nuevo y editar)
     document.getElementById('newSinMateriales')?.addEventListener('change', () => toggleSinMateriales('nuevo'));
     document.getElementById('editSinMateriales')?.addEventListener('change', () => toggleSinMateriales('editar'));
 
-    // Botón agregar
+    // Botón "Nueva Cita": abre el modal de creación
     document.getElementById('addAppointmentBtn')?.addEventListener('click', abrirModalNueva);
 
-    // Form nueva cita
+    // Formulario de nueva cita: recopilar datos, validar y enviar
     document.getElementById('newAppointmentForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         if (document.getElementById('newSubmitBtn').disabled) {
@@ -1188,6 +1309,7 @@ function initApp()
             toast('Corrija las cantidades inválidas antes de guardar.', 'warning');
             return;
         }
+        // Recopilar fechas y horas, convertir de 12h a 24h
         const fechaInicio = document.getElementById('newFechaInicio')?.value || '';
         const hi_h = document.getElementById('newHoraInicio_h')?.value || '8';
         const hi_m = document.getElementById('newHoraInicio_m')?.value || '00';
@@ -1211,10 +1333,10 @@ function initApp()
         document.getElementById('newAppointmentModal').style.display = 'none';
     });
 
-    // Asignar materiales (nuevo)
+    // Botón "Asignar Materiales" (modo nuevo)
     document.getElementById('newAsignarMateriales')?.addEventListener('click', () => abrirModalMateriales('nuevo'));
 
-    // Form editar cita
+    // Formulario de editar cita: recopilar datos, validar y enviar
     document.getElementById('editForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         if (document.getElementById('editSubmitBtn').disabled) {
@@ -1227,6 +1349,7 @@ function initApp()
         }
         const id = parseInt(document.getElementById('editId')?.value || 0);
         if (!id) return;
+        // Recopilar fechas y horas, convertir de 12h a 24h
         const fechaInicio = document.getElementById('editFechaInicio')?.value || '';
         const hi_h = document.getElementById('editHoraInicio_h')?.value || '8';
         const hi_m = document.getElementById('editHoraInicio_m')?.value || '00';
@@ -1250,44 +1373,46 @@ function initApp()
         document.getElementById('editModal').style.display = 'none';
     });
 
-    // Asignar materiales (editar)
+    // Botón "Asignar Materiales" (modo editar)
     document.getElementById('editAsignarMateriales')?.addEventListener('click', () => abrirModalMateriales('editar'));
-    // Ver historial de materiales (editar)
+    // Botón "Ver Historial" de materiales (modo editar)
     document.getElementById('editVerHistorial')?.addEventListener('click', function() {
         const id = parseInt(document.getElementById('editId')?.value || 0);
         if (id) abrirHistorialCita(id);
     });
 
-    // Panel materiales — nuevo
+    // Panel de materiales (modo nuevo): filtro, agregar, confirmar, cerrar
     document.getElementById('newMaterialFilter')?.addEventListener('input', () => renderizarListaMateriales('nuevo'));
     document.getElementById('newAddMaterialBtn')?.addEventListener('click', () => agregarMaterial('nuevo'));
     document.getElementById('newConfirmMaterialPanel')?.addEventListener('click', () => confirmarMateriales('nuevo'));
     document.getElementById('newCloseMaterialPanel')?.addEventListener('click', () => cerrarPanelMateriales('nuevo'));
     document.getElementById('newMaterialSelect')?.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); agregarMaterial('nuevo'); } });
-    // Panel materiales — editar
+    // Panel de materiales (modo editar): filtro, agregar, confirmar, cerrar
     document.getElementById('editMaterialFilter')?.addEventListener('input', () => renderizarListaMateriales('editar'));
     document.getElementById('editAddMaterialBtn')?.addEventListener('click', () => agregarMaterial('editar'));
     document.getElementById('editConfirmMaterialPanel')?.addEventListener('click', () => confirmarMateriales('editar'));
     document.getElementById('editCloseMaterialPanel')?.addEventListener('click', () => cerrarPanelMateriales('editar'));
     document.getElementById('editMaterialSelect')?.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); agregarMaterial('editar'); } });
 
-    // Modal cancelación
+    // Modal de cancelación: confirmar y cancelar
     document.getElementById('confirmCancelBtn')?.addEventListener('click', confirmarCancelacion);
     document.getElementById('cancelCancelBtn')?.addEventListener('click', () => document.getElementById('cancelModal').style.display = 'none');
 
-    // Toggle vista calendario
+    // Toggle vista tabla ↔ calendario
     document.getElementById('toggleViewBtn')?.addEventListener('click', function() {
         const tableView = document.getElementById('appointmentsTable');
         const calendarView = document.getElementById('calendarView');
         const icon = this.querySelector('i');
         if (tableView && calendarView) {
             if (tableView.style.display !== 'none') {
+                // Cambiar a vista calendario
                 tableView.style.display = 'none';
                 calendarView.style.display = 'block';
                 if (icon) { icon.classList.remove('fa-calendar'); icon.classList.add('fa-list'); }
                 this.innerHTML = '<i class="fas fa-list"></i> Vista Tabla';
                 if (calendario) calendario.updateSize();
             } else {
+                // Cambiar a vista tabla
                 tableView.style.display = 'block';
                 calendarView.style.display = 'none';
                 if (icon) { icon.classList.remove('fa-list'); icon.classList.add('fa-calendar'); }
@@ -1296,12 +1421,13 @@ function initApp()
         }
     });
 
-    // Cerrar modal historial
+    // Cerrar modal de historial de materiales
     document.querySelector('#citaHistorialModal .close-modal')?.addEventListener('click', () => {
         document.getElementById('citaHistorialModal').style.display = 'none';
     });
 
-    // Cerrar modales
+    // Cerrar modales genéricos (con X o botones cancelar)
+    // Bloquea cierre si hay cantidades inválidas en materiales
     document.querySelectorAll('.close-modal, #cancelNew, #cancelEdit').forEach(btn => {
         btn.addEventListener('click', function() {
             if (hayCantidadInvalida()) {
@@ -1311,7 +1437,7 @@ function initApp()
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         });
     });
-    // Cerrar panel lateral de materiales
+    // Cerrar panel lateral de materiales con botón X
     document.querySelectorAll('.close-sidebar').forEach(btn => {
         btn.addEventListener('click', function() {
             if (hayCantidadInvalida()) {
@@ -1322,6 +1448,7 @@ function initApp()
             if (panel) panel.style.display = 'none';
         });
     });
+    // Cerrar modales al hacer clic fuera (overlay)
     window.addEventListener('click', function(e) {
         if (hayCantidadInvalida()) return;
         document.querySelectorAll('.modal').forEach(m => {
@@ -1331,12 +1458,12 @@ function initApp()
         if (e.target === histModal) histModal.style.display = 'none';
     });
 
-    // Navegación calendario
+    // Navegación del calendario: mes anterior, mes siguiente, hoy
     document.getElementById('prevMonth')?.addEventListener('click', () => { if (calendario) calendario.prev(); });
     document.getElementById('nextMonth')?.addEventListener('click', () => { if (calendario) calendario.next(); });
     document.getElementById('todayBtn')?.addEventListener('click', () => { if (calendario) calendario.today(); });
 
-    // Paginación
+    // Paginación: anterior y siguiente
     document.getElementById('prevPage')?.addEventListener('click', () => {
         if (paginaActual > 1) { paginaActual--; renderizarTabla(paginaActual); }
     });
@@ -1345,14 +1472,14 @@ function initApp()
         if (paginaActual < totalPaginas) { paginaActual++; renderizarTabla(paginaActual); }
     });
 
-    // Filtros
+    // Filtros de la tabla principal
     document.getElementById('searchInput')?.addEventListener('input', filtrarCitas);
     document.getElementById('eventTypeFilter')?.addEventListener('change', filtrarCitas);
     document.getElementById('statusFilter')?.addEventListener('change', filtrarCitas);
     document.getElementById('filterDateFrom')?.addEventListener('change', filtrarCitas);
     document.getElementById('filterDateTo')?.addEventListener('change', filtrarCitas);
 
-    // Historial
+    // Toggle sección de historial de canceladas
     document.getElementById('toggleHistoryBtn')?.addEventListener('click', function() {
         const section = document.getElementById('historySection');
         if (section) {
@@ -1366,7 +1493,7 @@ function initApp()
         }
     });
 
-    // Gestión de tipos de evento
+    // Gestión de tipos de evento: abrir modal y crear nuevo tipo
     document.getElementById('manageEventTypesBtn')?.addEventListener('click', () => {
         document.getElementById('eventTypeModal').style.display = 'flex';
         renderizarListaTiposEvento();
@@ -1393,6 +1520,7 @@ function initApp()
     });
 }
 
+// Inicializar la aplicación y el calendario al cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
     setTimeout(initCalendar, 100);

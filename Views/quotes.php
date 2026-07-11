@@ -21,12 +21,13 @@
             <div class="logo-container">
                 <h1 class="logo-icon"><i class="fas fa-calendar-plus"></i></h1>
                 <div class="app-info">
-                    <h1>GestiÃ³n de Citas</h1>
+                    <h1>Gestión de Citas</h1>
                     <p>Administra tus citas y eventos programados</p>
                 </div>
             </div>
             <div class="user-container">
                 <div class="imagenfoto">
+                    <!-- Avatar: usa el de sesión o el logo del sistema por defecto -->
                     <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
                     <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
@@ -43,13 +44,13 @@
                         <i class="fas fa-user"></i> Cuenta
                     </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i> Cerrar SesiÃ³n
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </a>
                     </div>
                 </div>
             </div>
         </header>
-        <!-- MenÃº principal -->
+        <!-- Menú principal -->
         <nav class="main-menu">
             <a href="<?php echo APP_URL; ?>dashboard" class="menu-item">
                 <i class="fas fa-tachometer-alt"></i>
@@ -57,7 +58,7 @@
             </a>
             <a href="<?php echo APP_URL; ?>category" class="menu-item">
                 <i class="fas fa-layer-group"></i>
-                <span>CategorÃ­a</span>
+                <span>Categoría</span>
             </a>
             <a href="<?php echo APP_URL; ?>materials" class="menu-item">
                 <i class="fas fa-box-open"></i>
@@ -70,7 +71,7 @@
             <div class="menu-item-wrapper">
                 <a href="<?php echo APP_URL; ?>storage" class="menu-item">
                     <i class="fas fa-warehouse"></i>
-                    <span>AlmacÃ©n</span>
+                    <span>Almacén</span>
                 </a>
                 <button class="submenu-toggle" id="almacenSubmenuToggle" type="button">
                     <i class="fas fa-chevron-down"></i>
@@ -89,8 +90,9 @@
             </a>
             <a href="<?php echo APP_URL; ?>facturas" class="menu-item">
                 <i class="fas fa-file-invoice-dollar"></i>
-                <span>FacturaciÃ³n</span>
+                <span>Facturación</span>
             </a>
+            <!-- Botón de Reportes visible solo para super_admin -->
             <?php if (($_SESSION['user_role'] ?? '') === 'super_admin'): ?>
             <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
@@ -117,7 +119,7 @@
                     </div>
                 </div>
 
-                <!-- Nuevo diseÃ±o de dos columnas -->
+                <!-- Nuevo diseño de dos columnas -->
                 <div class="content-wrapper">
                     <!-- Panel de filtros a la izquierda -->
                     <aside class="filters-panel">
@@ -137,7 +139,6 @@
                                     <input type="date" id="filterDateTo">
                                 </div>
                             </div>
-
                             <div class="filter-group">
                                 <h3>Estado de Cita</h3>
                                 <select id="statusFilter" class="form-select">
@@ -149,7 +150,6 @@
                                     <option value="Cancelado">Cancelado</option>
                                 </select>
                             </div>
-
                             <div class="filter-group">
                                 <h3>Tipo de Evento</h3>
                                 <select id="eventTypeFilter" class="form-select">
@@ -159,8 +159,6 @@
                                     <i class="fas fa-cog"></i> Gestionar Tipos
                                 </button>
                             </div>
-
-
                         </section>
                     </aside>
 
@@ -174,7 +172,7 @@
                                     <th class="col-2">Cliente</th>
                                     <th class="col-3">Fecha y Hora</th>
                                     <th class="col-4">Tipo de Evento</th>
-                                    <th class="col-5">UbicaciÃ³n</th>
+                                    <th class="col-5">Ubicación</th>
                                     <th class="col-8">Notas</th>
                                     <th class="col-6">Estado</th>
                                     <th class="col-7">Acciones</th>
@@ -222,10 +220,10 @@
                                 <th>Cliente</th>
                                 <th>Fecha y Hora</th>
                                 <th>Tipo</th>
-                                <th>UbicaciÃ³n</th>
+                                <th>Ubicación</th>
                                 <th>Motivo</th>
                                 <th>Factura</th>
-                                <th>AcciÃ³n</th>
+                                <th>Acción</th>
                             </tr>
                         </thead>
                         <tbody id="historyBody">
@@ -286,7 +284,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">UbicaciÃ³n</label>
+                            <label class="form-label">Ubicación</label>
                             <input type="text" class="form-input" id="newUbicacion" required>
                         </div>
                         <div class="form-group">
@@ -300,7 +298,7 @@
                             </label>
                         </div>
                         <div class="form-group" id="newMotivoMaterialesGroup" style="display:none;">
-                            <textarea class="form-textarea" id="newMotivoSinMateriales" rows="2" placeholder="Indique por quÃ© no se requieren materiales..."></textarea>
+                            <textarea class="form-textarea" id="newMotivoSinMateriales" rows="2" placeholder="Indique por qué no se requieren materiales..."></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Notas</label>
@@ -340,7 +338,7 @@
         </div>
     </div>
 
-    <!-- Modal de EdiciÃ³n (con panel de materiales lateral) -->
+    <!-- Modal de Edición (con panel de materiales lateral) -->
     <div class="modal" id="editModal">
         <div class="modal-wrapper">
             <div class="modal-content">
@@ -390,7 +388,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">UbicaciÃ³n</label>
+                            <label class="form-label">Ubicación</label>
                             <input type="text" class="form-input" id="editUbicacion" required>
                         </div>
                         <div class="form-group" style="display:flex;gap:8px;">
@@ -407,7 +405,7 @@
                             </label>
                         </div>
                         <div class="form-group" id="editMotivoMaterialesGroup" style="display:none;">
-                            <textarea class="form-textarea" id="editMotivoSinMateriales" rows="2" placeholder="Indique por quÃ© no se requieren materiales..."></textarea>
+                            <textarea class="form-textarea" id="editMotivoSinMateriales" rows="2" placeholder="Indique por qué no se requieren materiales..."></textarea>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Notas</label>
@@ -447,7 +445,7 @@
         </div>
     </div>
 
-    <!-- Modal de ConfirmaciÃ³n de CancelaciÃ³n -->
+    <!-- Modal de Confirmación de Cancelación -->
     <div class="modal" id="cancelModal">
         <div class="modal-content" style="max-width:450px;">
             <div class="modal-header">
@@ -455,8 +453,8 @@
                 <span class="close-modal">&times;</span>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom:12px;">Por favor indique el motivo de la cancelaciÃ³n:</p>
-                <textarea class="form-textarea" id="cancelMotivo" rows="4" placeholder="Motivo de cancelaciÃ³n..." required style="width:100%;"></textarea>
+                <p style="margin-bottom:12px;">Por favor indique el motivo de la cancelación:</p>
+                <textarea class="form-textarea" id="cancelMotivo" rows="4" placeholder="Motivo de cancelación..." required style="width:100%;"></textarea>
                 <div class="form-actions" style="margin-top:12px;">
                     <button type="button" class="btn btn-outline" id="cancelCancelBtn">Volver</button>
                     <button type="button" class="btn btn-danger" id="confirmCancelBtn">Cancelar Cita</button>
@@ -478,7 +476,7 @@
         </div>
     </div>
 
-    <!-- Modal de GestiÃ³n de Tipos de Evento -->
+    <!-- Modal de Gestión de Tipos de Evento -->
     <div class="modal" id="eventTypeModal">
         <div class="modal-content" style="max-width:500px;">
             <div class="modal-header">
@@ -503,6 +501,7 @@
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
     </script>
     <script>
+        // Toggle del menú de usuario y submenú de almacén
         document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
             e.stopPropagation();
             document.getElementById('settingsDropdown')?.classList.toggle('show');

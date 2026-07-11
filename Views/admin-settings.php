@@ -82,6 +82,7 @@
             </div>
             <div class="user-container">
                 <div class="imagenfoto">
+                    <!-- Avatar: usa el de sesión o el logo del sistema por defecto -->
                     <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
                     <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
@@ -147,6 +148,7 @@
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Facturación</span>
             </a>
+            <!-- Botón de Reportes visible solo para super_admin -->
             <?php if (($_SESSION['user_role'] ?? '') === 'super_admin'): ?>
             <a href="<?php echo APP_URL; ?>reports" class="menu-item">
                 <i class="fas fa-chart-line"></i>
@@ -166,6 +168,7 @@
                 <div class="profile-card">
                     <div class="profile-header">
                         <div class="profile-avatar">
+                            <!-- Avatar del usuario con placeholder SVG si no tiene foto -->
                             <?php $avatar = $_SESSION['user_avatar'] ?? ''; ?>
                             <img src="<?php echo $avatar ? APP_URL . 'Public/' . htmlspecialchars($avatar) : 'data:image/svg+xml,' . rawurlencode('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect fill="#e0e0e0" width="120" height="120" rx="60"/><text x="60" y="72" font-size="48" text-anchor="middle" fill="#999" font-family="Arial">👤</text></svg>'); ?>" alt="Avatar de usuario" id="userAvatar">
                             <div class="avatar-upload" title="Cambiar foto">
@@ -191,6 +194,7 @@
                             <i class="fas fa-shield-alt"></i>
                             <span>Seguridad</span>
                         </button>
+                        <!-- Secciones de administración visibles según el rol -->
                         <?php if (in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin'])): ?>
                         <button class="config-tab" data-target="notifications">
                             <i class="fas fa-bell"></i>
@@ -212,7 +216,6 @@
                         <!-- Sección: Perfil -->
                         <div class="config-section active" id="profile-section">
                             <h3 style="margin-bottom: 25px; color: var(--primary);">Información Personal</h3>
-                            
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="name"><i class="fas fa-user"></i> Nombre</label>
@@ -231,8 +234,6 @@
                                     <input type="tel" class="form-input" id="phone" placeholder="0412-123-45-67">
                                 </div>
                             </div>
-                            
-                            
                             <div class="form-controls">
                                 <button class="btn btn-secondary">
                                     <i class="fas fa-times"></i> Cancelar
@@ -241,15 +242,12 @@
                                     <i class="fas fa-save"></i> Guardar Cambios
                                 </button>
                             </div>
-
-
                         </div>
 
                         <!-- Sección: Seguridad -->
                         <div class="config-section" id="security-section">
                             <h3 style="margin-bottom: 25px; color: var(--primary);">Cambiar Contraseña</h3>
                             <p style="margin-bottom: 20px; color: var(--gray);">Actualiza tu contraseña regularmente para mayor seguridad.</p>
-
                             <div id="passwordForm" style="margin-top: 10px; padding: 20px; background: var(--light-gray); border-radius: 10px; max-width: 500px;">
                                 <div class="form-group">
                                     <label for="currentPassword"><i class="fas fa-lock"></i> Contraseña Actual</label>
@@ -278,7 +276,6 @@
                         <div class="config-section" id="notifications-section">
                             <h3 style="margin-bottom: 25px; color: var(--primary);">Preferencias de Notificación</h3>
                             <p style="margin-bottom: 20px; color: var(--gray);">Controla cómo y cuándo recibes notificaciones del sistema.</p>
-                            
                             <div class="notification-list">
                                 <div class="notification-item">
                                     <div class="notification-info">
@@ -290,7 +287,6 @@
                                         <span class="slider"></span>
                                     </label>
                                 </div>
-                                
                                 <div class="notification-item">
                                     <div class="notification-info">
                                         <h4>Recordatorios de Citas</h4>
@@ -301,7 +297,6 @@
                                         <span class="slider"></span>
                                     </label>
                                 </div>
-                                
                                 <div class="notification-item">
                                     <div class="notification-info">
                                         <h4>Alertas de Seguridad</h4>
@@ -312,7 +307,6 @@
                                         <span class="slider"></span>
                                     </label>
                                 </div>
-                                
                                 <div class="notification-item">
                                     <div class="notification-info">
                                         <h4>Reportes Semanales</h4>
@@ -324,7 +318,6 @@
                                     </label>
                                 </div>
                             </div>
-                            
                             <div class="form-controls">
                                 <button class="btn btn-primary" id="saveNotifications">
                                     <i class="fas fa-save"></i> Guardar Configuración
@@ -336,7 +329,6 @@
                         <div class="config-section" id="billing-section">
                             <h3 style="margin-bottom: 25px; color: var(--primary);">Configuración de Facturación</h3>
                             <p style="margin-bottom: 20px; color: var(--gray);">Administra los términos y condiciones que aparecerán en las facturas.</p>
-
                             <div class="form-grid" style="grid-template-columns:1fr;">
                                 <div class="form-group">
                                     <label for="set_terminos_condiciones"><i class="fas fa-file-contract"></i> Términos y Condiciones</label>
@@ -344,7 +336,6 @@
                                     <textarea id="set_terminos_condiciones" class="form-textarea" rows="10" placeholder="Ej: Los pagos se realizan en bolívares o divisas al tipo de cambio BCV vigente.&#10;Las reservas están sujetas a disponibilidad.&#10;El cliente es responsable de verificar los detalles del evento."></textarea>
                                 </div>
                             </div>
-
                             <div class="form-controls">
                                 <button class="btn btn-primary" id="saveBilling">
                                     <i class="fas fa-save"></i> Guardar Configuración
@@ -360,11 +351,9 @@
                                     <i class="fas fa-plus"></i> Crear Usuario
                                 </button>
                             </div>
-
                             <div style="margin-bottom: 15px;">
                                 <input type="text" id="userSearch" placeholder="Buscar por nombre, email o usuario..." style="width: 100%; max-width: 400px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px;">
                             </div>
-
                             <div style="overflow-x: auto;">
                                 <table class="table" style="width: 100%; border-collapse: collapse;">
                                     <thead>
@@ -381,11 +370,10 @@
                                     </tbody>
                                 </table>
                             </div>
-
                             <div id="usersPagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;"></div>
                         </div>
 
-                        <!-- Modal Crear Usuario (estilo register.php) -->
+                        <!-- Modal Crear Usuario -->
                         <div id="modalCrearUsuario" class="modal-overlay" style="display: none;">
                             <div class="modal-content" style="max-width: 540px;">
                                 <div class="modal-header">
@@ -454,16 +442,16 @@
                 </div>
             </div>
         </main>
-
-        
     </div>
 
     <script>
+        // Expone constantes de PHP al JS para peticiones AJAX
         const APP_URL = '<?php echo APP_URL; ?>';
         const CSRF_TOKEN = '<?php echo $_SESSION['csrf_token'] ?? ''; ?>';
         const USER_ID = <?php echo (int)($_SESSION['user_id'] ?? 0); ?>;
     </script>
     <script>
+        // Toggle del menú de usuario y submenú de almacén
         document.getElementById('settingsBtn')?.addEventListener('click', function (e) {
             e.stopPropagation();
             document.getElementById('settingsDropdown')?.classList.toggle('show');

@@ -7,18 +7,25 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// FacturaRepository — Acceso a datos de las tablas `facturas` y `pagos_factura`
+// Gestiona creación, pagos (con/sin recibo), listados por estado, y cambios de estado
+// Implementa el flujo: factura → recibos → pagos, con transiciones controladas
 class FacturaRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene el detalle completo de facturación por ID de cita
+    // Incluye datos generales, materiales, pagos y recibos asociados
     public function getDetalleByCitaId(int $citaId): ?array
     {
         try {
+            // Datos generales de la cita y su factura asociada (si existe)
             $sqlCita = "SELECT
                             c.id AS citaId,
                             c.estado AS citaEstado,
@@ -53,6 +60,7 @@ class FacturaRepository
             $general = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$general) return null;
 
+            // Materiales asignados a la cita con precios unitarios
             $sqlMat = "SELECT
                            cm.material_id AS materialId,
                            m.material_code AS codigo,
@@ -67,6 +75,7 @@ class FacturaRepository
             $stmt->execute([':cita_id' => $citaId]);
             $materiales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Pagos y recibos asociados (solo si existe factura)
             $pagos = [];
             $recibos = [];
             if ($general['facturaId']) {
@@ -93,6 +102,7 @@ class FacturaRepository
         }
     }
 
+    // Obtiene todos los pagos de una factura principal y sus recibos
     public function getPagosByFacturaOrRecibos(int $facturaId): array
     {
         try {
@@ -112,9 +122,13 @@ class FacturaRepository
         }
     }
 
+    // Crea una nueva factura (tipo='factura') asociada a una cita
+    // Calcula total_factura = (costo_servicio + total_materiales) * (1 + IVA_RATE)
+    // Registra historial de creación (no-blocking)
     public function crearFactura(int $citaId, float $costoServicio, string $notasCuota = '', ?string $createdByName = null, ?string $descripcionServicio = null, string $planTipo = 'contado', ?int $planCuotasTotal = null, ?float $planMontoCuotaSugerido = null, ?int $changedBy = null): ?int
     {
         try {
+            // Calcula el total de materiales desde cita_materiales
             $matStmt = $this->db->prepare(
                 "SELECT COALESCE(SUM(cm.cantidad_utilizada * COALESCE(cm.precio_unitario, m.price, 0)), 0) AS total_mat
                  FROM cita_materiales cm
@@ -125,6 +139,7 @@ class FacturaRepository
             $totalMateriales = (float)$matStmt->fetchColumn();
             $totalFactura = round(($costoServicio + $totalMateriales) * (1 + IVA_RATE), 2);
 
+            // Inserta la factura con todos los datos del plan de pago
             $stmt = $this->db->prepare(
                 "INSERT INTO facturas (cita_id, costo_servicio, total_factura, notas_cuota, created_by_name, descripcion_servicio, plan_tipo, plan_cuotas_total, plan_monto_cuota_sugerido, tipo)
                  VALUES (:cita_id, :costo_servicio, :total_factura, :notas_cuota, :created_by_name, :descripcion_servicio, :plan_tipo, :plan_cuotas_total, :plan_monto_cuota_sugerido, 'factura')"
@@ -142,7 +157,7 @@ class FacturaRepository
             ]);
             $facturaId = (int)$this->db->lastInsertId();
 
-            // M6: log de creación (no-blocking si tabla no existe)
+            // Registra historial de creación (no bloquea si tabla no existe)
             try {
                 $logStmt = $this->db->prepare(
                     "INSERT INTO facturas_historial (factura_id, estado_anterior, estado_nuevo, changed_by, motivo)
@@ -159,16 +174,18 @@ class FacturaRepository
         }
     }
 
+    // Registra un pago contra una factura: crea un recibo (tipo='recibo') y asigna el pago
+    // Si es el primer pago, transiciona la cita de Pendiente → En Proceso
     public function registrarPago(int $facturaId, float $monto, string $metodoPago, float $tasaUsada, bool $manageTransaction = true, ?string $refPagoMovil = null): int
     {
         try {
             $ownTx = $manageTransaction && !$this->db->inTransaction();
             if ($ownTx) $this->db->beginTransaction();
 
-            // Crear un recibo (tipo='recibo') con su propio ID correlativo
+            // Calcula monto en Bs y crea un recibo correlativo
             $montoVes = round($monto * $tasaUsada, 2);
 
-            // Pre-fetch para evitar MySQL 1093 (no se permite subconsulta a la tabla destino)
+            // Pre-fetch para evitar MySQL 1093 (subconsulta a tabla destino)
             $srcStmt = $this->db->prepare(
                 "SELECT cita_id, created_by_name FROM facturas WHERE id = :fid"
             );
@@ -180,6 +197,7 @@ class FacturaRepository
             $citaId = (int)$srcRow['cita_id'];
             $createdByName = $srcRow['created_by_name'];
 
+            // Crea el recibo (tipo='recibo') vinculado a la factura origen
             $reciboStmt = $this->db->prepare(
                 "INSERT INTO facturas (cita_id, costo_servicio, total_factura, tipo, factura_origen_id, created_by_name, estado)
                  VALUES (:cita_id, 0, :monto_ves, 'recibo', :fid2, :created_by_name, 'cerrada')"
@@ -192,7 +210,7 @@ class FacturaRepository
             ]);
             $reciboId = (int)$this->db->lastInsertId();
 
-            // Registrar el pago contra el recibo
+            // Registra el pago contra el recibo
             $stmt = $this->db->prepare(
                 "INSERT INTO pagos_factura (factura_id, monto, metodo_pago, tasa_usada, Ref_PagoMovil)
                  VALUES (:factura_id, :monto, :metodo_pago, :tasa_usada, :ref_pago_movil)"
@@ -205,7 +223,7 @@ class FacturaRepository
                 ':ref_pago_movil'=> $refPagoMovil
             ]);
 
-            // M5: contar pagos del recibo, si es 1ra vez, actualizar estado cita
+            // Si es el primer pago de esta factura, transiciona la cita
             $countStmt = $this->db->prepare(
                 "SELECT COUNT(*) FROM pagos_factura
                  WHERE factura_id IN (:fid4)
@@ -239,10 +257,10 @@ class FacturaRepository
         }
     }
 
+    // Obtiene pagos por ID de factura (redirige a factura origen si es recibo)
     public function getPagosByFacturaId(int $facturaId): array
     {
         try {
-            // Check if facturaId is a recibo
             $check = $this->db->prepare("SELECT tipo, factura_origen_id FROM facturas WHERE id = :id");
             $check->execute([':id' => $facturaId]);
             $row = $check->fetch(PDO::FETCH_ASSOC);
@@ -258,6 +276,7 @@ class FacturaRepository
         }
     }
 
+    // Obtiene los datos de una factura por su ID
     public function getFacturaById(int $facturaId): ?array
     {
         try {
@@ -279,6 +298,7 @@ class FacturaRepository
         }
     }
 
+    // Calcula el total pagado en Bs de una factura (incluyendo recibos)
     public function getTotalPagadoVes(int $facturaId): float
     {
         try {
@@ -296,6 +316,9 @@ class FacturaRepository
         }
     }
 
+    // Cambia el estado de una factura validando transiciones permitidas
+    // Transiciones: activa ↔ cerrada, activa ↔ anulada, anulada → activa
+    // Registra historial de cambio de estado (no-blocking)
     public function cambiarEstado(int $facturaId, string $estado, ?int $changedBy = null, string $motivo = ''): bool
     {
         try {
@@ -306,7 +329,7 @@ class FacturaRepository
             if (!$actual) return false;
             $estadoAnterior = $actual['estado'];
 
-            // Permitir activa→anulada, activa→cerrada, anulada→activa
+            // Define las transiciones permitidas entre estados
             $transiciones = [
                 'activa'  => ['cerrada', 'anulada'],
                 'anulada' => ['activa']
@@ -318,6 +341,7 @@ class FacturaRepository
             $ownTx = !$this->db->inTransaction();
             if ($ownTx) $this->db->beginTransaction();
 
+            // Ejecuta el cambio de estado
             $stmt = $this->db->prepare("UPDATE facturas SET estado = :estado WHERE id = :id AND estado = :ea");
             $ok = $stmt->execute([':estado' => $estado, ':id' => $facturaId, ':ea' => $estadoAnterior]);
             if ($ok) {
@@ -350,6 +374,7 @@ class FacturaRepository
         }
     }
 
+    // Obtiene la factura asociada a una cita por el ID de la cita
     public function getFacturaByCitaId(int $citaId): ?array
     {
         try {
@@ -370,12 +395,14 @@ class FacturaRepository
         }
     }
 
+    // Lista las facturas agrupadas por estado (pendientes, abiertas, pagadas, canceladas)
+    // Cada grupo usa su propia lógica de consulta y filtrado
     public function listFacturasByStatus(string $status): array
     {
         try {
             switch ($status) {
                 case 'pendientes':
-                    // Todas las citas en estado 'Pendiente' (con o sin factura)
+                    // Todas las citas Pendiente con/sin factura
                     $sql = "SELECT c.id AS citaId, f.id AS facturaId, f.total_factura AS totalFactura,
                                    COALESCE(f.estado, 'pendiente') AS estado, c.fecha_hora_inicio AS fechaCita,
                                     CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
@@ -390,7 +417,7 @@ class FacturaRepository
                     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 case 'abiertas':
-                    // Facturas activas con saldo pendiente, solo citas En Proceso / En Progreso
+                    // Facturas activas con saldo pendiente (solo citas en proceso)
                     $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
                                    f.estado, f.created_at AS createdAt,
                                    CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
@@ -405,6 +432,7 @@ class FacturaRepository
                     $stmt = $this->db->query($sql);
                     $facturas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                    // Filtra solo las que tienen saldo pendiente
                     $result = [];
                     foreach ($facturas as $f) {
                         $totalPagado = $this->getTotalPagadoVes((int)$f['facturaId']);
@@ -417,7 +445,7 @@ class FacturaRepository
                     return $result;
 
                 case 'pagadas':
-                    // Facturas cerradas (solo facturas principales, no recibos)
+                    // Facturas cerradas (solo principales, no recibos)
                     $sql = "SELECT f.id AS facturaId, f.cita_id AS citaId, f.total_factura AS totalFactura,
                                    f.estado, f.created_at AS createdAt,
                                    CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
@@ -448,6 +476,7 @@ class FacturaRepository
                     $stmt = $this->db->query($sql);
                     $filas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+                    // Calcula total pagado para cada factura cancelada
                     foreach ($filas as &$f) {
                         $f['totalPagadoVes'] = $this->getTotalPagadoVes((int)$f['facturaId']);
                     }
@@ -463,9 +492,12 @@ class FacturaRepository
         }
     }
 
+    // Obtiene detalle completo de facturación por ID de factura
+    // Incluye datos generales, materiales, pagos y recibos
     public function getDetalleByFacturaId(int $facturaId): ?array
     {
         try {
+            // Datos generales desde factura f join cita c
             $sqlCita = "SELECT
                             c.id AS citaId,
                             c.estado AS citaEstado,
@@ -502,6 +534,7 @@ class FacturaRepository
             $general = $stmt->fetch(PDO::FETCH_ASSOC);
             if (!$general) return null;
 
+            // Materiales de la cita asociada
             $sqlMat = "SELECT
                            cm.material_id AS materialId,
                            m.material_code AS codigo,
@@ -516,11 +549,11 @@ class FacturaRepository
             $stmt->execute([':cita_id' => $general['citaId']]);
             $materiales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Pagos: si es factura principal, traer pagos de ella y sus recibos
+            // Pagos: si es recibo, redirige a factura origen
             $facturaOrigenId = $general['facturaTipo'] === 'recibo' ? (int)$general['facturaOrigenId'] : $facturaId;
             $pagos = $this->getPagosByFacturaOrRecibos($facturaOrigenId);
 
-            // Recibos: lista de recibos hijos (si es factura principal)
+            // Recibos hijos (solo si es factura principal)
             $recibos = [];
             if ($general['facturaTipo'] === 'factura') {
                 $rStmt = $this->db->prepare(
@@ -545,12 +578,8 @@ class FacturaRepository
         }
     }
 
-    /**
-     * Registrar el PRIMER pago al momento de crear la factura.
-     * A diferencia de registrarPago(), NO crea un recibo (tipo='recibo').
-     * El pago se vincula directamente a la factura.
-     * Además, hace la transición de la cita de Pendiente → En Proceso.
-     */
+    // Registra el primer pago al crear factura (sin crear recibo)
+    // El pago se vincula directamente a la factura y transiciona la cita a En Proceso
     public function registrarPrimerPago(int $facturaId, float $monto, string $metodoPago, float $tasaUsada, ?string $refPagoMovil = null): void
     {
         try {
@@ -566,7 +595,7 @@ class FacturaRepository
                 ':ref_pago_movil'=> $refPagoMovil
             ]);
 
-            // Transicionar la cita de Pendiente → En Proceso
+            // Transiciona la cita de Pendiente → En Proceso
             $citaStmt = $this->db->prepare(
                 "SELECT cita_id FROM facturas WHERE id = :fid"
             );

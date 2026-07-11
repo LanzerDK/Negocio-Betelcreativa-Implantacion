@@ -1,5 +1,6 @@
 /* categoryStyle.css - Estilos especificos del modulo de Categorias */
 
+/* Cabecera de la vista con degradado */
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
@@ -65,6 +66,7 @@
   margin-bottom: 20px;
 }
 
+/* Input de búsqueda con padding para el ícono */
 .search-box input {
   width: 100%;
   padding: 12px 15px 12px 45px;
@@ -76,11 +78,13 @@
   transition: all 0.3s;
 }
 
+/* Estado de foco del búsqueda: borde primario */
 .search-box input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
+/* Ícono de búsqueda posicionado a la izquierda */
 .search-box i {
   position: absolute;
   left: 15px;
@@ -97,7 +101,7 @@
   align-items: stretch;
 }
 
-/* Tarjeta individual de categoria */
+/* Tarjeta individual de categoria con borde dorado gradiente */
 .category-card {
   background: #ffffff;
   border-radius: 10px;
@@ -110,6 +114,7 @@
   height: 100%;
 }
 
+/* Borde gradiente dorado en tarjeta */
 .category-card::before {
   content: '';
   position: absolute;
@@ -128,7 +133,7 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
-/* Estado inhabilitado */
+/* Estado inhabilitado: borde rojo, opacidad reducida y overlay oscuro */
 .category-card.inhabilitado {
   transform: scale(0.98);
   border: 2px solid var(--danger);
@@ -136,10 +141,12 @@
   position: relative;
 }
 
+/* Ocultar borde gradiente en tarjeta deshabilitada */
 .category-card.inhabilitado::before {
   display: none;
 }
 
+/* Overlay oscuro sobre tarjeta inhabilitada */
 .category-card.inhabilitado::after {
   content: '';
   position: absolute;
@@ -154,16 +161,19 @@
   transform: scale(0.98);
 }
 
+/* Botones de acción con z-index por encima del overlay */
 .category-card.inhabilitado .card-actions {
   position: relative;
   z-index: 3;
 }
 
+/* Botón editar deshabilitado: opacidad reducida */
 .category-card.inhabilitado .edit-btn {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+/* Botón reactivar: verde cuando la categoría está deshabilitada */
 .category-card.inhabilitado .toggle-btn.is-disabled {
   background-color: var(--success);
   color: white;
@@ -192,7 +202,7 @@
   box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
 }
 
-/* Badge generico flotante en tarjeta */
+/* Badge generico flotante en tarjeta (stock, etc.) */
 .card-badge {
   position: absolute;
   top: 15px;
@@ -203,6 +213,7 @@
   font-weight: 600;
 }
 
+/* Variantes de badge según nivel de stock */
 .badge-stock {
   background-color: var(--success);
   color: white;
@@ -218,7 +229,7 @@
   color: white;
 }
 
-/* Imagen de la categoria */
+/* Imagen de la categoria con altura fija */
 .category-image {
   height: 180px;
   max-height: 180px;
@@ -228,6 +239,7 @@
   background-color: #e8eaed;
 }
 
+/* Estado sin imagen: ícono centrado placeholder */
 .category-image.no-image {
   display: flex;
   align-items: center;
@@ -243,7 +255,7 @@
   opacity: 0.6;
 }
 
-/* Vista previa de imagen antes de subir */
+/* Vista previa de imagen antes de subir (oculta por defecto) */
 .category-image-preview {
   display: none;
   margin-top: 8px;
@@ -259,7 +271,7 @@
   display: block;
 }
 
-/* Informacion de la categoria */
+/* Sección de información debajo de la imagen */
 .category-info {
   padding: 20px;
   display: flex;
@@ -267,7 +279,7 @@
   flex: 1;
 }
 
-/* Titulo y estado en fila */
+/* Fila de título + badge de precio/estado */
 .category-title {
   display: flex;
   justify-content: space-between;
@@ -276,7 +288,7 @@
   gap: 10px;
 }
 
-/* Nombre de la categoria con limite de 2 lineas */
+/* Nombre de la categoria con limite de 2 lineas (line-clamp) */
 .category-title h3 {
   color: #000;
   font-size: 1.1rem;
@@ -290,7 +302,7 @@
   -webkit-box-orient: vertical;
 }
 
-/* Estado como badge tipo precio */
+/* Badge de precio o estado estilizado como badge con degradado */
 .material-price {
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
@@ -304,7 +316,7 @@
   box-shadow: 0 2px 8px rgba(13, 71, 161, 0.2);
 }
 
-/* Detalles en grid 2 columnas */
+/* Detalles de la categoría en grid de 2 columnas */
 .material-details {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -319,6 +331,7 @@
   border: 1px solid rgba(13, 71, 161, 0.08);
 }
 
+/* Cada detalle individual con ícono y texto */
 .material-details span {
   display: inline-flex;
   align-items: center;
@@ -334,7 +347,7 @@
   flex-shrink: 0;
 }
 
-/* Acciones de la tarjeta */
+/* Acciones de la tarjeta (editar, habilitar/deshabilitar) */
 .card-actions {
   display: flex;
   gap: 10px;
@@ -342,7 +355,7 @@
   padding-top: 15px;
 }
 
-/* Boton de accion base */
+/* Botón de acción base: flex con icono */
 .action-btn {
   flex: 1;
   padding: 10px;
@@ -358,6 +371,7 @@
   font-size: 0.85rem;
 }
 
+/* Botón de editar: color accent (turquesa) */
 .edit-btn {
   background-color: rgba(26, 188, 156, 0.1);
   color: var(--accent);
@@ -368,6 +382,7 @@
   color: white;
 }
 
+/* Botón de toggle (habilitar/deshabilitar): color rojo por defecto */
 .toggle-btn {
   background-color: rgba(244, 67, 54, 0.1);
   color: var(--danger);
@@ -378,6 +393,7 @@
   color: white;
 }
 
+/* Estado deshabilitado del toggle: verde para reactivar */
 .toggle-btn.is-disabled {
   background-color: var(--success);
   color: white;
@@ -392,7 +408,7 @@
   transform: translateY(-2px);
 }
 
-/* Boton Nueva Categoria - estilo igual a btn-nuevo-material */
+/* Botón Nueva Categoria - estilo pill/dorado */
 .btn-nuevo-categoria {
   background: var(--secondary);
   color: var(--gold-button);
@@ -416,7 +432,7 @@
   box-shadow: var(--shadow);
 }
 
-/* Seccion de estadisticas */
+/* Sección de estadísticas con borde dorado gradiente */
 .stats-section {
   background: #ffffff;
   border-radius: 12px;
@@ -426,6 +442,7 @@
   margin-top: 16px;
 }
 
+/* Borde gradiente dorado en sección de estadísticas */
 .stats-section::before {
   content: '';
   position: absolute;
@@ -439,6 +456,7 @@
   pointer-events: none;
 }
 
+/* Título de sección con borde inferior dorado */
 .section-title {
   font-size: 1rem;
   color: var(--gold-text);
@@ -447,12 +465,14 @@
   border-bottom: 2px solid var(--gold-text);
 }
 
+/* Grid de estadísticas: 2 columnas */
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
+/* Tarjeta individual de estadística con borde dorado */
 .stat-card {
   background: #ffffff;
   box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.08), 0px 2px 20px rgba(212, 175, 55, 0.25);
@@ -466,6 +486,7 @@
   justify-content: center;
 }
 
+/* Borde gradiente dorado en tarjeta de estadística */
 .stat-card::before {
   content: '';
   position: absolute;
@@ -484,12 +505,14 @@
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
+/* Ícono de la estadística */
 .stat-icon {
   font-size: 1.5rem;
   color: var(--primary);
   line-height: 1;
 }
 
+/* Valor numérico de la estadística */
 .stat-value {
   font-size: 1.3rem;
   font-weight: 700;
@@ -497,6 +520,7 @@
   margin: 4px 0;
 }
 
+/* Etiqueta descriptiva de la estadística */
 .stat-label {
   font-size: 0.75rem;
   color: var(--dark);
@@ -504,6 +528,8 @@
 }
 
 /* Responsive - apila el layout en pantallas medianas (como materials) */
+
+/* Tablet: sidebar y grid en columna única, sticky el filtro */
 @media (max-width: 1024px) {
   .category-container {
     grid-template-columns: 1fr;
@@ -518,6 +544,7 @@
   }
 }
 
+/* Móvil grande: tarjetas más compactas */
 @media (max-width: 768px) {
   .categories-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -528,6 +555,7 @@
   }
 }
 
+/* Móvil: columna única y detalles en una columna */
 @media (max-width: 480px) {
   .categories-grid {
     grid-template-columns: 1fr;

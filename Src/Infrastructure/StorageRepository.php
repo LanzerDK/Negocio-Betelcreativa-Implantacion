@@ -9,15 +9,20 @@ use BetelCreativa\Helpers\Logger;
 use PDO;
 use PDOException;
 
+// StorageRepository — Acceso a datos de almacén (inventario)
+// Gestiona ajustes, movimientos entre ubicaciones, historial y resúmenes de stock
 class StorageRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Registra un ajuste de stock (entrada o salida) con verificación de disponibilidad
+    // Operación transaccional que actualiza stock_locations y registra movimiento
     public function recordAdjustment(int $materialId, int $userId, string $type, int $quantity, string $reason, ?string $notes, ?int $locationId = null, ?string $tipoReferencia = null, ?int $referenciaId = null): bool
     {
         try {
@@ -25,6 +30,7 @@ class StorageRepository
 
             $change = $type === 'entry' ? $quantity : -$quantity;
 
+            // Para salidas, verifica stock suficiente antes de continuar
             if ($type === 'exit') {
                 $stmtCheck = $this->db->prepare("SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS stock");
                 $stmtCheck->execute([':id' => $materialId]);
@@ -36,7 +42,7 @@ class StorageRepository
                 }
             }
 
-            // Si no se especificó ubicación, usar la ubicación principal del material
+            // Determina ubicación: especificada, principal del material, o por defecto
             if (!$locationId) {
                 $locStmt = $this->db->prepare("SELECT current_location_id FROM materials WHERE material_id = :id");
                 $locStmt->execute([':id' => $materialId]);
@@ -48,6 +54,7 @@ class StorageRepository
                 $locationId = $this->getOrCreateDefaultLocation();
             }
 
+            // Actualiza stock en la ubicación y limpia registros con cantidad <= 0
             $this->upsertStockLocation($materialId, $locationId, $change);
             $delStmt = $this->db->prepare("DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0");
             $delStmt->execute([':id' => $materialId]);
@@ -78,11 +85,14 @@ class StorageRepository
         }
     }
 
+    // Registra movimiento de stock entre dos ubicaciones
+    // Verifica stock origen, actualiza ambas ubicaciones y actualiza ubicación principal del material
     public function recordMove(int $materialId, int $userId, int $fromLocationId, int $toLocationId, int $quantity, string $reason, ?string $notes): bool
     {
         try {
             $this->db->beginTransaction();
 
+            // Verifica stock suficiente en la ubicación origen
             $check = $this->db->prepare(
                 "SELECT quantity FROM material_stock_locations WHERE material_id = :mid AND location_id = :lid"
             );
@@ -94,14 +104,17 @@ class StorageRepository
                 throw new PDOException("Stock insuficiente en la ubicación origen. Disponible: $available, Solicitado: $quantity.");
             }
 
+            // Resta de origen y suma a destino
             $this->upsertStockLocation($materialId, $fromLocationId, -$quantity);
             $this->upsertStockLocation($materialId, $toLocationId, $quantity);
 
+            // Limpia registros con cantidad <= 0
             $delStmt = $this->db->prepare(
                 "DELETE FROM material_stock_locations WHERE material_id = :id AND quantity <= 0"
             );
             $delStmt->execute([':id' => $materialId]);
 
+            // Actualiza la ubicación principal del material a la que tiene más stock
             $checkStmt = $this->db->prepare(
                 "SELECT location_id FROM material_stock_locations WHERE material_id = :id ORDER BY quantity DESC LIMIT 1"
             );
@@ -115,6 +128,7 @@ class StorageRepository
                 $updStmt->execute([':loc' => $checkCurrent['location_id'], ':id' => $materialId]);
             }
 
+            // Registra el movimiento como 'Transfer'
             $stmt = $this->db->prepare(
                 "INSERT INTO inventory_movements (material_id, user_id, action_type, quantity, reason, extra_note, origin_location_id, destination_location_id, movement_date)
                  VALUES (:material_id, :user_id, 'Transfer', :quantity, :reason, :extra_note, :origin, :destination, NOW())"
@@ -139,6 +153,7 @@ class StorageRepository
         }
     }
 
+    // Obtiene historial paginado de movimientos de inventario
     public function getHistory(int $page = 1, int $perPage = 15): array
     {
         try {
@@ -191,6 +206,7 @@ class StorageRepository
         }
     }
 
+    // Obtiene resumen de inventario: totales, stock bajo y agotados
     public function getSummary(): array
     {
         try {
@@ -217,6 +233,7 @@ class StorageRepository
         }
     }
 
+    // Obtiene el stock de un material desglosado por ubicación
     public function getStockByMaterial(int $materialId): array
     {
         try {
@@ -234,6 +251,7 @@ class StorageRepository
         }
     }
 
+    // Obtiene los materiales con stock en una ubicación específica
     public function getStockByLocation(int $locationId): array
     {
         try {
@@ -251,6 +269,7 @@ class StorageRepository
         }
     }
 
+    // Obtiene el stock total en una ubicación específica
     public function getTotalStockAtLocation(int $locationId): int
     {
         try {
@@ -264,6 +283,7 @@ class StorageRepository
         }
     }
 
+    // Obtiene todas las ubicaciones con su stock actual y capacidad máxima
     public function getAllLocationsWithStock(): array
     {
         try {
@@ -280,6 +300,7 @@ class StorageRepository
         }
     }
 
+    // Obtiene o crea la ubicación por defecto (Almacén General)
     private function getOrCreateDefaultLocation(): int
     {
         $stmt = $this->db->prepare("SELECT location_id FROM locations ORDER BY location_id ASC LIMIT 1");
@@ -294,6 +315,7 @@ class StorageRepository
         return (int)$this->db->lastInsertId();
     }
 
+    // Inserta o actualiza el stock de un material en una ubicación específica
     private function upsertStockLocation(int $materialId, int $locationId, int $quantityChange): void
     {
         $existing = $this->db->prepare(

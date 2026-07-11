@@ -2,19 +2,22 @@
 
 namespace BetelCreativa\Domain;
 
+// InventoryMovementModel — Modelo para los movimientos de inventario
+// Registra cualquier cambio en el stock: entrada, salida, transferencia o ajuste
 class InventoryMovementModel
 {
-    private ?int $id;
-    private int $materialId;
-    private int $userId;
-    private ?string $movementDate;
-    private string $actionType;
-    private int $quantity;
-    private ?string $reason;
-    private ?string $extraNote;
-    private ?int $originLocationId;
-    private ?int $destinationLocationId;
+    private ?int $id;                        // ID único del movimiento
+    private int $materialId;                 // Material afectado
+    private int $userId;                     // Usuario que realizó el movimiento
+    private ?string $movementDate;           // Fecha y hora del movimiento
+    private string $actionType;              // Tipo: Entry, Exit, Transfer
+    private int $quantity;                   // Cantidad movida
+    private ?string $reason;                 // Razón del movimiento
+    private ?string $extraNote;              // Nota adicional
+    private ?int $originLocationId;          // Ubicación de origen (para transferencias)
+    private ?int $destinationLocationId;     // Ubicación de destino (para transferencias)
 
+    // Constructor: recibe datos desde el controlador o repositorio
     public function __construct(array $data = [])
     {
         $this->id = $data['id'] ?? null;
@@ -29,6 +32,7 @@ class InventoryMovementModel
         $this->destinationLocationId = $data['destinationLocationId'] ?? null;
     }
 
+    // Getters
     public function getId(): ?int { return $this->id; }
     public function getMaterialId(): int { return $this->materialId; }
     public function getUserId(): int { return $this->userId; }

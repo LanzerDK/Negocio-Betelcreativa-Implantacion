@@ -1,8 +1,8 @@
 <?php
-/**
- * Endpoint de prueba para verificar POST + CSRF + Sesión.
- * Hace un POST normal a esta URL para probar que el fetch funciona.
- */
+
+// Endpoint de prueba para verificar que POST + CSRF + Sesión funcionan correctamente
+// Devuelve los datos recibidos y el ID de sesión actual
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../Config/app.php';
 

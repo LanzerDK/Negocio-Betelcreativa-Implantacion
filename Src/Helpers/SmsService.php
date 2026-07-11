@@ -2,50 +2,41 @@
 
 namespace BetelCreativa\Helpers;
 
-/**
- * SmsService — Envío de SMS vía TextBelt API
- * ------------------------------------------------------------
- * TextBelt (https://textbelt.com) es una API de SMS simple.
- * 
- * Uso gratuito: usar key='textbelt' (1 SMS/día a nivel mundial).
- * Uso pago:    comprar una API key en https://textbelt.com
- * 
- * Soporta 221 países. Para Venezuela usar formato E.164: +58412XXXXXXX
- */
+// SmsService — Envío de SMS vía TextBelt API
+// TextBelt (https://textbelt.com) es un servicio simple de mensajes de texto.
+// Modo gratuito: key='textbelt' permite 1 SMS/día a nivel mundial.
+// Números venezolanos se envían en formato E.164: +58412XXXXXXX
 class SmsService
 {
-    /**
-     * Envía un código de verificación por SMS
-     *
-     * @param string $phone  Número en formato local (ej: 0414-555-12-34)
-     * @param string $code   Código de 6 dígitos
-     * @return array ['success' => bool, 'message' => string]
-     */
+    // Envía un código de verificación por SMS al número indicado
+    // Recibe el número en formato local (ej: 0414-555-12-34) y el código de 6 dígitos
     public static function sendCode(string $phone, string $code): array
     {
         // ── 1. Normalizar número a formato E.164 ──────────────────────
-        //    Entrada: 0414-555-12-34
-        //    Salida:  +584145551234
+        //    De "0414-555-12-34" a "+584145551234"
+        //    Primero eliminamos todo lo que no sea dígito
         $cleaned = preg_replace('/[^0-9]/', '', $phone);
 
-        // Si el número ya empieza con +58 o 58, no duplicar código de país
+        // Si ya empieza con 58, solo agregamos el +
         if (str_starts_with($cleaned, '58')) {
             $e164 = '+' . $cleaned;
         } elseif (str_starts_with($cleaned, '0')) {
-            // Número venezolano: 0414XXXXXXX → +58414XXXXXXX
+            // Número venezolano típico: 0414XXXXXXX → +58414XXXXXXX (quitamos el 0 inicial y anteponemos +58)
             $e164 = '+58' . substr($cleaned, 1);
         } else {
-            // Asumir que ya es internacional o local sin prefijo
+            // Si no reconocemos el formato, asumimos número local sin prefijo y le agregamos +58
             $e164 = '+58' . $cleaned;
         }
 
-        // ── 2. Preparar mensaje ──────────────────────────────────────
+        // ── 2. Preparar el mensaje de texto ──────────────────────────
         $appName = defined('APP_NAME') ? APP_NAME : 'Betel Creativa';
         $message = "{$appName}: tu código de verificación es {$code}. Válido por 10 minutos.";
 
         // ── 3. Llamar a la API de TextBelt ───────────────────────────
+        // Si no hay key configurada en .env, usa 'textbelt' (plan gratuito, 1 SMS/día)
         $apiKey = defined('TEXTBELT_KEY') ? TEXTBELT_KEY : 'textbelt';
 
+        // Prepara los datos del formulario para enviar vía POST a TextBelt
         $postData = http_build_query([
             'phone'   => $e164,
             'message' => $message,
@@ -53,7 +44,9 @@ class SmsService
             'sender'  => $appName,
         ]);
 
+        // Inicia cURL hacia la API de TextBelt
         $ch = curl_init('https://textbelt.com/text');
+        // Configura las opciones: POST, timeout de 15 segundos, devuelve el resultado como string
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $postData,
@@ -62,12 +55,14 @@ class SmsService
             CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
         ]);
 
+        // Ejecuta la llamada y captura respuesta, código HTTP y error de cURL
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         curl_close($ch);
 
-        // ── 4. Interpretar respuesta ─────────────────────────────────
+        // ── 4. Interpretar la respuesta de TextBelt ──────────────────
+        // Si hubo un error de conexión (no de la API), lo reportamos
         if ($curlError) {
             Logger::warning("SMS falló (cURL): {$curlError}");
             return [
@@ -76,8 +71,10 @@ class SmsService
             ];
         }
 
+        // Decodifica la respuesta JSON de TextBelt
         $data = json_decode($response, true);
 
+        // Si el HTTP code no es 200 o la respuesta no tiene el campo 'success', algo salió mal
         if ($httpCode !== 200 || !$data || !isset($data['success'])) {
             Logger::warning("SMS falló (HTTP {$httpCode}): " . ($data['message'] ?? 'respuesta inválida'));
             return [
@@ -86,6 +83,7 @@ class SmsService
             ];
         }
 
+        // Si TextBelt confirmó el envío, reportamos éxito
         if ($data['success']) {
             $textId = $data['textId'] ?? 'N/A';
             Logger::info("SMS enviado a {$e164} (textId: {$textId})");
@@ -95,10 +93,10 @@ class SmsService
             ];
         }
 
-        // TextBelt devolvió success=false (cuota excedida, número inválido, etc.)
+        // Si llegamos aquí, TextBelt devolvió success=false (cuota excedida, número inválido, etc.)
         Logger::warning("SMS no enviado a {$e164}: {$data['message']}");
 
-        // Si la key es 'textbelt' y dice "Exceeded quota", informar al usuario
+        // Si usa la key gratuita y excedió la cuota, damos un mensaje amigable
         if ($apiKey === 'textbelt' && str_contains($data['message'] ?? '', 'quota')) {
             return [
                 'success' => false,
@@ -106,6 +104,7 @@ class SmsService
             ];
         }
 
+        // Cualquier otro error de TextBelt
         return [
             'success' => false,
             'message' => $data['message'] ?? 'Error al enviar SMS.',

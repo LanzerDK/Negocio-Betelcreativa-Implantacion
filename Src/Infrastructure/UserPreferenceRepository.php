@@ -6,15 +6,19 @@ use BetelCreativa\Config\Database;
 use PDO;
 use PDOException;
 
+// UserPreferenceRepository — Acceso a la tabla `user_preferences`
+// Gestiona preferencias de notificación por usuario con valores por defecto
 class UserPreferenceRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene las preferencias de un usuario; crea defaults si no existen
     public function getByUserId(int $userId): array
     {
         try {
@@ -32,6 +36,7 @@ class UserPreferenceRepository
                 ];
             }
 
+            // Crea defaults y los devuelve
             $this->createDefaults($userId);
             return [
                 'user_id'            => $userId,
@@ -41,7 +46,7 @@ class UserPreferenceRepository
                 'notify_reports'     => 0,
             ];
         } catch (PDOException $e) {
-            // Tabla no existe o error de conexión → defaults
+            // Si la tabla no existe, devuelve valores por defecto
             return [
                 'user_id'            => $userId,
                 'notify_low_stock'   => 1,
@@ -52,6 +57,7 @@ class UserPreferenceRepository
         }
     }
 
+    // Guarda las preferencias de un usuario (upsert)
     public function save(int $userId, array $prefs): bool
     {
         try {
@@ -80,6 +86,7 @@ class UserPreferenceRepository
         }
     }
 
+    // Crea registro de preferencias con valores por defecto (silencioso si ya existe)
     private function createDefaults(int $userId): void
     {
         try {
@@ -88,7 +95,7 @@ class UserPreferenceRepository
             );
             $stmt->execute([':uid' => $userId]);
         } catch (PDOException $e) {
-            // Silenciar — la tabla puede no existir
+            // Silencia errores — la tabla puede no existir
         }
     }
 }

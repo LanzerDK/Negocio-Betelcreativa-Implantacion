@@ -10,18 +10,24 @@ use BetelCreativa\Helpers\ApiResponse;
 use BetelCreativa\Helpers\CsrfHelper;
 use BetelCreativa\Helpers\SessionHelpers;
 
+// AppointmentController — Lógica de negocio para el módulo de citas/eventos
+// CRUD completo, evaluación automática de estados, cancelación, restauración,
+// gestión de materiales asociados y sincronización con facturación
 class AppointmentController
 {
+    // Crea un modelo AppointmentModel desde un array del repositorio
     private static function modelFromRow(array $row): AppointmentModel
     {
         return new AppointmentModel($row);
     }
 
+    // Obtiene la conexión PDO singleton
     private static function getDb(): \PDO
     {
         return \BetelCreativa\Config\Database::getConnection();
     }
 
+    // Convierte un modelo a array asociativo para respuesta JSON
     private static function toArray(AppointmentModel $c): array
     {
         return [
@@ -41,20 +47,24 @@ class AppointmentController
         ];
     }
 
+    // Evalúa y cambia el estado de una cita según la hora actual y las reglas de negocio
     private static function evaluarEstado(array &$row): void
     {
         $ahora = date('Y-m-d H:i:s');
         $modelo = new AppointmentModel($row);
         $estado = $modelo->getEstado();
 
+        // Transición automática: En Proceso → En Progreso cuando llega la hora de inicio
         if ($estado === 'En Proceso' && $row['fechaHoraInicio'] && $ahora >= $row['fechaHoraInicio']) {
             if ($modelo->canTransitionTo('En Progreso')) {
                 $row['estado'] = 'En Progreso';
             }
+        // Transición automática: En Progreso → Finalizada cuando pasa la hora de fin
         } elseif ($estado === 'En Progreso' && $row['fechaHoraFin'] && $ahora >= $row['fechaHoraFin']) {
             if ($modelo->canTransitionTo('Finalizada')) {
                 $row['estado'] = 'Finalizada';
             }
+        // Cancelación automática: Pendiente vencida sin pago
         } elseif ($estado === 'Pendiente' && $row['fechaHoraInicio'] && $ahora >= $row['fechaHoraInicio']) {
             $row['estado'] = 'Cancelado';
             $row['fechaHoraCancelacion'] = $ahora;
@@ -62,6 +72,8 @@ class AppointmentController
         }
     }
 
+    // Persiste en BD los cambios de estado evaluados, con lógica transaccional para
+    // cancelaciones automáticas (libera reservas) y finalización (deducción de stock solo si factura cerrada)
     private static function persistirEvaluacionEstado(AppointmentRepository $repo, array &$row): void
     {
         $estadoOriginal = $row['estado'];
@@ -71,8 +83,8 @@ class AppointmentController
             $ownTx = !$db->inTransaction();
             if ($ownTx) $db->beginTransaction();
             try {
+                // Cancelación automática: no auto-cancelar si existe factura asociada
                 if ($row['estado'] === 'Cancelado' && $estadoOriginal === 'Pendiente') {
-                    // C3: no auto-cancelar si existe factura (pagada o no)
                     $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
                     $factura = $factRepo->getFacturaByCitaId((int)$row['id']);
                     if ($factura) {
@@ -90,8 +102,8 @@ class AppointmentController
                 } else {
                     $repo->actualizarEstado((int)$row['id'], $row['estado']);
                 }
+                // Solo deducir stock si la factura de la cita está cerrada (pagada)
                 if ($row['estado'] === 'Finalizada') {
-                    // C4: solo deducir stock si la factura está cerrada (pagada)
                     $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
                     $factura = $factRepo->getFacturaByCitaId((int)$row['id']);
                     if ($factura && $factura['estado'] === 'cerrada') {
@@ -106,6 +118,7 @@ class AppointmentController
         }
     }
 
+    // Punto de entrada: enruta según método HTTP (GET/POST/PUT) y ejecuta la acción correspondiente
     public static function handleRequest(): void
     {
         SessionHelpers::requireAuth();
@@ -114,11 +127,13 @@ class AppointmentController
 
         switch ($method) {
             case 'GET':
+                // GET con ?historial&id — historial de cambios de materiales
                 if (isset($_GET['historial']) && isset($_GET['id'])) {
                     $matRepo = new CitaMaterialRepository();
                     $historial = $matRepo->obtenerHistorial((int)$_GET['id']);
                     ApiResponse::success($historial);
                     return;
+                // GET con ?canceladas — lista solo citas canceladas
                 } elseif (isset($_GET['canceladas'])) {
                     $filas = $repo->findCanceladas();
                     foreach ($filas as &$f) self::evaluarEstado($f);
@@ -126,6 +141,7 @@ class AppointmentController
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
                     return;
+                // GET con ?id — detalle de una cita incluyendo cliente, materiales y estado de factura
                 } elseif (isset($_GET['id'])) {
                     $fila = $repo->findById((int)$_GET['id']);
                     if (!$fila) { ApiResponse::error('Cita no encontrada.', 404); return; }
@@ -145,6 +161,7 @@ class AppointmentController
                     
                     ApiResponse::success($data);
                     return;
+                // GET con ?cliente_id — citas de un cliente específico
                 } elseif (isset($_GET['cliente_id'])) {
                     $filas = $repo->findByClienteId((int)$_GET['cliente_id']);
                     foreach ($filas as &$f) self::evaluarEstado($f);
@@ -152,6 +169,7 @@ class AppointmentController
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
                     return;
+                // GET con ?todos — incluye canceladas en el listado
                 } elseif (isset($_GET['todos'])) {
                     $filas = $repo->findAllWithCanceladas();
                     foreach ($filas as &$f) self::evaluarEstado($f);
@@ -159,6 +177,7 @@ class AppointmentController
                         return self::toArray(self::modelFromRow($f));
                     }, $filas));
                     return;
+                // GET sin parámetros — lista de citas activas
                 } else {
                     $filas = $repo->findAll();
                     foreach ($filas as &$f) self::evaluarEstado($f);
@@ -175,7 +194,7 @@ class AppointmentController
                 }
                 CsrfHelper::validateRequestOrFail();
 
-                // A4: endpoint para evaluar y persistir estados de cita (cron o llamada manual)
+                // Acción 'evaluate': evalúa y persiste estados de todas las citas (útil para cron o llamada manual)
                 $action = $input['action'] ?? '';
                 if ($action === 'evaluate') {
                     $filas = $repo->findAll();
@@ -190,6 +209,7 @@ class AppointmentController
                     return;
                 }
 
+                // Validaciones de campos obligatorios
                 if (empty($input['clienteId'])) {
                     ApiResponse::error('Debe seleccionar un cliente.'); return;
                 }
@@ -203,6 +223,7 @@ class AppointmentController
                     ApiResponse::error('La fecha de fin debe ser posterior a la de inicio.'); return;
                 }
 
+                // Arma array de datos iniciales para la nueva cita
                 $datos = [
                     'clienteId'       => (int)$input['clienteId'],
                     'fechaHoraInicio' => $input['fechaHoraInicio'],
@@ -214,6 +235,7 @@ class AppointmentController
                     'motivoSinMateriales'   => trim($input['motivoSinMateriales'] ?? '') ?: null
                 ];
 
+                // Verifica conflictos de horario con el mismo cliente
                 if ($repo->hasTimeConflict($datos['clienteId'], $datos['fechaHoraInicio'], $datos['fechaHoraFin'])) {
                     ApiResponse::error('El cliente ya tiene una cita en ese horario.'); return;
                 }
@@ -221,12 +243,14 @@ class AppointmentController
                 $db = self::getDb();
                 $db->beginTransaction();
 
+                // Inserta la cita
                 $id = $repo->save($datos);
                 if (!$id) {
                     $db->rollBack();
                     ApiResponse::error('Error al crear la cita.', 500);
                 }
 
+                // Si hay materiales, los asigna y reserva stock atómicamente
                 $materiales = $input['materiales'] ?? [];
                 if (!empty($materiales)) {
                     $matRepo = new CitaMaterialRepository();
@@ -254,7 +278,7 @@ class AppointmentController
                 $estadoActual = $existente['estado'];
                 $modelo = self::modelFromRow($existente);
 
-                // ---- C A N C E L A C I Ó N ----
+                // Cancelación: requiere motivo, valida transición, libera reservas y auto-anula factura activa
                 if (isset($input['motivoCancelacion']) && trim($input['motivoCancelacion']) !== '') {
                     try {
                         $modelo->validarTransicion('Cancelado');
@@ -267,10 +291,8 @@ class AppointmentController
                         'fechaHoraCancelacion'    => date('Y-m-d H:i:s'),
                         'motivoCancelacion'       => trim($input['motivoCancelacion'])
                     ]);
-                    // Liberar reservas de materiales (mantiene cita_materiales para posible restauración)
                     $matRepo = new CitaMaterialRepository();
                     $matRepo->cancelReservations($id, 'Cancelado', (int)$_SESSION['user_id']);
-                    // Auto-anular factura activa si existe
                     $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
                     $factura = $factRepo->getFacturaByCitaId($id);
                     if ($factura && ($factura['estado'] ?? '') === 'activa') {
@@ -280,7 +302,7 @@ class AppointmentController
                     return;
                 }
 
-                // ---- R E S T A U R A C I Ó N ----
+                // Restauración: valida plazo de 3 días hábiles, re-evalúa estado por tiempo, restaura reservas y factura
                 if (!empty($input['restaurar'])) {
                     if (!AppointmentModel::esRestaurable($modelo->getFechaHoraCancelacion(), $modelo->getFechaHoraInicio())) {
                         ApiResponse::error('El plazo de 3 días hábiles para restaurar ha expirado o la fecha de la cita ya pasó.'); return;
@@ -291,7 +313,6 @@ class AppointmentController
                     } catch (\DomainException $e) {
                         ApiResponse::error($e->getMessage()); return;
                     }
-                    // Re-evaluar estado por tiempo transcurrido
                     $inicio = $modelo->getFechaHoraInicio();
                     $fin = $modelo->getFechaHoraFin();
                     $ahora = date('Y-m-d H:i:s');
@@ -312,7 +333,6 @@ class AppointmentController
                         'fechaHoraCancelacion'    => null,
                         'motivoCancelacion'       => null
                     ]);
-                    // Restaurar factura anulada si existe
                     $factRepo = new \BetelCreativa\Infrastructure\FacturaRepository();
                     $factura = $factRepo->getFacturaByCitaId($id);
                     if ($factura && ($factura['estado'] ?? '') === 'anulada') {
@@ -325,7 +345,7 @@ class AppointmentController
                     return;
                 }
 
-                // ---- A C T U A L I Z A C I Ó N   N O R M A L ----
+                // Actualización normal de campos (cliente, fechas, ubicación, notas, materiales)
                 $datosUpdate = [];
                 if (isset($input['clienteId'])) $datosUpdate['clienteId'] = (int)$input['clienteId'];
                 if (isset($input['fechaHoraInicio'])) $datosUpdate['fechaHoraInicio'] = $input['fechaHoraInicio'];
@@ -335,6 +355,7 @@ class AppointmentController
                 if (isset($input['notas'])) $datosUpdate['notas'] = trim($input['notas']) ?: null;
                 if (isset($input['motivoSinMateriales'])) $datosUpdate['motivoSinMateriales'] = trim($input['motivoSinMateriales']) ?: null;
 
+                // Si se intenta cambiar el estado, valida la transición permitida
                 if (array_key_exists('estado', $datosUpdate)) {
                     try {
                         $modelo->validarTransicion($datosUpdate['estado']);
@@ -354,13 +375,12 @@ class AppointmentController
                         ApiResponse::error('El cliente ya tiene una cita en ese horario.'); return;
                     }
                     if ($repo->update($id, $datosUpdate)) {
-                        // Reemplazar materiales si se enviaron (reserva atómica)
-                        // Usamos array_key_exists para que vacío (eliminar todos) también dispare sync
+                        // Reemplazar materiales si se enviaron (incluso array vacío = eliminar todos)
                         if (array_key_exists('materiales', $input)) {
                             $materiales = $input['materiales'] ?? [];
                             $matRepo = new CitaMaterialRepository();
                             if (!$matRepo->syncMaterialsWithReservation($id, $materiales, $estadoActual, (int)$_SESSION['user_id'], 'Modificado')) {
-                                return; // ApiResponse::error ya fue llamada
+                                return;
                             }
                         }
                         ApiResponse::success(null, 'Cita actualizada exitosamente.');

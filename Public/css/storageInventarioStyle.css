@@ -1,5 +1,6 @@
 /* storageInventarioStyle.css - Módulo 3: Inventario */
 
+/* Barra de navegación superior del módulo */
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
   color: var(--gold-text);
@@ -9,6 +10,7 @@
   z-index: 100;
 }
 
+/* Contenedor principal del contenido con layout en columna */
 .content {
   border-radius: 15px;
   padding: 25px;
@@ -18,6 +20,7 @@
   gap: 25px;
 }
 
+/* Encabezado de página con título y botones de acción */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -27,12 +30,14 @@
   border-radius: 10px;
 }
 
+/* Título principal de la página */
 .page-title {
   color: white;
   font-size: 1.8rem;
   margin: 0;
 }
 
+/* Grid responsivo de tarjetas de resumen del inventario */
 .inventory-overview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -40,6 +45,7 @@
   margin-bottom: 10px;
 }
 
+/* Tarjeta individual de resumen con degradado y borde dorado */
 .overview-card {
   background: linear-gradient(135deg, var(--primary), var(--secondary));
   border-radius: 15px;
@@ -54,6 +60,7 @@
   justify-content: center;
 }
 
+/* Borde dorado decorativo en tarjetas de resumen */
 .overview-card::before {
   content: '';
   position: absolute;
@@ -67,12 +74,15 @@
   pointer-events: none;
 }
 
+/* Efecto hover en tarjetas de resumen */
 .overview-card:hover { transform: translateY(-5px); }
 
+/* Ícono, valor numérico y etiqueta dentro de cada tarjeta de resumen */
 .overview-icon { font-size: 2rem; margin-bottom: 10px; display: inline-block; }
 .overview-value { font-size: 2rem; font-weight: 700; margin: 8px 0; }
 .overview-label { font-size: 1rem; opacity: 0.9; }
 
+/* Panel lateral de filtros con borde dorado */
 .filters-sidebar {
   background: #ffffff;
   border-radius: 15px;
@@ -82,6 +92,7 @@
   position: relative;
 }
 
+/* Borde dorado decorativo en el sidebar de filtros */
 .filters-sidebar::before {
   content: '';
   position: absolute;
@@ -95,9 +106,11 @@
   pointer-events: none;
 }
 
+/* Estilos de texto e íconos dentro del sidebar de filtros */
 .filters-sidebar h3 { color: var(--gold-text); }
 .filters-sidebar i { color: var(--gold-text); }
 
+/* Título de sección dentro del sidebar con línea separadora dorada */
 .sidebar-title {
   color: var(--gold-text);
   margin-bottom: 20px;
@@ -106,6 +119,7 @@
   font-size: 1.2rem;
 }
 
+/* Botón principal de acción del sidebar de filtros */
 .filter-button {
   background: var(--secondary);
   color: var(--gold-button);
@@ -122,20 +136,24 @@
   justify-content: center;
 }
 
+/* Efecto hover en el botón de filtros */
 .filter-button:hover {
   background: var(--primary-dark);
   transform: translateY(-3px);
   box-shadow: var(--shadow);
 }
 
+/* Contenedor principal del contenido con layout en columna */
 .content-main { display: flex; flex-direction: column; gap: 30px; }
 
+/* Grid de dos columnas: sidebar de filtros + tabla de materiales */
 .content-wrapper {
   display: grid;
   grid-template-columns: 260px 1fr;
   gap: 25px;
 }
 
+/* Tabla de materiales contenedora con sombra y bordes redondeados */
 .materials-table {
   background: #ffffff;
   border-radius: 15px;
@@ -143,6 +161,7 @@
   box-shadow: var(--shadow);
 }
 
+/* Encabezado de la tabla de materiales con grid de columnas */
 .table-header {
   display: grid;
   grid-template-columns: auto minmax(160px, 2.5fr) minmax(100px, 1.2fr) minmax(110px, 1fr) minmax(80px, 0.8fr) auto;
@@ -154,6 +173,7 @@
   align-items: center;
 }
 
+/* Fila de la tabla de materiales con grid de columnas */
 .table-row {
   display: grid;
   grid-template-columns: auto minmax(160px, 2.5fr) minmax(100px, 1.2fr) minmax(110px, 1fr) minmax(80px, 0.8fr) auto;
@@ -164,8 +184,10 @@
   background: white;
 }
 
+/* Efecto hover en filas de la tabla */
 .table-row:hover { background: rgba(13, 71, 161, 0.03); }
 
+/* Thumbnail circular del material */
 .material-img {
   width: 44px;
   height: 44px;
@@ -179,10 +201,12 @@
   flex-shrink: 0;
 }
 
+/* Información del material (nombre, código) */
 .material-info { flex: 1; min-width: 0; }
 .material-info strong { display: block; line-height: 1.3; }
 .material-code { font-size: 0.85rem; color: var(--gray); margin-top: 4px; }
 
+/* Badge de estado de stock (genérico) */
 .status {
   padding: 5px 12px;
   border-radius: 20px;
@@ -191,10 +215,12 @@
   display: inline-block;
 }
 
+/* Estados de stock: con stock, stock bajo, sin stock */
 .status.in-stock { background: rgba(76, 175, 80, 0.15); color: var(--success); }
 .status.low-stock { background: rgba(255, 152, 0, 0.15); color: var(--warning); }
 .status.out-of-stock { background: rgba(244, 67, 54, 0.15); color: var(--danger); }
 
+/* Botón de acción circular (editar, eliminar, etc.) */
 .action-btn {
   width: 36px;
   height: 36px;
@@ -209,12 +235,14 @@
   justify-content: center;
 }
 
+/* Efecto hover en botón de acción */
 .action-btn:hover {
   background: var(--primary);
   color: white;
   transform: scale(1.1);
 }
 
+/* Contenedor del historial de movimientos de inventario */
 .history-container {
   position: relative;
   background: #ffffff;
@@ -223,6 +251,7 @@
   box-shadow: var(--shadow);
 }
 
+/* Borde dorado decorativo en el contenedor de historial */
 .history-container::before {
   content: '';
   position: absolute;
@@ -236,6 +265,7 @@
   pointer-events: none;
 }
 
+/* Tabla de historial de movimientos de inventario */
 .history-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
 .history-table thead tr { background: linear-gradient(to right, var(--primary), var(--secondary)); border-radius: 10px 10px 0 0; }
 .history-table th { background: transparent; color: white; padding: 12px 12px; text-align: left; font-weight: 600; white-space: nowrap; }
@@ -244,6 +274,7 @@
 .history-table td { padding: 10px 12px; border-bottom: 1px solid var(--light-gray); vertical-align: middle; }
 .history-table tr:hover { background: rgba(13, 71, 161, 0.03); }
 
+/* Elementos de formulario genéricos */
 .form-label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--gray); }
 .form-text { font-size: 0.85rem; color: var(--gray); margin-top: 4px; }
 .d-flex { display: flex; }
@@ -251,7 +282,7 @@
 .form-check { display: flex; align-items: center; gap: 6px; }
 .form-check-input { width: 16px; height: 16px; }
 
-/* Location stock display in adjust modal */
+/* Stock por ubicación en el modal de ajuste de inventario */
 .location-stock-container {
   margin-top: 8px;
   padding: 8px 12px;
@@ -260,23 +291,27 @@
   font-size: 0.85rem;
 }
 
+/* Título de la sección de stock por ubicación */
 .location-stock-title {
   font-weight: 600;
   color: var(--primary);
   margin-bottom: 6px;
 }
 
+/* Elemento individual de stock por ubicación */
 .location-stock-item {
   padding: 2px 0;
   color: #555;
 }
 
+/* Mensaje de stock vacío cuando no hay ubicaciones */
 .location-stock-empty {
   color: var(--gray);
   font-style: italic;
   font-size: 0.85rem;
 }
 
+/* Responsive: tablet — layout de una columna y filas apiladas */
 @media (max-width: 992px) {
   .content-wrapper { grid-template-columns: 1fr; }
   .table-header { display: none; }
@@ -293,6 +328,7 @@
   .inventory-overview { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* Responsive: móvil — ajustes de espaciado y tipografía */
 @media (max-width: 768px) {
   .content { padding: 15px; }
   .page-title { font-size: 1.4rem; }

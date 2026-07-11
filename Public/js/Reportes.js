@@ -1,12 +1,17 @@
+// Almacén de instancias de Chart.js por ID de canvas
 let charts = {};
 
+// Inicialización al cargar el DOM: configura navegación, gráficos y botones
 document.addEventListener('DOMContentLoaded', () => {
+    // Navegación entre reportes (tabs del menú lateral)
     initReportNavigation();
+    // Crear instancias vacías de los 4 gráficos
     initChartInstances();
+    // Vincular botones "Generar" a sus respectivos reportes
     initGenerateButtons();
 
 
-    // Set default dates and load initial data
+    // Establecer fechas por defecto y cargar todos los reportes iniciales
     setDefaultDates();
     setTimeout(() => {
         loadReport('inventory');
@@ -16,12 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 100);
 });
 
+// Establece fechas por defecto: últimos 30 días hasta hoy
 function setDefaultDates() {
     const today = new Date();
     const thirtyDaysAgo = new Date(today);
     thirtyDaysAgo.setDate(today.getDate() - 30);
     const fmt = d => d.toISOString().split('T')[0];
 
+    // Aplica fechas a los campos de filtro de cada reporte
     document.querySelectorAll('.movements-from, .income-from, .purchases-from').forEach(el => {
         el.value = fmt(thirtyDaysAgo);
     });
@@ -30,7 +37,9 @@ function setDefaultDates() {
     });
 }
 
+// Configura la navegación entre secciones de reportes
 function initReportNavigation() {
+    // Click en botón de reporte: activa la sección correspondiente y carga datos
     document.querySelectorAll('.report-btn.primary').forEach(btn => {
         btn.addEventListener('click', function () {
             document.querySelectorAll('.report-content').forEach(r => r.classList.remove('active'));
@@ -45,6 +54,7 @@ function initReportNavigation() {
         });
     });
 
+    // Click en botón cerrar reporte: oculta la sección
     document.querySelectorAll('.close-report').forEach(btn => {
         btn.addEventListener('click', function () {
             this.closest('.report-content').classList.remove('active');
@@ -52,6 +62,7 @@ function initReportNavigation() {
     });
 }
 
+// Paleta de colores para los gráficos Chart.js
 const CHART_COLORS = {
     primary: '#002266',
     secondary: '#0A369D',
@@ -63,6 +74,7 @@ const CHART_COLORS = {
     palette: ['#002266','#0A369D','#D4AF37','#4A90E2','#F7E493','#4caf50','#ff9800','#f44336'],
 };
 
+// Convierte la configuración de gráfico de la API a formato Chart.js
 function createChartConfig(apiChart) {
     if (!apiChart) return null;
     const chartType = apiChart.type;
@@ -75,14 +87,17 @@ function createChartConfig(apiChart) {
                     label: ds.label,
                     data: ds.data,
                 };
+                // Estilos según tipo de gráfico
                 if (chartType === 'doughnut') {
                     base.backgroundColor = CHART_COLORS.palette.slice(0, ds.data.length);
                     base.borderWidth = 0;
                 } else if (chartType === 'bar') {
+                    // Verde para primera serie, rojo para segunda
                     base.backgroundColor = i === 0 ? 'rgba(76, 175, 80, 0.7)' : 'rgba(244, 67, 54, 0.7)';
                     base.borderColor = i === 0 ? '#4caf50' : '#f44336';
                     base.borderWidth = 1;
                 } else {
+                    // Estilo línea con relleno semitransparente
                     base.backgroundColor = 'rgba(10, 54, 157, 0.1)';
                     base.borderColor = '#0A369D';
                     base.borderWidth = 3;
@@ -97,6 +112,7 @@ function createChartConfig(apiChart) {
     };
 }
 
+// Crea las instancias vacías de los 4 gráficos (doughnut, bar, line, line)
 function initChartInstances() {
     const configs = [
         { id: 'inventoryChart',   type: 'doughnut' },
@@ -116,6 +132,7 @@ function initChartInstances() {
     });
 }
 
+// Retorna las opciones de configuración de Chart.js según el tipo de gráfico
 function getChartOptions(type) {
     const base = {
         responsive: true,
@@ -135,6 +152,7 @@ function getChartOptions(type) {
     return base;
 }
 
+// Vincula los botones "Generar" a la función loadReport
 function initGenerateButtons() {
     document.querySelectorAll('.generate-btn').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -144,6 +162,7 @@ function initGenerateButtons() {
     });
 }
 
+// Carga un reporte específico desde la API y actualiza la vista
 async function loadReport(report) {
     const params = getFilterParams(report);
     const url = APP_URL + 'Public/api/reports.php?action=' + report + '&' + new URLSearchParams(params);
@@ -160,6 +179,7 @@ async function loadReport(report) {
     }
 }
 
+// Extrae los parámetros de filtro del DOM según el tipo de reporte
 function getFilterParams(report) {
     switch (report) {
         case 'inventory': {
@@ -195,6 +215,7 @@ function getFilterParams(report) {
     }
 }
 
+// Renderiza un reporte: actualiza gráfico, estadísticas, tabla y nota
 function renderReport(report, data) {
     if (!data) return;
 
@@ -202,17 +223,20 @@ function renderReport(report, data) {
     try { updateStats(report, data.stats); } catch (e) { console.error(e); }
     try { updateTable(report, data.table); } catch (e) { console.error(e); }
 
+    // Mostrar nota informativa si el reporte la incluye (ej: ingresos)
     if (data.note) {
         const noteEl = document.querySelector('.income-note');
         if (noteEl) noteEl.textContent = data.note;
     }
 
+    // Guardar URL del gráfico en el dataset para exportación PDF
     if (data.chart?.chartUrl) {
         const reportEl = document.getElementById(report + 'Report');
         if (reportEl) reportEl.dataset.chartUrl = data.chart.chartUrl;
     }
 }
 
+// Actualiza un gráfico existente con nuevos datos de la API
 function updateChart(report, chartData) {
     const canvasId = report + 'Chart';
     const existing = charts[canvasId];
@@ -226,6 +250,7 @@ function updateChart(report, chartData) {
     existing.update();
 }
 
+// Actualiza las tarjetas de estadísticas con los valores del reporte
 function updateStats(report, stats) {
     if (!stats) return;
     const container = document.querySelector('.' + report + '-stats');
@@ -238,6 +263,7 @@ function updateStats(report, stats) {
             const labEl = cards[i].querySelector('.stat-label');
             if (valEl) {
                 const val = stat.value ?? 0;
+                // Formato con prefijo $ si la stat es en divisa
                 valEl.textContent = stat.currency ? '$' + formatNumber(val) : formatNumber(val);
             }
             if (labEl) labEl.textContent = stat.label;
@@ -245,6 +271,7 @@ function updateStats(report, stats) {
     });
 }
 
+// Renderiza la tabla de datos del reporte con formato numérico localizado
 function updateTable(report, tableData) {
     if (!tableData || !tableData.headers || !tableData.rows) return;
 
@@ -252,11 +279,13 @@ function updateTable(report, tableData) {
     const tbody = document.querySelector(selector);
     if (!tbody) return;
 
+    // Estado vacío: sin datos para el período seleccionado
     if (tableData.rows.length === 0) {
         tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:20px;color:var(--gray);">No hay datos para este período</td></tr>';
         return;
     }
 
+    // Renderizar cada fila con formato numérico para celdas numéricas
     const html = tableData.rows.map(row => {
         const cells = row.map(cell => {
             if (typeof cell === 'number') return '<td>' + formatNumber(cell) + '</td>';
@@ -267,18 +296,22 @@ function updateTable(report, tableData) {
     tbody.innerHTML = html;
 }
 
+// Formatea un número con localización venezolana (es-VE)
 function formatNumber(n) {
     if (n === null || n === undefined) return '0';
+    // Decimales para números flotantes
     if (typeof n === 'number' && !Number.isInteger(n)) {
         return n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    // Si es string no numérico, retornar tal cual
     if (typeof n === 'string' && isNaN(Number(n))) return n;
     return Number(n).toLocaleString('es-VE');
 }
 
 
-// ── PDF export (table only) ─────────────────────
+// ── Exportación PDF (tabla solamente) ─────────────────────
 
+// Delegación de eventos: detecta clic en botones de exportación PDF
 document.addEventListener('click', function (e) {
     const btn = e.target.closest('.export-pdf');
     if (!btn) return;
@@ -286,14 +319,17 @@ document.addEventListener('click', function (e) {
     exportToPDF(reportId);
 });
 
+// Extrae headers y filas de la tabla HTML y los agrega al PDF con jsPDF
 function addTableToPdf(pdf, element, startY) {
     const table = element.querySelector('.report-table');
     if (!table) return;
 
+    // Extraer encabezados de la tabla
     const headers = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim());
     const rows = [];
     const tbody = table.querySelector('tbody');
     if (tbody) {
+        // Extraer filas, excluyendo filas completamente vacías
         [...tbody.querySelectorAll('tr')].forEach(tr => {
             const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
             if (cells.length > 0 && cells.some(c => c !== '')) {
@@ -303,6 +339,7 @@ function addTableToPdf(pdf, element, startY) {
     }
     if (rows.length === 0) return;
 
+    // Generar tabla en el PDF con estilo corporativo (azul dorado)
     pdf.autoTable({
         head: [headers],
         body: rows,
@@ -329,14 +366,17 @@ function addTableToPdf(pdf, element, startY) {
     });
 }
 
+// Genera y descarga un PDF con el reporte completo (título + tabla)
 async function exportToPDF(reportId) {
     const element = document.getElementById(reportId);
     if (!element) { toast('Reporte no encontrado.', 'error'); return; }
 
     const report = reportId.replace('Report', '');
+    // Asegurar que el reporte esté visible para poder capturar su tabla
     const wasActive = element.classList.contains('active');
     if (!wasActive) element.classList.add('active');
 
+    // Recargar datos del reporte antes de exportar
     await loadReport(report);
     await new Promise(r => setTimeout(r, 600));
 
@@ -345,14 +385,18 @@ async function exportToPDF(reportId) {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
 
+        // Título centrado en el encabezado del PDF
         const title = element.querySelector('.report-name')?.textContent || report;
         pdf.setFontSize(16);
         pdf.text(title, pdfWidth / 2, 12, { align: 'center' });
 
+        // Agregar tabla del reporte al PDF
         addTableToPdf(pdf, element, 20);
 
+        // Descargar el archivo PDF generado
         pdf.save(`reporte_${reportId}.pdf`);
     } finally {
+        // Restaurar visibilidad del reporte si estaba oculto
         if (!wasActive) element.classList.remove('active');
     }
 }

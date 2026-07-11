@@ -2,19 +2,22 @@
 
 namespace BetelCreativa\Domain;
 
+// SupplierModel — Modelo de dominio para los proveedores
+// Un proveedor puede ser fijo (asociado a materiales específicos) o comodín (genérico)
 class SupplierModel
 {
-    private ?int $id;
-    private string $companyName;
-    private ?string $contactName;
-    private ?string $phone;
-    private ?string $email;
-    private ?string $address;
-    private ?string $notes;
-    private string $supplierType;
-    private ?string $subtype;
-    private bool $isActive;
+    private ?int $id;                // ID único del proveedor
+    private string $companyName;     // Nombre de la empresa
+    private ?string $contactName;    // Nombre de la persona de contacto
+    private ?string $phone;          // Teléfono
+    private ?string $email;          // Correo electrónico
+    private ?string $address;        // Dirección física
+    private ?string $notes;          // Notas internas
+    private string $supplierType;    // Tipo: 'fijo' o 'comodin'
+    private ?string $subtype;        // Subtipo opcional (ej: "GLOBANT", "DASSA")
+    private bool $isActive;          // Si está activo en el sistema
 
+    // Constructor: soporta snake_case (BD) y camelCase (API)
     public function __construct(array $data = [])
     {
         $this->id = $data['id'] ?? null;
@@ -29,6 +32,7 @@ class SupplierModel
         $this->isActive = (bool)($data['isActive'] ?? $data['is_active'] ?? true);
     }
 
+    // Getters
     public function getId(): ?int { return $this->id; }
     public function getCompanyName(): string { return $this->companyName; }
     public function getContactName(): ?string { return $this->contactName; }
@@ -40,6 +44,7 @@ class SupplierModel
     public function getSubtype(): ?string { return $this->subtype; }
     public function getIsActive(): bool { return $this->isActive; }
 
+    // Setters
     public function setId(?int $id): void { $this->id = $id; }
     public function setCompanyName(string $companyName): void { $this->companyName = $companyName; }
     public function setContactName(?string $contactName): void { $this->contactName = $contactName; }

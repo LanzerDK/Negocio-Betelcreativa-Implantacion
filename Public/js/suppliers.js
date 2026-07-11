@@ -1,8 +1,12 @@
+// Estado global: ID del proveedor que se está editando (null si es nuevo)
 let editingSupplierId = null;
 
+// Inicialización al cargar el DOM
 document.addEventListener('DOMContentLoaded', function () {
+    // Cargar proveedores y materiales desde la API
     cargarProveedores();
 
+    // Abrir modal de nuevo proveedor y limpiar formulario
     document.getElementById('newSupplierBtn').addEventListener('click', function () {
         editingSupplierId = null;
         document.getElementById('supplierModalLabel').textContent = 'Nuevo Proveedor';
@@ -10,24 +14,30 @@ document.addEventListener('DOMContentLoaded', function () {
         Modal.open('supplierModal');
     });
 
+    // Guardar proveedor al hacer clic en el botón
     document.getElementById('saveSupplierBtn').addEventListener('click', guardarProveedor);
 
+    // Filtrar proveedores en tiempo real al escribir en el buscador
     document.getElementById('searchInput')?.addEventListener('input', filtrarProveedores);
 
+    // Alternar campos visibles según el tipo de proveedor (fijo o comodín)
     document.getElementById('supplierType').addEventListener('change', function () {
         toggleSupplierFields(this.value);
     });
 
+    // Limpiar campo de búsqueda y restaurar lista completa
     document.getElementById('btnLimpiarProveedores')?.addEventListener('click', function () {
         document.getElementById('searchInput').value = '';
         filtrarProveedores();
     });
 });
 
+// Mostrar u ocultar campos del formulario según el tipo de proveedor seleccionado
 function toggleSupplierFields(type) {
     const isComodin = type === 'comodin';
     document.getElementById('fijoFields').style.display = isComodin ? 'none' : 'block';
     document.getElementById('comodinFields').style.display = isComodin ? 'block' : 'none';
+    // Limpiar campos del tipo que se oculta para evitar datos residuales
     if (!isComodin) {
         document.getElementById('supplierSubtype').value = '';
         document.getElementById('supplierNotes').value = '';
@@ -39,6 +49,7 @@ function toggleSupplierFields(type) {
     }
 }
 
+// Resetear todos los campos del formulario de proveedor
 function limpiarFormulario() {
     document.getElementById('supplierCompany').value = '';
     document.getElementById('supplierContact').value = '';
@@ -51,6 +62,7 @@ function limpiarFormulario() {
     toggleSupplierFields('fijo');
 }
 
+// Cargar proveedores y materiales en paralelo, luego renderizar
 function cargarProveedores() {
     Promise.all([
         callApi(APP_URL + 'Public/api/admin/suppliers.php'),
@@ -64,25 +76,31 @@ function cargarProveedores() {
         .catch(err => console.error('Error de red:', err));
 }
 
+// Renderizar tarjetas de proveedores y estadísticas del encabezado
 function renderizarProveedores(proveedores, materiales) {
     const container = document.getElementById('suppliersContainer');
     container.innerHTML = '';
 
     materiales = materiales || [];
 
+    // Filtrar solo materiales activos para conteo
     const activos = materiales.filter(m => m.is_active !== false && m.is_active !== 0);
 
+    // Calcular estadísticas: total, activos y materiales vinculados
     const total = proveedores.length;
     const activas = proveedores.filter(s => s.is_active !== false && s.is_active !== 0).length;
 
+    // Contar materiales activos por proveedor (supplier_id como clave)
     const matCountBySup = {};
     activos.forEach(m => {
         const sid = m.supplier_id;
         if (sid) matCountBySup[sid] = (matCountBySup[sid] || 0) + 1;
     });
 
+    // Sumar total de materiales vinculados a todos los proveedores
     const totalVinculados = Object.values(matCountBySup).reduce((a, b) => a + b, 0);
 
+    // Determinar el proveedor con mayor cantidad de materiales vinculados
     let topSupplier = '—';
     let maxCount = 0;
     proveedores.forEach(s => {
@@ -93,16 +111,19 @@ function renderizarProveedores(proveedores, materiales) {
         }
     });
 
+    // Actualizar valores de las tarjetas de estadísticas en el DOM
     document.getElementById('totalSuppliers').textContent = total;
     document.getElementById('totalSupplierMaterials').textContent = totalVinculados;
     document.getElementById('activeSuppliers').textContent = activas;
     document.getElementById('topSupplier').textContent = topSupplier;
 
+    // Mostrar estado vacío si no hay proveedores
     if (proveedores.length === 0) {
         container.innerHTML = '<div class="empty-state"><i class="fas fa-truck"></i><p>No hay proveedores registrados</p></div>';
         return;
     }
 
+    // Crear tarjeta DOM por cada proveedor
     proveedores.forEach(sup => {
         const card = document.createElement('div');
         const isActive = sup.is_active !== false && sup.is_active !== 0;
@@ -112,12 +133,14 @@ function renderizarProveedores(proveedores, materiales) {
 
         const matCount = matCountBySup[sup.id] || 0;
 
+        // Escapar datos para prevenir XSS
         const safeName = escapeHtml(sup.company_name);
         const contact = sup.contact_name ? escapeHtml(sup.contact_name) : null;
         const phone = sup.phone ? escapeHtml(sup.phone) : null;
         const email = sup.email ? escapeHtml(sup.email) : null;
         const address = sup.address ? escapeHtml(sup.address) : null;
 
+        // Determinar badge de tipo (fijo o comodín) y subetiqueta
         const isComodin = sup.supplier_type === 'comodin';
         const typeBadge = isComodin
             ? `<span class="supplier-type-badge comodin"><i class="fas fa-exchange-alt"></i> Comodín</span>`
@@ -126,6 +149,7 @@ function renderizarProveedores(proveedores, materiales) {
             ? `<div class="subtype-label"><i class="fas fa-tag"></i> ${escapeHtml(sup.subtype)}</div>`
             : '';
 
+        // Construir HTML de la tarjeta con header, body y acciones
         card.innerHTML = `
             <div class="supplier-header">
                 <div class="supplier-avatar">
@@ -153,6 +177,7 @@ function renderizarProveedores(proveedores, materiales) {
             </div>
         `;
 
+        // Evento: editar proveedor (bloquea si está inactivo)
         card.querySelector('.edit-btn').addEventListener('click', function (e) {
             e.stopPropagation();
             if (!isActive) {
@@ -162,6 +187,7 @@ function renderizarProveedores(proveedores, materiales) {
             editarProveedor(sup);
         });
 
+        // Evento: alternar estado activo/inactivo
         card.querySelector('.toggle-btn').addEventListener('click', function (e) {
             e.stopPropagation();
             toggleEstadoProveedor(sup.id, isActive, card, this, matCount);
@@ -171,6 +197,7 @@ function renderizarProveedores(proveedores, materiales) {
     });
 }
 
+// Abrir modal de edición con los datos del proveedor seleccionado
 function editarProveedor(sup) {
     editingSupplierId = sup.id;
     document.getElementById('supplierModalLabel').textContent = 'Editar Proveedor';
@@ -182,10 +209,12 @@ function editarProveedor(sup) {
     document.getElementById('supplierType').value = sup.supplier_type || 'fijo';
     document.getElementById('supplierSubtype').value = sup.subtype || '';
     document.getElementById('supplierNotes').value = sup.notes || '';
+    // Mostrar campos según el tipo de proveedor (fijo o comodín)
     toggleSupplierFields(sup.supplier_type || 'fijo');
     Modal.open('supplierModal');
 }
 
+// Validar formulario y guardar proveedor (crear o actualizar)
 function guardarProveedor() {
     const companyName = document.getElementById('supplierCompany').value.trim();
     const contactName = document.getElementById('supplierContact').value.trim();
@@ -193,14 +222,17 @@ function guardarProveedor() {
     const email = document.getElementById('supplierEmail').value.trim();
     const address = document.getElementById('supplierAddress').value.trim();
 
+    // Validar que el nombre de la empresa sea obligatorio
     if (!companyName) {
         toast('El nombre de la empresa es obligatorio.', 'warning');
         return;
     }
 
+    // Construir URL y método HTTP según si es edición o creación
     const url = APP_URL + 'Public/api/admin/suppliers.php' + (editingSupplierId ? '?id=' + editingSupplierId : '');
     const method = editingSupplierId ? 'PUT' : 'POST';
 
+    // Enviar datos del proveedor al servidor
     callApi(url, {
         method: method,
         headers: {
@@ -221,6 +253,7 @@ function guardarProveedor() {
         .then(data => {
             if (data.success) {
                 Modal.close('supplierModal');
+                // Recargar la lista de proveedores después de guardar
                 cargarProveedores();
             } else {
                 toast(data.message, 'error');
@@ -232,14 +265,17 @@ function guardarProveedor() {
         });
 }
 
+// Alternar estado activo/inactivo de un proveedor con validación de materiales vinculados
 function toggleEstadoProveedor(id, isActive, card, button, matCount) {
     const newStatus = isActive ? 0 : 1;
 
+    // Bloquear deshabilitar si tiene materiales vinculados
     if (newStatus === 0 && matCount > 0) {
         toast('No se puede deshabilitar este proveedor, tiene materiales vinculados.', 'warning');
         return;
     }
 
+    // Enviar cambio de estado al servidor
     callApi(APP_URL + 'Public/api/admin/suppliers.php?id=' + id, {
         method: 'PUT',
         headers: {
@@ -250,13 +286,17 @@ function toggleEstadoProveedor(id, isActive, card, button, matCount) {
     })
         .then(data => {
             if (data.success) {
+                // Actualizar clase visual de la tarjeta
                 card.classList.toggle('inhabilitado');
                 const nowActive = newStatus === 1;
+                // Actualizar texto e ícono del botón de toggle
                 button.innerHTML = `<i class="fas ${nowActive ? 'fa-eye-slash' : 'fa-check-circle'}"></i> ${nowActive ? 'Inhabilitar' : 'Habilitar'}`;
+                // Actualizar badge de estado
                 const badge = card.querySelector('.supplier-status');
                 badge.textContent = nowActive ? 'Activo' : 'Inactivo';
                 badge.className = 'supplier-status ' + (nowActive ? 'status-active' : 'status-inactive');
 
+                // Actualizar contador de proveedores activos en estadísticas
                 const activasEl = document.getElementById('activeSuppliers');
                 if (activasEl) {
                     const current = parseInt(activasEl.textContent);
@@ -272,6 +312,7 @@ function toggleEstadoProveedor(id, isActive, card, button, matCount) {
         });
 }
 
+// Filtrar tarjetas de proveedores por nombre según el término de búsqueda
 function filtrarProveedores() {
     const term = document.getElementById('searchInput').value.toLowerCase().trim();
     document.querySelectorAll('.supplier-card').forEach(card => {

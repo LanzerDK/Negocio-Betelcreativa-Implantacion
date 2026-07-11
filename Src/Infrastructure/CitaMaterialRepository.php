@@ -7,15 +7,20 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// CitaMaterialRepository — Acceso a la tabla `cita_materiales` y su historial
+// Gestiona reservas, deducciones, reversiones y sincronización de materiales por cita
+// Toda operación crítica usa transacciones con FOR UPDATE para consistencia
 class CitaMaterialRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todos los materiales asignados a una cita, incluyendo stock disponible
     public function findByCitaId(int $citaId): array
     {
         try {
@@ -39,14 +44,9 @@ class CitaMaterialRepository
         }
     }
 
-    /**
-     * Crea o reemplaza la asignación de materiales de una cita.
-     * Fase 1: Libera reservas viejas.
-     * Fase 2: Verifica stock disponible para cantidades nuevas.
-     * Fase 3: Reserva nuevas cantidades.
-     * Fase 4: Reemplaza registros en cita_materiales.
-     * Fase 5: Registra historial transaccional.
-     */
+    // Sincroniza los materiales de una cita con reservas: compara old vs new,
+    // verifica stock, libera reservas viejas, reserva nuevas, actualiza cita_materiales
+    // y registra historial de cambios. Operación transaccional con locks.
     public function syncMaterialsWithReservation(
         int $citaId,
         array $newMaterials,
@@ -60,14 +60,14 @@ class CitaMaterialRepository
                 $this->db->beginTransaction();
             }
 
-            // 1. Cargar materiales actuales desde DB
+            // 1. Carga los materiales actuales desde la BD para comparación
             $oldRows = $this->findByCitaId($citaId);
             $oldByMat = [];
             foreach ($oldRows as $row) {
                 $oldByMat[(int)$row['materialId']] = (int)$row['cantidadUtilizada'];
             }
 
-            // 2. Normalizar nuevos materiales (agrupar por materialId por si vienen duplicados)
+            // 2. Normaliza el array nuevo agrupando por materialId
             $newByMat = [];
             foreach ($newMaterials as $nm) {
                 $mid = (int)($nm['materialId'] ?? $nm['material_id'] ?? 0);
@@ -77,17 +77,17 @@ class CitaMaterialRepository
                 }
             }
 
-            // 3. Detectar cambios (comparación raw, sin array_filter — B2 fix)
+            // 3. Detecta si realmente hubo cambios para evitar work innecesario
             ksort($oldByMat);
             ksort($newByMat);
             $materialsChanged = ($oldByMat !== $newByMat);
 
+            // Si no hay cambios, salimos sin tocar reservas ni BD
             if (!$materialsChanged) {
-                // C1 fix: sin cambios → salir ANTES de tocar reservas
                 return true;
             }
 
-            // 4. Verificar si existe factura cerrada (bloquea modificación)
+            // 4. Verifica si existe una factura cerrada asociada (bloquea modificación)
             $checkFact = $this->db->prepare("SELECT id, estado, costo_servicio FROM facturas WHERE cita_id = :cid LIMIT 1");
             $checkFact->execute([':cid' => $citaId]);
             $factura = $checkFact->fetch(PDO::FETCH_ASSOC);
@@ -102,8 +102,8 @@ class CitaMaterialRepository
                 }
             }
 
-            // 5. Bloquear TODOS los materiales involucrados (old + new) con FOR UPDATE,
-            //    ordenados asc para prevenir deadlocks (M4 fix)
+            // 5. Bloquea TODOS los materiales involucrados con FOR UPDATE ordenados asc
+            //    para prevenir deadlocks en concurrencia
             $allIds = array_unique(array_merge(array_keys($oldByMat), array_keys($newByMat)));
             sort($allIds);
             $lockStmt = $this->db->prepare(
@@ -114,8 +114,7 @@ class CitaMaterialRepository
                 $lockStmt->fetch();
             }
 
-            // 6. Verificar stock disponible para cantidades adicionales
-            //    (después del lock global, antes de modificar reservas)
+            // 6. Verifica stock disponible para cantidades adicionales
             foreach ($newByMat as $mid => $newCant) {
                 $oldCant = $oldByMat[$mid] ?? 0;
                 $extra = $newCant - $oldCant;
@@ -143,7 +142,7 @@ class CitaMaterialRepository
                 }
             }
 
-            // 7. Liberar reservas viejas (protegido por FOR UPDATE — M4 fix)
+            // 7. Libera las reservas viejas (solo si tenían cantidad > 0)
             $freeStmt = $this->db->prepare(
                 "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
             );
@@ -153,7 +152,7 @@ class CitaMaterialRepository
                 }
             }
 
-            // 8. Reservar nuevas cantidades
+            // 8. Reserva las nuevas cantidades en reserved_stock
             $reserveStmt = $this->db->prepare(
                 "UPDATE materials SET reserved_stock = reserved_stock + :cant WHERE material_id = :id"
             );
@@ -163,7 +162,7 @@ class CitaMaterialRepository
                 }
             }
 
-            // 9. Reemplazar registros en cita_materiales
+            // 9. Reemplaza los registros en cita_materiales (borra todo y re-inserta)
             $delStmt = $this->db->prepare("DELETE FROM cita_materiales WHERE cita_id = :cid");
             $delStmt->execute([':cid' => $citaId]);
 
@@ -185,7 +184,7 @@ class CitaMaterialRepository
                 }
             }
 
-            // 6.5 Sincronizar total de factura si existe y está activa
+            // 6.5 Recalcula y actualiza total de factura si existe y está activa
             if ($factura && $factura['estado'] === 'activa') {
                 $costoServicio = (float)$factura['costo_servicio'];
                 $matTotStmt = $this->db->prepare(
@@ -199,7 +198,7 @@ class CitaMaterialRepository
                 $upd->execute([':total' => $totalFactura, ':fid' => $factura['id']]);
             }
 
-            // 10. Registrar historial (solo materiales cuyo valor cambió)
+            // 10. Registra historial solo para materiales cuyo valor cambió
             foreach ($allIds as $mid) {
                 $oldCant = $oldByMat[$mid] ?? 0;
                 $newCant = $newByMat[$mid] ?? 0;
@@ -221,10 +220,8 @@ class CitaMaterialRepository
         }
     }
 
-    /**
-     * Libera las reservas de una cita (al cancelar).
-     * NO elimina los registros de cita_materiales para permitir restauración futura.
-     */
+    // Libera las reservas de una cita al cancelarla
+    // NO elimina los registros de cita_materiales para permitir restauración futura
     public function cancelReservations(int $citaId, string $estadoCita, int $usuarioId): bool
     {
         try {
@@ -232,7 +229,7 @@ class CitaMaterialRepository
 
             $materiales = $this->findByCitaId($citaId);
 
-            // Lock all materials with FOR UPDATE, sorted to prevent deadlocks
+            // Lock con FOR UPDATE ordenado para prevenir deadlocks
             usort($materiales, fn($a, $b) => (int)$a['materialId'] - (int)$b['materialId']);
             $lockStmt = $this->db->prepare(
                 "SELECT reserved_stock FROM materials WHERE material_id = :id FOR UPDATE"
@@ -242,6 +239,7 @@ class CitaMaterialRepository
                 $lockStmt->fetch();
             }
 
+            // Libera reserva de cada material usado en esta cita
             $freeStmt = $this->db->prepare(
                 "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
             );
@@ -263,10 +261,8 @@ class CitaMaterialRepository
         }
     }
 
-    /**
-     * Re-reserva los materiales de una cita cancelada (al restaurar).
-     * Los registros de cita_materiales aún existen de antes de la cancelación.
-     */
+    // Re-reserva los materiales de una cita cancelada al restaurarla
+    // Verifica stock disponible antes de reservar
     public function restoreReservations(int $citaId, string $estadoCita, int $usuarioId): bool
     {
         try {
@@ -282,6 +278,7 @@ class CitaMaterialRepository
             foreach ($materiales as $mat) {
                 $cant = (int)$mat['cantidadUtilizada'];
                 if ($cant > 0) {
+                    // Verifica stock disponible antes de reservar
                     $check = $this->db->prepare(
                         "SELECT COALESCE((SELECT SUM(quantity) FROM material_stock_locations WHERE material_id = :id), 0) AS current_stock, reserved_stock FROM materials WHERE material_id = :id2 FOR UPDATE"
                     );
@@ -305,11 +302,8 @@ class CitaMaterialRepository
         }
     }
 
-    /**
-     * Ejecuta la deducción real de stock cuando una cita pasa a Finalizada.
-     * Consume stock secuencialmente de todas las ubicaciones (FIFO por location_id),
-     * libera reserved_stock y registra en inventory_movements.
-     */
+    // Deduce stock real cuando una cita pasa a Finalizada
+    // Consume FIFO por ubicación, libera reserved_stock y registra movimiento de inventario
     public function executeDeductionOnCompleted(int $citaId, int $usuarioId): bool
     {
         try {
@@ -320,6 +314,7 @@ class CitaMaterialRepository
 
             $now = date('Y-m-d H:i:s');
 
+            // Prepara statements para consumir stock de ubicaciones FIFO
             $locsStmt = $this->db->prepare(
                 "SELECT location_id, quantity FROM material_stock_locations
                  WHERE material_id = :id AND quantity > 0
@@ -344,11 +339,11 @@ class CitaMaterialRepository
                 $cant = (int)$mat['cantidadUtilizada'];
                 if ($cant <= 0) continue;
 
-                // Bloquear y leer todas las ubicaciones con stock > 0
+                // Bloquea y lee todas las ubicaciones con stock positivo
                 $locsStmt->execute([':id' => $mat['materialId']]);
                 $locations = $locsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-                // Verificar stock total disponible
+                // Verifica stock total disponible antes de deducir
                 $total = array_sum(array_column($locations, 'quantity'));
                 if ($total < $cant) {
                     $this->db->rollBack();
@@ -356,7 +351,7 @@ class CitaMaterialRepository
                     return false;
                 }
 
-                // Consumo secuencial FIFO por ubicación
+                // Consume secuencialmente de cada ubicación (FIFO)
                 $remaining = $cant;
                 foreach ($locations as $loc) {
                     if ($remaining <= 0) break;
@@ -370,12 +365,13 @@ class CitaMaterialRepository
                     $remaining -= $take;
                 }
 
-                // Liberar reserved_stock
+                // Libera la reserva de este material
                 $releaseStmt->execute([
                     ':cant' => $cant,
                     ':id'   => $mat['materialId']
                 ]);
 
+                // Registra el movimiento de salida con referencia a la cita
                 $movStmt->execute([
                     ':mid'     => $mat['materialId'],
                     ':uid'     => $usuarioId,
@@ -398,34 +394,35 @@ class CitaMaterialRepository
         }
     }
 
-    /**
-     * Revierte la deducción de stock cuando se anula una factura asociada
-     * a una cita Finalizada. Lee los movimientos Exit previos y crea Entry inversos.
-     */
+    // Revierte la deducción de stock al anular una factura asociada a cita Finalizada
+    // Lee movimientos Exit previos y crea Entry inversos devolviendo stock a ubicaciones
     public function reverseDeductionOnAnulacion(int $citaId, int $usuarioId, int $facturaId, bool $manageTransaction = true): bool
     {
         try {
             $ownTx = $manageTransaction && !$this->db->inTransaction();
             if ($ownTx) $this->db->beginTransaction();
 
+            // Obtiene todos los movimientos Exit asociados a esta cita
             $movStmt = $this->db->prepare(
                 "SELECT material_id, SUM(quantity) AS qty
                  FROM inventory_movements
                  WHERE tipo_referencia = 'cita'
                    AND referencia_id = :cid
                    AND action_type = 'Exit'
-                 GROUP BY material_id"
+                  GROUP BY material_id"
             );
             $movStmt->execute([':cid' => $citaId]);
             $movements = $movStmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Si no hay movimientos, no hay nada que revertir
             if (empty($movements)) {
                 if ($ownTx) $this->db->commit();
-                return true; // nada que revertir
+                return true;
             }
 
             $now = date('Y-m-d H:i:s');
 
+            // Prepara statements para devolver stock y registrar entrada
             $upsertStmt = $this->db->prepare(
                 "INSERT INTO material_stock_locations (material_id, location_id, quantity)
                  VALUES (:mid, :lid, :qty)
@@ -439,7 +436,7 @@ class CitaMaterialRepository
                 "UPDATE materials SET reserved_stock = GREATEST(reserved_stock - :cant, 0) WHERE material_id = :id"
             );
 
-            // Buscar ubicación por defecto válida (fallback: primera location existente)
+            // Busca ubicación por defecto válida (fallback: primera location existente)
             $defaultLocStmt = $this->db->query("SELECT id FROM locations ORDER BY id ASC LIMIT 1");
             $defaultLoc = (int)$defaultLocStmt->fetchColumn();
             if ($defaultLoc <= 0) $defaultLoc = 1;
@@ -449,7 +446,7 @@ class CitaMaterialRepository
                 $qty = (int)$m['qty'];
                 if ($qty <= 0) continue;
 
-                // Devolver stock a la primera ubicación disponible del material
+                // Devuelve stock a la primera ubicación disponible del material
                 $locStmt = $this->db->prepare(
                     "SELECT location_id FROM material_stock_locations WHERE material_id = :mid ORDER BY location_id ASC LIMIT 1"
                 );
@@ -474,7 +471,7 @@ class CitaMaterialRepository
                     ':date'   => $now
                 ]);
 
-                // Liberar reserved_stock (pudo haber quedado)
+                // Libera reserved_stock residual
                 $releaseStmt->execute([':cant' => $qty, ':id' => $materialId]);
             }
 
@@ -489,6 +486,7 @@ class CitaMaterialRepository
         }
     }
 
+    // Elimina todos los registros de cita_materiales para una cita
     public function deleteByCitaId(int $citaId): void
     {
         try {
@@ -499,6 +497,7 @@ class CitaMaterialRepository
         }
     }
 
+    // Obtiene el historial de cambios de materiales de una cita
     public function obtenerHistorial(int $citaId): array
     {
         try {
@@ -519,6 +518,7 @@ class CitaMaterialRepository
         }
     }
 
+    // Registra una entrada en el historial de cambios de materiales por cita
     private function logHistorial(int $citaId, int $materialId, int $cantidadAnterior, int $cantidadNueva, string $accion, string $estadoCita, int $usuarioId): void
     {
         $stmt = $this->db->prepare(

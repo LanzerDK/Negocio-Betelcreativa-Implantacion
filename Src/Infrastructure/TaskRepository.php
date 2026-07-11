@@ -8,15 +8,19 @@ use BetelCreativa\Helpers\ApiResponse;
 use PDO;
 use PDOException;
 
+// TaskRepository — Acceso a datos de la tabla `tasks`
+// CRUD con listados separados por estado (pendientes/completadas)
 class TaskRepository
 {
     private PDO $db;
 
+    // Obtiene la conexión PDO singleton desde Database
     public function __construct()
     {
         $this->db = Database::getConnection();
     }
 
+    // Obtiene todas las tareas pendientes ordenadas por prioridad (alta → media → baja)
     public function findAllPending(): array
     {
         try {
@@ -40,6 +44,7 @@ class TaskRepository
         }
     }
 
+    // Obtiene todas las tareas completadas ordenadas por fecha de finalización
     public function findAllCompleted(): array
     {
         try {
@@ -61,6 +66,7 @@ class TaskRepository
         }
     }
 
+    // Busca una tarea por su ID
     public function findById(int $id): ?TaskModel
     {
         try {
@@ -78,6 +84,7 @@ class TaskRepository
         }
     }
 
+    // Inserta una nueva tarea
     public function save(TaskModel $task): bool
     {
         try {
@@ -95,6 +102,7 @@ class TaskRepository
         }
     }
 
+    // Actualiza una tarea; si se marca como completada, registra la fecha/hora
     public function update(TaskModel $task): bool
     {
         try {
@@ -118,6 +126,7 @@ class TaskRepository
         }
     }
 
+    // Elimina una tarea por su ID
     public function delete(int $id): bool
     {
         try {

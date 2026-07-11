@@ -1,5 +1,8 @@
 <?php
 
+// Endpoint API para subir imagen de categoría
+// Valida MIME, tamaño, guarda en uploads/categories/ y devuelve la URL absoluta
+
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../Config/app.php';
 
