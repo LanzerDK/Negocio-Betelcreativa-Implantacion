@@ -85,20 +85,22 @@ body::before {
   font-weight: 500;
 }
 
-.input-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #000;
-  font-size: 1.4rem;
-  line-height: 1;
-  pointer-events: none;
-}
-
 .input-group {
   display: flex;
   gap: 10px;
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #444;
+  font-size: 1.2rem;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .select-wrapper {
