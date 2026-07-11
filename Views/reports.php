@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportes - Gestión de Almacén</title>
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
     
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/reportStyle.css">
@@ -30,7 +31,8 @@
 
             <div class="user-container">
                 <div class="imagenfoto">
-                    <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
+                    <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
+                    <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
                 <div class="user-details">
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
@@ -41,7 +43,7 @@
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settingsDropdown">
-                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
+                    <a href="<?php echo APP_URL; ?>admin-settings" class="dropdown-item">
                         <i class="fas fa-user"></i> Cuenta
                     </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
@@ -79,8 +81,7 @@
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="submenu-dropdown" id="almacenSubmenu">
-                    <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item"><i class="fas fa-truck-loading"></i> Distribución</a>
-                    <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
+                <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
                 </div>
             </div>
             <a href="<?php echo APP_URL; ?>customers" class="menu-item">

@@ -61,3 +61,13 @@ if (!function_exists('roleLabel')) {
         };
     }
 }
+
+if (!function_exists('systemLogoUrl')) {
+    function systemLogoUrl(): string {
+        $custom = __DIR__ . '/../Public/uploads/logo.png';
+        if (file_exists($custom)) {
+            return APP_URL . 'Public/uploads/logo.png';
+        }
+        return APP_URL . 'Public/images/BetEl.png';
+    }
+}

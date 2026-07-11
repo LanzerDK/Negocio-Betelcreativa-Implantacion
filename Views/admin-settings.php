@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuración de Usuario - Bet-El Creativa</title>
+    <title>Configuración - Bet-El Creativa</title>
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/configStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
@@ -81,7 +82,8 @@
             </div>
             <div class="user-container">
                 <div class="imagenfoto">
-                    <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
+                    <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
+                    <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
                 <div class="user-details">
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
@@ -92,9 +94,9 @@
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settingsDropdown">
-                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
-                        <i class="fas fa-user"></i> Cuenta
-                    </a>
+                        <a href="<?php echo APP_URL; ?>admin-settings" class="dropdown-item">
+                            <i class="fas fa-user"></i> Cuenta
+                        </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
                             <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                         </a>
@@ -130,8 +132,7 @@
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="submenu-dropdown" id="almacenSubmenu">
-                    <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item"><i class="fas fa-truck-loading"></i> Distribución</a>
-                    <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
+                <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
                 </div>
             </div>
             <a href="<?php echo APP_URL; ?>customers" class="menu-item">
@@ -186,18 +187,14 @@
                             <i class="fas fa-user"></i>
                             <span>Perfil</span>
                         </button>
-                        <button class="config-tab" data-target="notifications">
-                            <i class="fas fa-bell"></i>
-                            <span>Notificaciones</span>
-                        </button>
                         <button class="config-tab" data-target="security">
                             <i class="fas fa-shield-alt"></i>
                             <span>Seguridad</span>
                         </button>
                         <?php if (in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin'])): ?>
-                        <button class="config-tab" data-target="system">
-                            <i class="fas fa-cogs"></i>
-                            <span>Sistema</span>
+                        <button class="config-tab" data-target="notifications">
+                            <i class="fas fa-bell"></i>
+                            <span>Notificaciones</span>
                         </button>
                         <button class="config-tab" data-target="billing">
                             <i class="fas fa-file-invoice-dollar"></i>
@@ -219,19 +216,19 @@
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="name"><i class="fas fa-user"></i> Nombre</label>
-                                    <input type="text" id="name" placeholder="Tu nombre">
+                                    <input type="text" class="form-input" id="name" placeholder="Tu nombre">
                                 </div>
                                 <div class="form-group">
                                     <label for="lastName"><i class="fas fa-user"></i> Apellido</label>
-                                    <input type="text" id="lastName" placeholder="Tu apellido">
+                                    <input type="text" class="form-input" id="lastName" placeholder="Tu apellido">
                                 </div>
                                 <div class="form-group">
                                     <label for="email"><i class="fas fa-envelope"></i> Correo Electrónico</label>
-                                    <input type="email" id="email" placeholder="tu@email.com">
+                                    <input type="email" class="form-input" id="email" placeholder="tu@email.com">
                                 </div>
                                 <div class="form-group">
                                     <label for="phone"><i class="fas fa-phone"></i> Teléfono</label>
-                                    <input type="tel" id="phone" placeholder="0412-123-45-67">
+                                    <input type="tel" class="form-input" id="phone" placeholder="0412-123-45-67">
                                 </div>
                             </div>
                             
@@ -244,8 +241,38 @@
                                     <i class="fas fa-save"></i> Guardar Cambios
                                 </button>
                             </div>
+
+
                         </div>
 
+                        <!-- Sección: Seguridad -->
+                        <div class="config-section" id="security-section">
+                            <h3 style="margin-bottom: 25px; color: var(--primary);">Cambiar Contraseña</h3>
+                            <p style="margin-bottom: 20px; color: var(--gray);">Actualiza tu contraseña regularmente para mayor seguridad.</p>
+
+                            <div id="passwordForm" style="margin-top: 10px; padding: 20px; background: var(--light-gray); border-radius: 10px; max-width: 500px;">
+                                <div class="form-group">
+                                    <label for="currentPassword"><i class="fas fa-lock"></i> Contraseña Actual</label>
+                                    <input type="password" class="form-input" id="currentPassword" placeholder="Ingresa tu contraseña actual">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword"><i class="fas fa-key"></i> Nueva Contraseña</label>
+                                    <input type="password" class="form-input" id="newPassword" placeholder="Ingresa tu nueva contraseña">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword"><i class="fas fa-check-circle"></i> Confirmar Contraseña</label>
+                                    <input type="password" class="form-input" id="confirmPassword" placeholder="Confirma tu nueva contraseña">
+                                </div>
+                                <div class="form-controls" style="border: none; padding: 0; margin-top: 10px;">
+                                    <button class="btn btn-primary" id="savePassword">
+                                        <i class="fas fa-save"></i> Actualizar Contraseña
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Secciones solo para admin/super_admin -->
+                        <?php if (in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin'])): ?>
 
                         <!-- Sección: Notificaciones -->
                         <div class="config-section" id="notifications-section">
@@ -296,197 +323,10 @@
                                         <span class="slider"></span>
                                     </label>
                                 </div>
-                                
                             </div>
                             
                             <div class="form-controls">
                                 <button class="btn btn-primary" id="saveNotifications">
-                                    <i class="fas fa-save"></i> Guardar Configuración
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Sección: Seguridad -->
-                        <div class="config-section" id="security-section">
-                            <h3 style="margin-bottom: 25px; color: var(--primary);">Seguridad y Acceso</h3>
-                            
-                            <div class="security-item">
-                                <div class="security-info">
-                                    <h4>Autenticación de Dos Factores</h4>
-                                    <p>Agrega una capa adicional de seguridad a tu cuenta</p>
-                                </div>
-                                <div class="security-status">
-                                    <span class="status-badge status-inactive">Inactivo</span>
-                                    <button class="btn btn-primary" style="padding: 8px 15px;">
-                                        <i class="fas fa-lock"></i> Activar
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="security-item">
-                                <div class="security-info">
-                                    <h4>Cambiar Contraseña</h4>
-                                    <p>Actualiza tu contraseña regularmente para mayor seguridad</p>
-                                </div>
-                                <button class="btn btn-secondary" id="changePasswordBtn">
-                                    <i class="fas fa-key"></i> Cambiar Contraseña
-                                </button>
-                            </div>
-                            
-                            <!-- Formulario de cambio de contraseña (oculto por defecto) -->
-                            <div id="passwordForm" style="display: none; margin-top: 20px; padding: 20px; background: var(--light-gray); border-radius: 10px;">
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="currentPassword">Contraseña Actual</label>
-                                        <input type="password" id="currentPassword" placeholder="Ingresa tu contraseña actual">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="newPassword">Nueva Contraseña</label>
-                                        <input type="password" id="newPassword" placeholder="Ingresa tu nueva contraseña">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="confirmPassword">Confirmar Contraseña</label>
-                                        <input type="password" id="confirmPassword" placeholder="Confirma tu nueva contraseña">
-                                    </div>
-                                </div>
-                                
-                                <div class="form-controls">
-                                    <button class="btn btn-secondary" id="cancelPassword">
-                                        Cancelar
-                                    </button>
-                                    <button class="btn btn-primary" id="savePassword">
-                                        <i class="fas fa-save"></i> Actualizar Contraseña
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="security-item">
-                                <div class="security-info">
-                                    <h4>Sesiones Activas</h4>
-                                    <p>Gestiona tus sesiones activas en diferentes dispositivos</p>
-                                </div>
-                                <span class="status-badge status-active">2 Sesiones</span>
-                            </div>
-                            
-                            <div class="session-list" style="margin-top: 20px;">
-                                <h4 style="margin-bottom: 15px; color: var(--dark);">Sesiones Activas</h4>
-                                
-                                <div class="session-item">
-                                    <div class="session-info">
-                                        <h4>Chrome - Windows 10</h4>
-                                        <p><i class="fas fa-map-marker-alt"></i> Bogotá, Colombia • Activa ahora</p>
-                                        <p style="font-size: 0.75rem; color: var(--gray);">Última actividad: hace 5 minutos</p>
-                                    </div>
-                                    <div class="session-actions">
-                                        <button class="btn-icon" title="Cerrar sesión">
-                                            <i class="fas fa-sign-out-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div class="session-item">
-                                    <div class="session-info">
-                                        <h4>Firefox - Android</h4>
-                                        <p><i class="fas fa-map-marker-alt"></i> Medellín, Colombia • Activa hace 2 horas</p>
-                                        <p style="font-size: 0.75rem; color: var(--gray);">Última actividad: hace 2 horas</p>
-                                    </div>
-                                    <div class="session-actions">
-                                        <button class="btn-icon" title="Cerrar sesión">
-                                            <i class="fas fa-sign-out-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-controls" style="margin-top: 30px;">
-                                <button class="btn btn-danger">
-                                    <i class="fas fa-sign-out-alt"></i> Cerrar Todas las Sesiones
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Sección: Sistema -->
-                        <div class="config-section" id="system-section">
-                            <h3 style="margin-bottom: 25px; color: var(--primary);">Información del Sistema</h3>
-                            
-                            <div class="system-info">
-                                <h4>Bet-El Creativa Management System</h4>
-                                <p style="color: var(--gray); margin-bottom: 15px;">Versión 2.1.0 • Última actualización: 15/03/2024</p>
-                                
-                                <div class="info-grid">
-                                    <div class="info-item">
-                                        <h5>Base de Datos</h5>
-                                        <p>MySQL 8.0</p>
-                                    </div>
-                                    
-                                    <div class="info-item">
-                                        <h5>Servidor Web</h5>
-                                        <p>Apache 2.4</p>
-                                    </div>
-                                    
-                                    <div class="info-item">
-                                        <h5>PHP Version</h5>
-                                        <p>8.1.2</p>
-                                    </div>
-                                    
-                                    <div class="info-item">
-                                        <h5>Espacio Usado</h5>
-                                        <p>2.4 GB / 10 GB</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="set_low_stock_threshold"><i class="fas fa-exclamation-triangle"></i> Umbral de Stock Bajo</label>
-                                    <input type="number" id="set_low_stock_threshold" min="1" placeholder="Ej: 10">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_pagination_default"><i class="fas fa-list"></i> Registros por Página</label>
-                                    <input type="number" id="set_pagination_default" min="5" placeholder="Ej: 20">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_dashboard_refresh_interval"><i class="fas fa-sync"></i> Refresco Dashboard (seg)</label>
-                                    <input type="number" id="set_dashboard_refresh_interval" min="10" placeholder="Ej: 60">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_password_min_length"><i class="fas fa-lock"></i> Longitud Mínima Contraseña</label>
-                                    <input type="number" id="set_password_min_length" min="4" placeholder="Ej: 6">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_appointment_default_duration"><i class="fas fa-clock"></i> Duración Cita (min)</label>
-                                    <input type="number" id="set_appointment_default_duration" min="15" placeholder="Ej: 60">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_business_hours_start"><i class="fas fa-sun"></i> Hora Apertura</label>
-                                    <input type="time" id="set_business_hours_start">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_business_hours_end"><i class="fas fa-moon"></i> Hora Cierre</label>
-                                    <input type="time" id="set_business_hours_end">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_working_days"><i class="fas fa-calendar-week"></i> Días Laborales</label>
-                                    <input type="text" id="set_working_days" placeholder="Ej: 1,2,3,4,5">
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_backup_frequency"><i class="fas fa-database"></i> Frecuencia Respaldo</label>
-                                    <select id="set_backup_frequency">
-                                        <option value="daily">Diario</option>
-                                        <option value="weekly">Semanal</option>
-                                        <option value="monthly">Mensual</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="set_log_retention_days"><i class="fas fa-history"></i> Retención de Logs (días)</label>
-                                    <input type="number" id="set_log_retention_days" min="1" placeholder="Ej: 90">
-                                </div>
-                            </div>
-                            
-                            <div class="form-controls">
-                                <button class="btn btn-primary" id="saveSystem">
                                     <i class="fas fa-save"></i> Guardar Configuración
                                 </button>
                             </div>
@@ -501,12 +341,7 @@
                                 <div class="form-group">
                                     <label for="set_terminos_condiciones"><i class="fas fa-file-contract"></i> Términos y Condiciones</label>
                                     <p style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;">Escribe cada término en una línea separada. Se mostrarán como lista en la vista previa de la factura.</p>
-                                    <textarea id="set_terminos_condiciones" rows="10" placeholder="Ej: Los pagos se realizan en bolívares o divisas al tipo de cambio BCV vigente.&#10;Las reservas están sujetas a disponibilidad.&#10;El cliente es responsable de verificar los detalles del evento." style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:Poppins,sans-serif;font-size:0.9rem;resize:vertical;box-sizing:border-box;"></textarea>
-                                </div>
-                                <div class="form-group" style="margin-top:15px;">
-                                    <label for="set_metodos_pago"><i class="fas fa-credit-card"></i> Métodos de Pago</label>
-                                    <p style="font-size:0.8rem;color:var(--gray);margin-bottom:8px;">Escribe cada método en una línea separada. Aparecerán como opciones en el módulo de facturación.</p>
-                                    <textarea id="set_metodos_pago" rows="5" placeholder="Efectivo&#10;PagoMóvil&#10;Divisas&#10;Transferencia&#10;Zelle&#10;Punto de Venta" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-family:Poppins,sans-serif;font-size:0.9rem;resize:vertical;box-sizing:border-box;"></textarea>
+                                    <textarea id="set_terminos_condiciones" class="form-textarea" rows="10" placeholder="Ej: Los pagos se realizan en bolívares o divisas al tipo de cambio BCV vigente.&#10;Las reservas están sujetas a disponibilidad.&#10;El cliente es responsable de verificar los detalles del evento."></textarea>
                                 </div>
                             </div>
 
@@ -517,8 +352,7 @@
                             </div>
                         </div>
 
-                        <!-- Sección: Usuarios (solo admin) -->
-                        <?php if (in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin'])): ?>
+                        <!-- Sección: Usuarios -->
                         <div class="config-section" id="users-section">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                                 <h3 style="color: var(--primary); margin: 0;"><i class="fas fa-users-cog"></i> Gestión de Usuarios</h3>
@@ -551,9 +385,9 @@
                             <div id="usersPagination" style="display: flex; justify-content: center; gap: 8px; margin-top: 15px;"></div>
                         </div>
 
-                        <!-- Modal Crear Usuario -->
+                        <!-- Modal Crear Usuario (estilo register.php) -->
                         <div id="modalCrearUsuario" class="modal-overlay" style="display: none;">
-                            <div class="modal-content" style="max-width: 520px;">
+                            <div class="modal-content" style="max-width: 540px;">
                                 <div class="modal-header">
                                     <h3><i class="fas fa-user-plus"></i> Crear Usuario</h3>
                                     <button class="modal-close" id="cerrarModalUsuario">&times;</button>
@@ -563,46 +397,46 @@
                                         <div class="form-row">
                                             <div class="form-group">
                                                 <label><i class="fas fa-user"></i> Nombre</label>
-                                                <input type="text" id="cu_name" placeholder="Nombre" required>
+                                                <input type="text" class="form-input" id="cu_name" placeholder="Nombre" required>
                                                 <div class="feedback" id="cu_name-feedback"></div>
                                             </div>
                                             <div class="form-group">
                                                 <label><i class="fas fa-user"></i> Apellido</label>
-                                                <input type="text" id="cu_lastName" placeholder="Apellido" required>
+                                                <input type="text" class="form-input" id="cu_lastName" placeholder="Apellido" required>
                                                 <div class="feedback" id="cu_lastName-feedback"></div>
                                             </div>
                                         </div>
                                         <div class="form-group">
                                             <label><i class="fas fa-user-tag"></i> Usuario</label>
-                                            <input type="text" id="cu_username" placeholder="Nombre de usuario" required>
+                                            <input type="text" class="form-input" id="cu_username" placeholder="Nombre de usuario (ej: jdoe)" required>
                                             <div class="feedback" id="cu_username-feedback"></div>
                                         </div>
                                         <div class="form-group">
                                             <label><i class="fas fa-envelope"></i> Correo Electrónico</label>
-                                            <input type="email" id="cu_email" placeholder="correo@ejemplo.com" required>
+                                            <input type="email" class="form-input" id="cu_email" placeholder="correo@ejemplo.com" required>
                                             <div class="feedback" id="cu_email-feedback"></div>
                                         </div>
                                         <div class="form-group">
                                             <label><i class="fas fa-id-card"></i> Cédula</label>
-                                            <div class="input-group" style="display: flex; gap: 8px;">
-                                                <select id="cu_tipoCi" style="width: 120px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-family: Poppins, sans-serif;">
+                                            <div class="input-group">
+                                                <select class="form-select" id="cu_tipoCi" style="width:100px;flex:none;">
                                                     <option value="V">V</option>
                                                     <option value="E">E</option>
                                                     <option value="J">J</option>
                                                 </select>
-                                                <input type="text" id="cu_ci" placeholder="Número de cédula" required style="flex: 1;">
+                                                <input type="text" class="form-input" id="cu_ci" placeholder="Número de cédula" required style="flex:1;">
                                             </div>
                                             <div class="feedback" id="cu_ci-feedback"></div>
                                         </div>
                                         <div class="form-group">
                                             <label><i class="fas fa-phone"></i> Teléfono</label>
-                                            <input type="tel" id="cu_phone" placeholder="0412-123-45-67" required>
+                                            <input type="tel" class="form-input" id="cu_phone" placeholder="0412-123-45-67" required>
                                             <div class="feedback" id="cu_phone-feedback"></div>
                                         </div>
                                         <div class="form-group">
                                             <label><i class="fas fa-lock"></i> Contraseña</label>
-                                            <input type="password" id="cu_password" placeholder="Mínimo 6 caracteres" required>
-                                            <div class="password-hint" style="font-size: 0.8rem; color: var(--gray); margin-top: 4px;">Mínimo 6 caracteres</div>
+                                            <input type="password" class="form-input" id="cu_password" placeholder="Mínimo 6 caracteres" required>
+                                            <div class="password-hint" style="font-size:0.8rem;color:var(--gray);margin-top:4px;">Mínimo 6 caracteres</div>
                                             <div class="feedback" id="cu_password-feedback"></div>
                                         </div>
                                     </form>

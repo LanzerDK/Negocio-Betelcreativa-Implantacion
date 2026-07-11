@@ -176,7 +176,8 @@ class FacturaController
                             $montoUsd = $montoPagoBs / $tasa;
                         }
 
-                        $reciboId = $repo->registrarPago($id, $montoUsd, $metodoPago, $tasa, false);
+                        $refPagoMovil = trim($input['ref_pago_movil'] ?? '') ?: null;
+                        $repo->registrarPrimerPago($id, $montoUsd, $metodoPago, $tasa, $refPagoMovil);
 
                         if ($esPagoCompleto) {
                             $repo->cambiarEstado($id, 'cerrada', (int)($_SESSION['user_id'] ?? 0));
@@ -185,7 +186,7 @@ class FacturaController
                         $db->commit();
 
                         if ($esPagoCompleto) {
-                            ApiResponse::success(['id' => $id, 'planTipo' => 'contado', 'reciboId' => $reciboId], 'Factura creada y pagada exitosamente.');
+                            ApiResponse::success(['id' => $id, 'planTipo' => 'contado', 'reciboId' => $id], 'Factura creada y pagada exitosamente.');
                         } else {
                             $saldoPendiente = round($totalFacturaCalculado - $montoPagoBs, 2);
                             ApiResponse::success([
@@ -240,16 +241,37 @@ class FacturaController
                             throw new \RuntimeException('No se pueden registrar pagos en una factura ' . $factura['estado'] . '.');
                         }
 
-                        $reciboId = $repo->registrarPago($facturaId, $monto, $metodoPago, $tasaUsada, false);
+                        // Prevent overpayment: check if already fully paid
+                        $paidStmt = $db->prepare(
+                            "SELECT COALESCE(SUM(p.monto * p.tasa_usada), 0)
+                             FROM pagos_factura p
+                             LEFT JOIN facturas r ON p.factura_id = r.id
+                             WHERE p.factura_id = :fid1 OR r.factura_origen_id = :fid2"
+                        );
+                        $paidStmt->execute([':fid1' => $facturaId, ':fid2' => $facturaId]);
+                        $totalPagadoVes = (float)$paidStmt->fetchColumn();
+                        $totalFacturaVes = (float)$factura['totalFactura'];
+                        if ($totalPagadoVes >= $totalFacturaVes - 0.01) {
+                            throw new \RuntimeException('La factura ya está totalmente pagada.');
+                        }
+
+                        $refPagoMovil = trim($input['ref_pago_movil'] ?? '') ?: null;
+                        $reciboId = $repo->registrarPago($facturaId, $monto, $metodoPago, $tasaUsada, false, $refPagoMovil);
                         $db->commit();
 
                         $pagos = $repo->getPagosByFacturaId($facturaId);
                         $totalPagado = 0;
                         foreach ($pagos as $p) $totalPagado += (float)$p['monto'];
+                        // Determine si la factura quedó completamente pagada
+                        $estadoFactura = $factura['estado'];
+                        if ($totalPagadoVes + ($monto * $tasaUsada) >= $totalFacturaVes - 0.01) {
+                            $estadoFactura = 'cerrada';
+                        }
                         ApiResponse::success([
-                            'totalPagado' => $totalPagado,
-                            'pagos'       => $pagos,
-                            'reciboId'    => $reciboId
+                            'totalPagado'   => $totalPagado,
+                            'pagos'         => $pagos,
+                            'reciboId'      => $reciboId,
+                            'estadoFactura' => $estadoFactura
                         ], 'Pago registrado exitosamente.');
                     } catch (\Throwable $e) {
                         $db->rollBack();

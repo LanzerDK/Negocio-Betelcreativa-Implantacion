@@ -27,11 +27,56 @@ document.getElementById('avatarInput').addEventListener('change', async function
         const json = await callApi(API + 'upload.php', { method: 'POST', body: formData });
         if (json.success) {
             document.getElementById('userAvatar').src = APP_URL + 'Public/' + json.data.avatar_url;
+            document.querySelector('.imagenfoto img').src = APP_URL + 'Public/' + json.data.avatar_url;
             toast('Avatar actualizado', 'success');
         } else {
             toast(json.message || 'Error al subir avatar', 'error');
         }
     } catch (err) {
+        toast('Error de conexión', 'error');
+    }
+});
+
+// ── Logo del Sistema ────────────────────────────────────
+document.getElementById('logoInput')?.addEventListener('change', async function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('logo', file);
+    formData.append('csrf_token', CSRF_TOKEN);
+
+    try {
+        const json = await callApi(API + 'upload-logo.php', { method: 'POST', body: formData });
+        if (json.success) {
+            document.getElementById('logoPreview').src = APP_URL + 'Public/' + json.data.logo_url;
+            document.querySelector('.imagenfoto img').src = APP_URL + 'Public/' + json.data.logo_url;
+            toast('Logo del sistema actualizado', 'success');
+        } else {
+            toast(json.message || 'Error al subir logo', 'error');
+        }
+    } catch (err) {
+        toast('Error de conexión', 'error');
+    }
+});
+
+document.getElementById('btnRestaurarLogo')?.addEventListener('click', async function () {
+    if (!confirm('¿Restaurar el logo original del sistema?')) return;
+
+    try {
+        const json = await callApi(API + 'settings.php?action=batch-update', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+            body: JSON.stringify({ settings: { system_logo: '' } }),
+        });
+        if (json.success) {
+            document.getElementById('logoPreview').src = APP_URL + 'Public/images/BetEl.png';
+            document.querySelector('.imagenfoto img').src = APP_URL + 'Public/images/BetEl.png';
+            toast('Logo restaurado', 'success');
+        } else {
+            toast(json.message || 'Error al restaurar logo', 'error');
+        }
+    } catch (_) {
         toast('Error de conexión', 'error');
     }
 });
@@ -114,15 +159,6 @@ document.getElementById('saveNotifications')?.addEventListener('click', async fu
 });
 
 // ── Seguridad ───────────────────────────────────────────
-document.getElementById('changePasswordBtn')?.addEventListener('click', function () {
-    const form = document.getElementById('passwordForm');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-});
-
-document.getElementById('cancelPassword')?.addEventListener('click', () => {
-    document.getElementById('passwordForm').style.display = 'none';
-});
-
 document.getElementById('savePassword')?.addEventListener('click', async function () {
     const current = document.getElementById('currentPassword').value;
     const newPass = document.getElementById('newPassword').value;
@@ -149,7 +185,6 @@ document.getElementById('savePassword')?.addEventListener('click', async functio
         });
         if (json.success) {
             toast('Contraseña actualizada', 'success');
-            document.getElementById('passwordForm').style.display = 'none';
             document.getElementById('currentPassword').value = '';
             document.getElementById('newPassword').value = '';
             document.getElementById('confirmPassword').value = '';
@@ -161,18 +196,6 @@ document.getElementById('savePassword')?.addEventListener('click', async functio
     }
 });
 
-// ── Sistema: cargar settings ────────────────────────────
-async function loadSystemSettings() {
-    try {
-        const json = await callApi(API + 'settings.php?action=list', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
-        if (!json.success) return;
-        json.data.forEach(item => {
-            const el = document.getElementById('set_' + item.key);
-            if (el) el.value = item.value;
-        });
-    } catch (_) { /* ignore */ }
-}
-
 // ── Facturacion: cargar terminos ─────────────────────────
 async function loadBillingSettings() {
     try {
@@ -181,24 +204,17 @@ async function loadBillingSettings() {
             const el = document.getElementById('set_terminos_condiciones');
             if (el) el.value = json.data.terminos;
         }
-        const mJson = await callApi(API + 'facturas.php?action=metodos-pago', { headers: { 'X-CSRF-TOKEN': CSRF_TOKEN } });
-        if (mJson.success && Array.isArray(mJson.data)) {
-            const el = document.getElementById('set_metodos_pago');
-            if (el) el.value = mJson.data.join('\n');
-        }
     } catch (_) { /* ignore */ }
 }
 
 // ── Facturacion: guardar ─────────────────────────────────
 document.getElementById('saveBilling')?.addEventListener('click', async function () {
     const terminos = document.getElementById('set_terminos_condiciones')?.value.trim() || '';
-    const metodosRaw = document.getElementById('set_metodos_pago')?.value.trim() || '';
-    const metodos = metodosRaw.split('\n').map(s => s.trim()).filter(Boolean).join(',');
     try {
         const json = await callApi(API + 'settings.php?action=batch-update', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-            body: JSON.stringify({ settings: { terminos_condiciones: terminos, metodos_pago: metodos } }),
+            body: JSON.stringify({ settings: { terminos_condiciones: terminos } }),
         });
         if (json.success) {
             toast('Configuración de facturación guardada.', 'success');
@@ -207,36 +223,6 @@ document.getElementById('saveBilling')?.addEventListener('click', async function
         }
     } catch (_) {
         toast('Error de conexión.', 'error');
-    }
-});
-
-// ── Sistema: guardar ────────────────────────────────────
-document.getElementById('saveSystem')?.addEventListener('click', async function () {
-    const keys = [
-        'low_stock_threshold', 'pagination_default', 'dashboard_refresh_interval',
-        'password_min_length', 'appointment_default_duration', 'business_hours_start',
-        'business_hours_end', 'working_days', 'backup_frequency', 'log_retention_days',
-    ];
-
-    const settings = {};
-    for (const key of keys) {
-        const el = document.getElementById('set_' + key);
-        if (el) settings[key] = el.value;
-    }
-    if (Object.keys(settings).length === 0) return;
-    try {
-        const json = await callApi(API + 'settings.php?action=batch-update', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-            body: JSON.stringify({ settings }),
-        });
-        if (json.success) {
-            toast(json.message || 'Configuración del sistema guardada', 'success');
-        } else {
-            toast(json.message || 'Error al guardar configuración', 'error');
-        }
-    } catch (_) {
-        toast('Error de conexión al guardar configuración', 'error');
     }
 });
 
@@ -293,7 +279,6 @@ function renderUsers(data) {
         </tr>
     `).join('');
 
-    // Paginación
     if (pagination) {
         pagination.innerHTML = '';
         for (let i = 1; i <= data.total_pages; i++) {
@@ -306,7 +291,6 @@ function renderUsers(data) {
         }
     }
 
-    // Eventos: cambio de rol
     document.querySelectorAll('.role-select').forEach(sel => {
         sel.addEventListener('change', async function () {
             const userId = this.dataset.userId;
@@ -329,7 +313,6 @@ function renderUsers(data) {
         });
     });
 
-    // Eventos: toggle active
     document.querySelectorAll('.toggle-active-btn').forEach(btn => {
         btn.addEventListener('click', async function () {
             const userId = this.dataset.userId;
@@ -395,7 +378,6 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
         password: document.getElementById('cu_password'),
     };
 
-    // Validación básica
     let valid = true;
     Object.entries(fields).forEach(([key, el]) => {
         const fb = document.getElementById('cu_' + key + '-feedback');
@@ -405,7 +387,7 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
             valid = false;
         } else {
             el.classList.remove('invalid'); el.classList.add('valid');
-            if (fb) { fb.textContent = '✓'; fb.className = 'feedback valid-feedback'; }
+            if (fb) { fb.textContent = '\u2713'; fb.className = 'feedback valid-feedback'; }
         }
     });
 
@@ -459,6 +441,5 @@ document.getElementById('guardarCrearUsuario')?.addEventListener('click', async 
 // ── Init ─────────────────────────────────────────────────
 loadProfile();
 loadPreferences();
-if (document.getElementById('system-section')) loadSystemSettings();
 if (document.getElementById('billing-section')) loadBillingSettings();
 if (document.getElementById('users-section')) loadUsers();

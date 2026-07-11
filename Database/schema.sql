@@ -182,12 +182,27 @@ CREATE TABLE IF NOT EXISTS cita_materiales (
 ) ENGINE=InnoDB;
 
 -- =============================================
--- Tabla: locations (ubicaciones/estantes del almacén)
+-- Tabla: warehouses (almacenes)
+-- =============================================
+CREATE TABLE IF NOT EXISTS warehouses (
+    warehouse_id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(200) NOT NULL,
+    location VARCHAR(255) DEFAULT NULL,
+    max_shelves INT NOT NULL DEFAULT 100,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- =============================================
+-- Tabla: locations (estantes/ubicaciones del almacén)
 -- =============================================
 CREATE TABLE IF NOT EXISTS locations (
     location_id INT AUTO_INCREMENT PRIMARY KEY,
     location_name VARCHAR(200) NOT NULL,
-    description VARCHAR(255) DEFAULT NULL
+    warehouse_id INT DEFAULT NULL,
+    max_capacity INT NOT NULL DEFAULT 200,
+    description VARCHAR(255) DEFAULT NULL,
+    FOREIGN KEY (warehouse_id) REFERENCES warehouses(warehouse_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 INSERT INTO locations (location_name, description) VALUES ('Almacén General', 'Ubicación por defecto');
@@ -352,7 +367,7 @@ CREATE TABLE IF NOT EXISTS facturas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cita_id INT NOT NULL,
     costo_servicio DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Mano de obra / Honorarios',
-    total_factura DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT '(costo_servicio + suma materiales) * 1.16 (IVA incluido)',
+    total_factura DECIMAL(12,2) NOT NULL DEFAULT 0.00 COMMENT 'costo_servicio + suma total de materiales',
     notas_cuota VARCHAR(255) DEFAULT NULL,
     created_by_name VARCHAR(200) DEFAULT NULL COMMENT 'Nombre de quien creó la factura',
     tipo ENUM('factura','recibo') NOT NULL DEFAULT 'factura' COMMENT 'Tipo de documento: factura (principal) o recibo',
@@ -378,6 +393,7 @@ CREATE TABLE IF NOT EXISTS pagos_factura (
     monto DECIMAL(12,2) NOT NULL COMMENT 'Siempre en USD (base contable)',
     metodo_pago ENUM('divisas', 'efectivo', 'pagomovil') NOT NULL,
     tasa_usada DECIMAL(12,2) NOT NULL COMMENT 'Tasa BCV del momento del pago',
+    Ref_PagoMovil VARCHAR(50) DEFAULT NULL COMMENT 'Nro de referencia para Pago Móvil',
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
@@ -394,6 +410,5 @@ CREATE TABLE IF NOT EXISTS facturas_historial (
     changed_by INT DEFAULT NULL COMMENT 'user_id que realizó el cambio',
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     motivo VARCHAR(255) DEFAULT NULL,
-    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE,
-    FOREIGN KEY (changed_by) REFERENCES users(user_id) ON DELETE SET NULL
+    FOREIGN KEY (factura_id) REFERENCES facturas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

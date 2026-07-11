@@ -21,7 +21,7 @@ class LocationRepository
     {
         try {
             $stmt = $this->db->query(
-                "SELECT location_id AS id, location_name AS name, description FROM locations ORDER BY location_id ASC"
+                "SELECT location_id AS id, location_name AS name, warehouse_id, max_capacity, description FROM locations ORDER BY location_id ASC"
             );
             $locations = [];
             while ($row = $stmt->fetch()) {
@@ -38,7 +38,7 @@ class LocationRepository
     {
         try {
             $stmt = $this->db->prepare(
-                "SELECT location_id AS id, location_name AS name, description FROM locations WHERE location_id = :id"
+                "SELECT location_id AS id, location_name AS name, warehouse_id, max_capacity, description FROM locations WHERE location_id = :id"
             );
             $stmt->execute([':id' => $id]);
             $data = $stmt->fetch();
@@ -65,10 +65,12 @@ class LocationRepository
     public function save(LocationModel $location): bool
     {
         try {
-            $sql = "INSERT INTO locations (location_name, description) VALUES (:name, :description)";
+            $sql = "INSERT INTO locations (location_name, warehouse_id, max_capacity, description) VALUES (:name, :warehouse_id, :max_capacity, :description)";
             $stmt = $this->db->prepare($sql);
             return $stmt->execute([
                 ':name' => $location->getName(),
+                ':warehouse_id' => $location->getWarehouseId(),
+                ':max_capacity' => $location->getMaxCapacity(),
                 ':description' => $location->getDescription()
             ]);
         } catch (PDOException $e) {

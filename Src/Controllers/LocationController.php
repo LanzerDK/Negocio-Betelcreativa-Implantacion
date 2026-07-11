@@ -43,20 +43,36 @@ class LocationController
 
                 $name = trim($input['name'] ?? '');
                 $description = trim($input['description'] ?? '');
-                if ($description !== '') {
-                    $description = mb_convert_case($description, MB_CASE_TITLE, 'UTF-8');
-                }
+                $warehouseId = !empty($input['warehouse_id']) ? (int)$input['warehouse_id'] : null;
+                $maxCapacity = (int)($input['max_capacity'] ?? 200);
 
                 if (empty($name)) {
                     ApiResponse::error('El nombre de la ubicación es obligatorio.');
+                }
+                if ($maxCapacity < 1 || $maxCapacity > 200) {
+                    ApiResponse::error('La capacidad máxima debe estar entre 1 y 200.', 400);
                 }
 
                 if ($repo->existsByName($name)) {
                     ApiResponse::error('Ya existe una ubicación con ese nombre.');
                 }
 
+                if ($warehouseId) {
+                    $whRepo = new \BetelCreativa\Infrastructure\WarehouseRepository();
+                    $wh = $whRepo->findById($warehouseId);
+                    if (!$wh) {
+                        ApiResponse::error('El almacén seleccionado no existe.', 400);
+                    }
+                    $shelfCount = $whRepo->getShelfCount($warehouseId);
+                    if ($shelfCount >= $wh->getMaxShelves()) {
+                        ApiResponse::error('El almacén ha alcanzado su límite máximo de estantes (' . $wh->getMaxShelves() . ').', 400);
+                    }
+                }
+
                 $location = new LocationModel([
                     'name' => $name,
+                    'warehouse_id' => $warehouseId,
+                    'max_capacity' => $maxCapacity,
                     'description' => $description
                 ]);
 
@@ -99,6 +115,8 @@ class LocationController
         return [
             'id' => $l->getId(),
             'name' => $l->getName(),
+            'warehouse_id' => $l->getWarehouseId(),
+            'max_capacity' => $l->getMaxCapacity(),
             'description' => $l->getDescription()
         ];
     }

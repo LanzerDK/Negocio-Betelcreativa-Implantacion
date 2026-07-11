@@ -44,6 +44,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('genConversionRow').style.display = 'none';
         document.getElementById('genErrorAnticipo').style.display = 'none';
         document.getElementById('genTasaBcv').value = TASA_BCV;
+        const genRefGroup = document.getElementById('genRefGroup');
+        if (genRefGroup) genRefGroup.style.display = 'none';
+        const genReferencia = document.getElementById('genReferencia');
+        if (genReferencia) genReferencia.value = '';
         document.getElementById('genProgressFill').style.width = '0%';
         document.getElementById('genProgressLabel').textContent = '0%';
         totalCalculado = 0;
@@ -70,6 +74,8 @@ document.addEventListener('DOMContentLoaded', function () {
             input.placeholder = '0,00';
         }
         input.value = '';
+        const genRefGroup = document.getElementById('genRefGroup');
+        if (genRefGroup) genRefGroup.style.display = this.value === 'pagomovil' ? 'block' : 'none';
         actualizarConversionGenerar();
         validarAnticipo();
     });
@@ -167,9 +173,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!citaId) return toast('ID de cita requerido.', 'warning');
         if (!descripcionServicio) return toast('Describa el servicio prestado.', 'warning');
         if (!costoServicio || costoServicio <= 0) return toast('Especifique un costo de servicio válido.', 'warning');
-        if (!materialesCache.length) return toast('La cita debe tener al menos un material asignado.', 'warning');
         if (!metodoPago) return toast('Seleccione un método de pago.', 'warning');
         if (montoInput <= 0) return toast('Debe especificar un monto de anticipo.', 'warning');
+
+        if (metodoPago === 'pagomovil') {
+            const ref = document.getElementById('genReferencia')?.value?.trim();
+            if (!ref) return toast('Debe ingresar el número de referencia de Pago Móvil.', 'warning');
+            if (!/^\d{10,12}$/.test(ref)) return toast('La referencia debe contener solo números, entre 10 y 12 dígitos.', 'warning');
+            if (!confirm('¿Está seguro que la referencia "' + ref + '" es correcta? Una vez confirmada no podrá modificarse.')) return;
+        }
 
         const minimo = totalCalculado * 0.50;
         if (montoPagoBs < minimo - 0.01) {
@@ -189,7 +201,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     descripcion_servicio: descripcionServicio,
                     monto_pago_bs: montoPagoBs,
                     metodo_pago: metodoPago,
-                    tasa_usada: TASA_BCV
+                    tasa_usada: TASA_BCV,
+                    ref_pago_movil: document.getElementById('genReferencia')?.value?.trim() || ''
                 })
             });
             if (res.success) {
@@ -208,6 +221,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             window.open(APP_URL + 'factura-recibo?id=' + reciboId, '_blank');
                         }, 500);
                     }
+                }
+                if (res.data?.planTipo === 'contado') {
+                    currentTab = 'pagadas';
+                } else if (res.data?.planTipo === 'cuotas') {
+                    currentTab = 'abiertas';
                 }
                 cargarFacturas(currentTab);
                 if (res.data?.id) {
@@ -230,30 +248,44 @@ document.addEventListener('DOMContentLoaded', function () {
         abrirModalPago();
     });
 
-    document.getElementById('pagoMetodo')?.addEventListener('change', actualizarConversionPago);
+    document.getElementById('pagoMetodo')?.addEventListener('change', onPagoMetodoChange);
     document.getElementById('pagoMontoVes')?.addEventListener('input', actualizarConversionPago);
+
+    function onPagoMetodoChange() {
+        const metodo = document.getElementById('pagoMetodo').value;
+        const label = document.getElementById('pagoLabel');
+        const input = document.getElementById('pagoMontoVes');
+        const refGroup = document.getElementById('pagoRefGroup');
+
+        if (metodo === 'divisas') {
+            label.textContent = 'Monto ($)';
+            input.placeholder = '0.00';
+        } else {
+            label.textContent = 'Monto (Bs)';
+            input.placeholder = '0,00';
+        }
+        input.value = '';
+        actualizarConversionPago();
+
+        // Toggle referencia field for Pago Móvil
+        refGroup.style.display = metodo === 'pagomovil' ? 'block' : 'none';
+    }
 
     function actualizarConversionPago() {
         const metodo = document.getElementById('pagoMetodo').value;
-        const monto = parseFloat(document.getElementById('pagoMontoVes').value) || 0;
-        const hint = document.getElementById('pagoInputHint');
+        const montoInput = parseFloat(document.getElementById('pagoMontoVes').value) || 0;
         const row = document.getElementById('pagoConversionRow');
         const text = document.getElementById('pagoConversionText');
 
-        if (metodo === 'divisas') {
-            hint.textContent = 'Ingrese el monto en Bolívares (se convertirá a Dólares)';
-        } else {
-            hint.textContent = 'Ingrese el monto en Bolívares';
-        }
-
-        if (!monto || monto <= 0 || !TASA_BCV || TASA_BCV <= 0) { row.style.display = 'none'; return; }
+        if (!montoInput || montoInput <= 0 || !TASA_BCV || TASA_BCV <= 0) { row.style.display = 'none'; return; }
         row.style.display = 'block';
 
-        const usd = monto / TASA_BCV;
         if (metodo === 'divisas') {
-            text.innerHTML = 'Equivalente en Dólares: <strong>$' + usd.toFixed(2) + '</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
+            const bs = montoInput * TASA_BCV;
+            text.innerHTML = '<strong>$' + montoInput.toFixed(2) + '</strong> = <strong>' + bs.toFixed(2) + ' Bs</strong> (tasa: 1 $ = ' + TASA_BCV.toFixed(2) + ' Bs)';
         } else {
-            text.innerHTML = 'Equivalente en Dólares: <strong>$' + usd.toFixed(2) + '</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
+            const usd = montoInput / TASA_BCV;
+            text.innerHTML = '<strong>' + montoInput.toFixed(2) + ' Bs</strong> ≈ <strong>$' + usd.toFixed(2) + ' USD</strong> (tasa: ' + TASA_BCV.toFixed(2) + ')';
         }
     }
 
@@ -261,20 +293,34 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         const facturaIdVal = parseInt(document.getElementById('pagoFacturaId').value);
         const metodoPago = document.getElementById('pagoMetodo').value;
-        const montoVes = parseFloat(document.getElementById('pagoMontoVes').value);
+        const montoInput = parseFloat(document.getElementById('pagoMontoVes').value);
         const tasaUsada = parseFloat(document.getElementById('pagoTasa').value) || TASA_BCV;
-        if (!montoVes || montoVes <= 0) return toast('Ingrese un monto válido.', 'warning');
-        const montoUsd = montoVes / tasaUsada;
+        if (!montoInput || montoInput <= 0) return toast('Ingrese un monto válido.', 'warning');
+
+        if (metodoPago === 'pagomovil') {
+            const ref = document.getElementById('pagoReferencia')?.value?.trim();
+            if (!ref) return toast('Debe ingresar el número de referencia de Pago Móvil.', 'warning');
+            if (!/^\d{10,12}$/.test(ref)) return toast('La referencia debe contener solo números, entre 10 y 12 dígitos.', 'warning');
+            if (!confirm('¿Está seguro que la referencia "' + ref + '" es correcta? Una vez confirmada no podrá modificarse.')) return;
+        }
+
+        // Convert: if divisas, input is USD; otherwise input is Bs → convert to USD
+        const monto = metodoPago === 'divisas' ? montoInput : montoInput / tasaUsada;
+        const refPagoMovil = document.getElementById('pagoReferencia')?.value?.trim() || '';
+
         setLoading('btnGuardarPago', true);
         try {
             const res = await callApi(APP_URL + 'Public/api/facturas.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-                body: JSON.stringify({ action: 'pagar', factura_id: facturaIdVal, monto: montoUsd, metodo_pago: metodoPago, tasa_usada: tasaUsada })
+                body: JSON.stringify({ action: 'pagar', factura_id: facturaIdVal, monto: monto, metodo_pago: metodoPago, tasa_usada: tasaUsada, ref_pago_movil: refPagoMovil })
             });
             if (res.success) {
                 toast('Pago registrado exitosamente.', 'success');
                 document.getElementById('pagoModal').style.display = 'none';
+                if (res.data?.estadoFactura === 'cerrada') {
+                    currentTab = 'pagadas';
+                }
                 cargarFacturas(currentTab);
                 if (selectedFacturaId) cargarDetalleFactura(selectedFacturaId);
             } else {
@@ -457,7 +503,7 @@ function filtrarFacturas(query) {
         return;
     }
     const filtradas = allFacturas.filter(f => {
-        const searchStr = (f.facturaId ? '#' + String(f.facturaId) : 'Cita #' + String(f.citaId)) + ' ' + (f.clienteNombre || '') + ' ' + (f.estado || '');
+        const searchStr = (f.facturaId ? '#' + String(f.facturaId) : 'Cita #' + String(f.citaId)) + ' ' + (f.clienteNombre || '') + ' ' + (f.clienteCedula || '') + ' ' + (f.estado || '');
         return searchStr.toLowerCase().includes(q);
     });
     renderSidebarList(filtradas);
@@ -573,6 +619,7 @@ function renderDetalleFactura(d, fid) {
 
     const g = d.general || {};
     document.getElementById('card1-cliente').textContent = g.clienteNombre || '—';
+    document.getElementById('card1-cita-id').textContent = '#' + (g.citaId || '—');
     document.getElementById('card1-cedula').textContent = g.clienteCedula || '—';
     document.getElementById('card1-telefono').textContent = g.clienteTelefono || '—';
     document.getElementById('card1-fecha').textContent = g.fechaHoraInicio ? g.fechaHoraInicio.replace('T', ' ') : '—';
@@ -587,6 +634,15 @@ function renderDetalleFactura(d, fid) {
         atendidoEl.textContent = g.createdByName;
     } else {
         atendidoRow.style.display = 'none';
+    }
+
+    const notasRow = document.getElementById('card1-notas-row');
+    const notasEl = document.getElementById('card1-notas');
+    if (g.notas && g.notas.trim()) {
+        notasRow.style.display = 'flex';
+        notasEl.textContent = g.notas;
+    } else {
+        notasRow.style.display = 'none';
     }
 
     // ── Desglose Table ───────────────────────────────────
@@ -610,7 +666,11 @@ function renderDetalleFactura(d, fid) {
             '</tr>';
     });
     if (!mats.length) {
-        html = '<tr><td colspan="7" class="text-center" style="color:var(--gray);padding:20px;">Sin materiales asignados</td></tr>';
+        if (g.motivoSinMateriales && g.motivoSinMateriales.trim()) {
+            html = '<tr><td colspan="7" style="padding:16px;color:#6c757d;font-style:italic;"><strong>Sin materiales.</strong> Motivo: ' + escapeHtml(g.motivoSinMateriales) + '</td></tr>';
+        } else {
+            html = '<tr><td colspan="7" class="text-center" style="color:var(--gray);padding:20px;">Sin materiales asignados</td></tr>';
+        }
     }
     document.getElementById('tabla-desglose').innerHTML = html;
 
@@ -631,12 +691,12 @@ function renderDetalleFactura(d, fid) {
     } else if (facturaId) {
         let actionsHtml = '';
         if (facturaEstado === 'activa') {
-            actionsHtml += '<button type="button" class="btn btn-primary" id="btnRegistrarAbonoCard2" style="flex:1;"><i class="fas fa-plus-circle"></i> Registrar Abono</button>';
+            actionsHtml += '<button type="button" class="btn btn-primary" id="btnVerFactura" style="flex:1;"><i class="fas fa-file-invoice"></i> Ver Factura</button>';
         }
         actionsDiv.innerHTML = actionsHtml;
         actionsDiv.style.display = actionsHtml ? 'flex' : 'none';
-        document.getElementById('btnRegistrarAbonoCard2')?.addEventListener('click', function () {
-            abrirModalPago();
+        document.getElementById('btnVerFactura')?.addEventListener('click', function () {
+            window.open(APP_URL + 'factura-recibo?id=' + facturaId, '_blank');
         });
     } else {
         // No tiene factura (Pendiente)
@@ -650,37 +710,52 @@ function renderDetalleFactura(d, fid) {
         });
     }
 
-    // ── Pagos ────────────────────────────────────────────
+    // ── Total pagado (para barra de progreso) ─────────
     const pagos = d.pagos || [];
-    let pagosHtml = '';
     let totalPagadoVes = 0;
     pagos.forEach(p => {
         const monto = parseFloat(p.monto) || 0;
         const tasa = parseFloat(p.tasaUsada) || 0;
-        const montoVes = monto * tasa;
-        totalPagadoVes += montoVes;
-        const esDivisas = p.metodoPago === 'divisas';
-        const metodoLabel = p.metodoPago === 'divisas' ? 'Dólar $' : p.metodoPago === 'efectivo' ? 'Efectivo' : 'Pago Móvil';
-        const montoStr = esDivisas
-            ? '$' + monto.toFixed(2) + ' @ ' + tasa.toFixed(2)
-            : montoVes.toFixed(2) + ' Bs';
-        pagosHtml += '<tr>' +
-            '<td>' + (p.fecha ? p.fecha.slice(0, 10) : '—') + '</td>' +
-            '<td class="text-right">' + montoStr + '</td>' +
-            '<td>' + metodoLabel + '</td>' +
-            '<td class="text-right">' + tasa.toFixed(2) + '</td>' +
-            '</tr>';
+        totalPagadoVes += monto * tasa;
     });
-    const devolucion = Math.max(0, totalPagadoVes - totalFacturaCalc);
-    if (devolucion > 0.01) {
-        pagosHtml += '<tr class="devolucion-row"><td colspan="4" class="text-right" style="padding-top:8px;font-weight:700;color:#dc3545;">Devolución: ' + devolucion.toFixed(2) + ' Bs</td></tr>';
-    }
-    if (!pagos.length) {
-        pagosHtml = '<tr><td colspan="4" class="text-center" style="color:var(--gray);padding:15px;">Sin pagos registrados</td></tr>';
-    }
-    document.getElementById('tabla-pagos').innerHTML = pagosHtml;
-
     const saldoPendienteVes = Math.max(0, totalFacturaCalc - totalPagadoVes);
+
+    // ── Facturas Asociadas ────────────────────────────
+    const facturasAsoc = d.recibos || [];
+    const tbodyFact = document.getElementById('tabla-facturas-asociadas');
+    if (!facturasAsoc.length && !g.facturaId) {
+        tbodyFact.innerHTML = '<tr><td colspan="5" class="text-center" style="color:var(--gray);padding:15px;">Sin facturas asociadas</td></tr>';
+    } else {
+        let fHtml = '';
+        // Main factura first
+        if (g.facturaId) {
+            const fechaFact = g.facturaCreatedAt ? g.facturaCreatedAt.slice(0, 10) : (g.fechaHoraInicio ? g.fechaHoraInicio.slice(0, 10) : '—');
+            fHtml += '<tr>' +
+                '<td>#' + String(g.facturaId).padStart(6, '0') + '</td>' +
+                '<td>' + fechaFact + '</td>' +
+                '<td class="text-right">' + totalFacturaCalc.toFixed(2) + '</td>' +
+                '<td>Factura</td>' +
+                '<td class="text-center"><button class="action-btn" onclick="window.open(\'' + APP_URL + 'factura-recibo?id=' + g.facturaId + '\',\'_blank\')" title="Imprimir"><i class="fas fa-print"></i></button></td>' +
+                '</tr>';
+        }
+        // Then child recibos
+        facturasAsoc.forEach(r => {
+            const fFecha = r.createdAt ? r.createdAt.slice(0, 10) : '—';
+            const fMonto = parseFloat(r.totalFactura) || 0;
+            fHtml += '<tr>' +
+                '<td>#' + String(r.id).padStart(6, '0') + '</td>' +
+                '<td>' + fFecha + '</td>' +
+                '<td class="text-right">' + fMonto.toFixed(2) + '</td>' +
+                '<td>Recibo</td>' +
+                '<td class="text-center"><button class="action-btn" onclick="window.open(\'' + APP_URL + 'factura-recibo?id=' + r.id + '\',\'_blank\')" title="Imprimir Recibo"><i class="fas fa-print"></i></button></td>' +
+                '</tr>';
+        });
+        if (!fHtml) {
+            fHtml = '<tr><td colspan="5" class="text-center" style="color:var(--gray);padding:15px;">Sin facturas asociadas</td></tr>';
+        }
+        tbodyFact.innerHTML = fHtml;
+    }
+
     document.getElementById('card3-total-ves').textContent = totalFacturaCalc.toFixed(2) + ' Bs';
     document.getElementById('card3-pendiente-ves').textContent = saldoPendienteVes.toFixed(2) + ' Bs';
 
@@ -714,13 +789,13 @@ function renderDetalleFactura(d, fid) {
     const btnAnular = document.getElementById('btnAnularFactura');
 
     if (currentTab === 'pagadas' || facturaEstado === 'cerrada') {
-        // Read-only: only show print buttons
         pagoActions.style.display = 'none';
         pagoActionsRO.style.display = 'flex';
     } else if (facturaId && facturaEstado === 'activa') {
         pagoActions.style.display = 'flex';
         pagoActionsRO.style.display = 'none';
-        if (btnAbono) { btnAbono.style.display = ''; }
+        // Hide abono button if fully paid
+        if (btnAbono) { btnAbono.style.display = saldoPendienteVes <= 0.01 ? 'none' : ''; }
         if (btnCerrar) { btnCerrar.style.display = ''; }
         if (btnAnular) { btnAnular.style.display = ''; }
     } else {
@@ -728,7 +803,6 @@ function renderDetalleFactura(d, fid) {
         pagoActionsRO.style.display = 'none';
     }
 
-    // For pending (sin factura), also hide pago actions
     if (!facturaId) {
         pagoActions.style.display = 'none';
         pagoActionsRO.style.display = 'none';
@@ -746,6 +820,11 @@ function abrirModalPago() {
     document.getElementById('pagoMetodo').value = 'efectivo';
     document.getElementById('pagoConversionRow').style.display = 'none';
     document.getElementById('pagoInputHint').textContent = 'Ingrese el monto en Bolívares';
+    const label = document.getElementById('pagoLabel');
+    if (label) label.textContent = 'Monto (Bs)';
+    document.getElementById('pagoMontoVes').placeholder = '0,00';
+    document.getElementById('pagoRefGroup').style.display = 'none';
+    document.getElementById('pagoReferencia').value = '';
     document.getElementById('pagoModal').style.display = 'flex';
 }
 

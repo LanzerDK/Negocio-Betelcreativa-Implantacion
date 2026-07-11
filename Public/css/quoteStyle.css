@@ -314,6 +314,11 @@
 
 .appointments-table th.col-1 { width: 55px; }
 .appointments-table th.col-7 { width: 90px; }
+.appointments-table th.col-8 { width: 130px; }
+
+.appointments-table td.col-4,
+.appointments-table td.col-5,
+.appointments-table td.col-8 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
 
 /* Celdas de datos */
 .appointments-table td {

@@ -9,7 +9,6 @@ class ViewsModel
         $baseViewsDir = __DIR__ . '/../../Views/';
         
         $whiteList = [
-            "cuenta",
             "dashboard",
             "category",
             "admin-settings",
@@ -18,7 +17,6 @@ class ViewsModel
             "quotes",
             "reports",
             "storage",
-            "storage-distribucion",
             "storage-inventario",
             "facturas",
             "factura-recibo",

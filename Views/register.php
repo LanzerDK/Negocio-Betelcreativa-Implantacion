@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - Bet-El Creativa</title>
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
 
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/registerStyle.css">

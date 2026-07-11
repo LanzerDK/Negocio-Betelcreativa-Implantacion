@@ -194,13 +194,25 @@
 /* Grid de zonas del almacén responsive */
 .layout-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
-/* Tarjeta de zona con bordes y hover */
-.zone {
+@media (max-width: 1200px) {
+  .layout-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tarjeta de almacén */
+.warehouse {
   background: #ffffff;
   border-radius: 15px;
   padding: 20px;
@@ -209,14 +221,15 @@
   border: 1px solid var(--light-gray);
 }
 
-.zone:hover {
+.warehouse:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
-/* Cabecera de zona con ícono y título */
-.zone-header {
+/* Cabecera de almacén */
+.warehouse-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
   padding: 10px 15px;
@@ -225,53 +238,169 @@
   color: white;
 }
 
-/* Ícono circular de la zona */
-.zone-icon {
-  font-size: 1.8rem;
+.warehouse-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.warehouse-header-info {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-size: 0.9rem;
+  opacity: 0.95;
+}
+
+/* Ícono circular del almacén */
+.warehouse-icon {
+  font-size: 1.5rem;
   color: white;
-  margin-right: 15px;
   background: rgba(255, 255, 255, 0.15);
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Nombre de la zona */
-.zone-title {
-  font-size: 1.3rem;
+/* Nombre del almacén */
+.warehouse-name {
+  font-size: 1.2rem;
   font-weight: 600;
   color: white;
 }
 
-/* Estante individual dentro de una zona */
+.warehouse-code {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.warehouse-shelf-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.warehouse-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Contenedor de estantes dentro de un almacén */
+.shelves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shelves-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--gray);
+  font-style: italic;
+}
+
+/* Estante individual */
 .shelf {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 15px;
-  margin-bottom: 10px;
   background: white;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   border: 1px solid var(--light-gray);
 }
 
+.shelf-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .shelf-name {
   font-weight: 600;
 }
 
-/* Estadísticas del estante (materiales/capacidad) */
+/* Estadísticas del estante (items / capacidad) */
 .shelf-stats {
-  display: flex;
-  gap: 15px;
-  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--gray);
 }
 
-.shelf-stats div:last-child {
-  color: var(--success);
+/* Acciones del estante */
+.shelf-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.shelf-view,
+.shelf-move,
+.shelf-delete {
+  background: none;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.shelf-view {
+  color: var(--primary);
+}
+
+.shelf-view:hover {
+  background: rgba(13, 71, 161, 0.1);
+  transform: scale(1.1);
+}
+
+.shelf-move {
+  color: var(--warning);
+}
+
+.shelf-move:hover {
+  background: rgba(255, 152, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.shelf-delete {
+  color: var(--danger);
+}
+
+.shelf-delete:hover {
+  background: rgba(244, 67, 54, 0.1);
+  transform: scale(1.1);
+}
+
+/* Estado vacío */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--gray);
+  font-size: 1.1rem;
+}
+
+/* Preview de nombre en modal warehouse */
+.wh-name-preview {
+  color: #000;
+  font-weight: 700;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid var(--light-gray);
+}
+
+/* Acciones en sección header */
+.section-actions {
+  display: flex;
+  gap: 10px;
 }
 
 /* Tabla de materiales del inventario */
@@ -467,7 +596,8 @@
   margin-top: 20px;
 }
 
-/* Botón Agregar Estante con estilo del sistema: fondo azul + texto dorado */
+/* Botones de acción en section header: Agregar Almacén / Agregar Estante */
+#addWarehouseBtn,
 #addShelfBtn {
   background: var(--secondary);
   color: var(--gold-button);
@@ -480,28 +610,13 @@
   align-items: center;
   gap: 8px;
   transition: var(--transition);
+  white-space: nowrap;
 }
+#addWarehouseBtn:hover,
 #addShelfBtn:hover {
   background: var(--primary-dark);
   transform: translateY(-3px);
   box-shadow: var(--shadow);
-}
-
-/* Botón de eliminar estante con estilo danger */
-.shelf-delete {
-  background: none;
-  border: none;
-  color: var(--danger);
-  cursor: pointer;
-  font-size: 0.85rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: var(--transition);
-}
-
-.shelf-delete:hover {
-  background: rgba(244, 67, 54, 0.1);
-  transform: scale(1.1);
 }
 
 
@@ -708,4 +823,78 @@
   width: auto;
   max-width: none;
   padding: 0;
+}
+
+/* Tabla simple para ver materiales del estante */
+#viewShelfBody table,
+.table-striped {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-striped th {
+  background: linear-gradient(to right, var(--primary), var(--secondary));
+  color: white;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.table-striped td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--light-gray);
+}
+
+.table-striped tr:nth-child(even) td {
+  background: rgba(13, 71, 161, 0.03);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  flex-wrap: wrap;
+}
+
+.page-btn {
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-btn:hover:not(.disabled):not(.active) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.page-btn.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  font-weight: 700;
+}
+
+.page-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.page-dots {
+  padding: 8px 6px;
+  color: var(--gray);
+  font-size: 0.9rem;
+  letter-spacing: 2px;
 }

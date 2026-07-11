@@ -14,30 +14,27 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('newCategoryBtn').addEventListener('click', function () {
         editingCategoryId = null;
         categoryImageUploadedUrl = null;
-        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Nueva Categoría';
+        document.getElementById('categoryModalLabel').textContent = 'Nueva Categoría';
         document.getElementById('categoryName').value = '';
         document.getElementById('categoryDescription').value = '';
         document.getElementById('categoryImage').value = '';
         document.getElementById('categoryImagePreview').style.display = 'none';
         document.getElementById('categoryImagePreview').querySelector('img').src = '';
-        document.getElementById('categoryModal').style.display = 'flex';
+        Modal.open('categoryModal');
     });
 
     document.getElementById('categoryImage')?.addEventListener('change', function (e) {
         mostrarPreview(e.target, 'categoryImagePreview');
     });
 
-    document.getElementById('closeModalBtn').addEventListener('click', function () {
-        document.getElementById('categoryModal').style.display = 'none';
-    });
-
-    document.getElementById('cancelModalBtn').addEventListener('click', function () {
-        document.getElementById('categoryModal').style.display = 'none';
-    });
-
     document.getElementById('saveCategoryBtn').addEventListener('click', guardarCategoria);
 
     document.getElementById('searchInput')?.addEventListener('input', filtrarCategorias);
+
+    document.getElementById('btnLimpiarCategorias')?.addEventListener('click', function () {
+        document.getElementById('searchInput').value = '';
+        filtrarCategorias();
+    });
 });
 
 function cargarCategorias() {
@@ -150,7 +147,7 @@ function renderizarCategorias(categorias, materiales) {
 function editarCategoria(cat) {
     editingCategoryId = cat.id;
     categoryImageUploadedUrl = cat.imageUrl || null;
-    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Categoría';
+    document.getElementById('categoryModalLabel').textContent = 'Editar Categoría';
     document.getElementById('categoryName').value = cat.name;
     document.getElementById('categoryDescription').value = cat.description;
     document.getElementById('categoryImage').value = '';
@@ -163,7 +160,7 @@ function editarCategoria(cat) {
         img.src = '';
         preview.style.display = 'none';
     }
-    document.getElementById('categoryModal').style.display = 'flex';
+    Modal.open('categoryModal');
 }
 
 function guardarCategoria() {
@@ -197,7 +194,7 @@ function guardarCategoria() {
         })
             .then(data => {
                 if (data.success) {
-                    document.getElementById('categoryModal').style.display = 'none';
+                    Modal.close('categoryModal');
                     cargarCategorias();
                 } else {
                     toast(data.message, 'error');

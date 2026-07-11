@@ -1,7 +1,7 @@
 let allMaterials = [];
 let allCategories = [];
 let allLocations = [];
-let allZones = [];
+
 let suppliersMap = {};
 let historyData = [];
 let historyPage = 1;
@@ -107,8 +107,6 @@ function llenarSelectores() {
     });
   }
   llenarSelectMaterial('adjustMaterial', null);
-  llenarSelectMaterial('moveMaterialSelect', null);
-  llenarSelectUbicacion('moveNewLocation', null);
   llenarSelectUbicacion('addMaterialLocation', null);
   const catSel = document.getElementById('addMatCategory');
   if (catSel) {
@@ -208,11 +206,9 @@ function renderTabla() {
       <div class="col-4" data-label="Stock"><span class="status ${statusClass}">${formatearStock(m)}</span></div>
       <div class="col-5" data-label="Acciones">
         <button class="action-btn adjust" data-id="${m.id}" title="Ajustar Inventario"><i class="fas fa-sliders-h"></i></button>
-        <button class="action-btn move" data-id="${m.id}" title="Mover Material"><i class="fas fa-arrows-alt"></i></button>
       </div>
     `;
     row.querySelector('.adjust')?.addEventListener('click', () => abrirAjustar(m));
-    row.querySelector('.move')?.addEventListener('click', () => abrirMover(m));
     fragment.appendChild(row);
   });
   container.appendChild(fragment);
@@ -289,33 +285,6 @@ function actualizarInfoConversion(material) {
   }
 }
 
-async function abrirMover(material) {
-  document.getElementById('moveId').value = material.id;
-  llenarSelectMaterial('moveMaterialSelect', material.id);
-  document.getElementById('moveMaterialSelect').disabled = true;
-  const locs = await fetchStockLocations(material.id);
-  const currentLoc = locs.length > 0 ? locs[0].locationId : material.location_id;
-  document.getElementById('moveCurrentLocation').value = allLocations.find(l => l.id === currentLoc)?.name || '—';
-  document.getElementById('moveCurrentLocation').dataset.locationId = currentLoc || '';
-  const toSel = document.getElementById('moveNewLocation');
-  llenarSelectUbicacion('moveNewLocation', null);
-  Array.from(toSel.options).forEach(opt => {
-    if (opt.value === String(currentLoc)) opt.disabled = true;
-  });
-  document.getElementById('moveQuantity').value = '';
-  document.getElementById('moveReason').value = 'reorganizacion';
-  document.getElementById('moveNotes').value = '';
-  document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
-  Modal.open('moveModal');
-}
-
-async function fetchStockLocations(materialId) {
-  try {
-    const data = await callApi(APP_URL + 'Public/api/storage.php?action=stock&material_id=' + materialId);
-    return data.success ? data.data : [];
-  } catch { return []; }
-}
-
 async function guardarAjuste() {
   const materialId = parseInt(document.getElementById('adjustId').value);
   const type = document.getElementById('adjustType').value;
@@ -370,43 +339,6 @@ async function guardarAjuste() {
   }
 }
 
-async function guardarMovimiento() {
-  const materialId = parseInt(document.getElementById('moveId').value);
-  const fromLocationId = parseInt(document.getElementById('moveCurrentLocation').dataset.locationId);
-  const toLocationId = parseInt(document.getElementById('moveNewLocation').value);
-  const quantity = parseInt(document.getElementById('moveQuantity').value);
-  const reason = document.getElementById('moveReason').value;
-  const notes = document.getElementById('moveNotes').value.trim();
-  document.querySelectorAll('.is-invalid').forEach(e => e.classList.remove('is-invalid'));
-  let valid = true;
-  if (!materialId || !fromLocationId) { valid = false; }
-  if (!toLocationId) { marcarError('moveNewLocation'); valid = false; }
-  if (!quantity || quantity <= 0) { marcarError('moveQuantity'); valid = false; }
-  if (fromLocationId === toLocationId) { toast('La ubicación de destino debe ser diferente.', 'error'); return; }
-  if (!valid) return toast('Complete todos los campos requeridos.', 'error');
-  if (!confirm('¿Está seguro de mover ' + quantity + ' unidades a la nueva ubicación?')) return;
-  setLoading('guardarMovimientoBtn', true);
-  try {
-    const data = await callApi(APP_URL + 'Public/api/storage.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': CSRF_TOKEN },
-      body: JSON.stringify({ action: 'move', material_id: materialId, from_location_id: fromLocationId, to_location_id: toLocationId, quantity, reason, notes })
-    });
-    if (data.success) {
-      Modal.close('moveModal');
-      toast('Material movido exitosamente.', 'success');
-      await recargarDatos();
-    } else {
-      toast('Error: ' + data.message, 'error');
-    }
-  } catch (err) {
-    toast('Error de conexión.', 'error');
-    console.error(err);
-  } finally {
-    setLoading('guardarMovimientoBtn', false);
-  }
-}
-
 async function recargarDatos() {
   try {
     const [mat, cat, loc, sum, sup] = await Promise.all([
@@ -420,9 +352,6 @@ async function recargarDatos() {
     if (cat.success) allCategories = cat.data;
     if (loc.success) {
       allLocations = loc.data;
-      const zoneSet = new Set();
-      loc.data.forEach(l => { if (l.description) zoneSet.add(l.description); });
-      allZones = Array.from(zoneSet).sort();
     }
     if (sup && sup.success) {
       suppliersMap = {};

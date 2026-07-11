@@ -13,6 +13,13 @@ let citaEditandoId = null;
 let facturaEstadoCita = null;
 let citaMaterialesOriginales = []; // snapshot al abrir edición (para cálculo de stock disponible)
 
+function escapeHtml(str) {
+    if (!str) return '';
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
 // ==================== HELPERS TIMEZONE VET ====================
 
 function ahoraEnCaracas() {
@@ -249,6 +256,10 @@ function renderizarTabla(pagina)
 
         const esCancelado = cita.estado === 'Cancelado';
         const esFinalizada = cita.estado === 'Finalizada';
+        const facturaPagadaCompleta = cita.facturaEstado === 'cerrada'
+            || (cita.facturaEstado === 'activa' && cita.totalFactura && cita.totalPagadoVes
+                && parseFloat(cita.totalPagadoVes) >= parseFloat(cita.totalFactura) - 0.01);
+        const bloqueado = esCancelado || esFinalizada || facturaPagadaCompleta;
 
         fila.innerHTML = `
             <td class="col-1">#${cita.id}</td>
@@ -264,10 +275,11 @@ function renderizarTabla(pagina)
             <td class="col-3">${fechaHora}</td>
             <td class="col-4"><span class="event-type">${cita.eventType || '—'}</span></td>
             <td class="col-5">${cita.ubicacion || '—'}</td>
+            <td class="col-8">${cita.notas || '—'}</td>
             <td class="col-6"><span class="status ${classNameEstado(cita.estado)}">${textoEstado(cita.estado)}</span></td>
             <td class="col-7">
-                ${!esCancelado && !esFinalizada ? `<button class="action-btn edit" data-id="${cita.id}"><i class="fas fa-edit"></i></button>` : ''}
-                ${!esCancelado && !esFinalizada ? `<button class="action-btn cancel-btn" data-id="${cita.id}" title="Cancelar cita"><i class="fas fa-ban"></i></button>` : ''}
+                ${!bloqueado ? `<button class="action-btn edit" data-id="${cita.id}"><i class="fas fa-edit"></i></button>` : ''}
+                ${!bloqueado ? `<button class="action-btn cancel-btn" data-id="${cita.id}" title="Cancelar cita"><i class="fas fa-ban"></i></button>` : ''}
                 ${esCancelado && esRestaurable(cita.fechaHoraCancelacion, cita.fechaHoraInicio) ? `<button class="action-btn restore-btn" data-id="${cita.id}" title="Restaurar cita"><i class="fas fa-undo"></i></button>` : ''}
             </td>
         `;
@@ -902,12 +914,16 @@ function renderizarHistorial()
         const telefono = obtenerTelefonoCliente(c.clienteId);
         const fechaHora = formatearFechaHora(c.fechaHoraInicio);
         const puedeRestaurar = esRestaurable(c.fechaHoraCancelacion, c.fechaHoraInicio);
+        const facturaLink = c.facturaId ? '#' + String(c.facturaId).padStart(6, '0') : '—';
+        const motivo = c.motivoCancelacion || '—';
         return `<tr>
             <td>#${c.id}</td>
             <td><strong>${nombre}</strong><br><small style="color:var(--gray)">${telefono}</small></td>
             <td>${fechaHora}</td>
             <td>${c.eventType || '—'}</td>
             <td>${c.ubicacion || '—'}</td>
+            <td style="max-width:200px;white-space:normal;word-break:break-word;">${escapeHtml(motivo)}</td>
+            <td>${facturaLink}</td>
             <td>
                 ${puedeRestaurar ? `<button class="btn-reactivate" data-id="${c.id}"><i class="fas fa-undo"></i> Restaurar</button>` : '<span style="color:var(--gray);font-size:0.85rem;">Vencido</span>'}
             </td>

@@ -26,7 +26,9 @@ class AppointmentRepository
             c.estado_previo_cancelacion AS estadoPrevioCancelacion,
             c.fecha_hora_cancelacion AS fechaHoraCancelacion,
             c.motivo_cancelacion AS motivoCancelacion,
-            c.notas, c.motivo_sin_materiales AS motivoSinMateriales, c.created_at AS createdAt";
+            c.notas, c.motivo_sin_materiales AS motivoSinMateriales, c.created_at AS createdAt,
+            f.id AS facturaId, f.estado AS facturaEstado, f.total_factura AS totalFactura,
+            COALESCE((SELECT SUM(p.monto * p.tasa_usada) FROM pagos_factura p LEFT JOIN facturas r ON p.factura_id = r.id WHERE p.factura_id = f.id OR r.factura_origen_id = f.id), 0) AS totalPagadoVes";
 
     public function findAll(): array
     {
@@ -35,6 +37,7 @@ class AppointmentRepository
                 "SELECT " . self::COLUMNS . "
                  FROM citas c
                  LEFT JOIN event_types et ON c.event_type_id = et.id
+                 LEFT JOIN facturas f ON c.id = f.cita_id AND f.tipo = 'factura'
                  WHERE c.estado != 'Cancelado'
                  ORDER BY c.fecha_hora_inicio DESC"
             );
@@ -52,6 +55,7 @@ class AppointmentRepository
                 "SELECT " . self::COLUMNS . "
                  FROM citas c
                  LEFT JOIN event_types et ON c.event_type_id = et.id
+                 LEFT JOIN facturas f ON c.id = f.cita_id AND f.tipo = 'factura'
                  ORDER BY c.fecha_hora_inicio DESC"
             );
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -68,6 +72,7 @@ class AppointmentRepository
                 "SELECT " . self::COLUMNS . "
                  FROM citas c
                  LEFT JOIN event_types et ON c.event_type_id = et.id
+                 LEFT JOIN facturas f ON c.id = f.cita_id AND f.tipo = 'factura'
                  WHERE c.id = :id"
             );
             $stmt->execute([':id' => $id]);
@@ -86,6 +91,7 @@ class AppointmentRepository
                 "SELECT " . self::COLUMNS . "
                  FROM citas c
                  LEFT JOIN event_types et ON c.event_type_id = et.id
+                 LEFT JOIN facturas f ON c.id = f.cita_id AND f.tipo = 'factura'
                  WHERE c.estado = 'Cancelado'
                  ORDER BY c.fecha_hora_cancelacion DESC"
             );
@@ -103,6 +109,7 @@ class AppointmentRepository
                 "SELECT " . self::COLUMNS . "
                  FROM citas c
                  LEFT JOIN event_types et ON c.event_type_id = et.id
+                 LEFT JOIN facturas f ON c.id = f.cita_id AND f.tipo = 'factura'
                  WHERE c.cliente_id = :clienteId
                  ORDER BY c.fecha_hora_inicio DESC"
             );

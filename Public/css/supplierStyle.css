@@ -1,26 +1,14 @@
-/* supplierStyle.css - Estilos del módulo de Proveedores */
+/* supplierStyle.css - Estilos del modulo de Proveedores */
 
-.app-header {
-  background: linear-gradient(to right, var(--primary), var(--secondary));
-  color: var(--gold-text);
-  padding: 15px 25px;
-  display: flex;
-  align-items: center;
-  z-index: 100;
-}
-
-.material-layout {
+/* Contenedor principal con sidebar de filtros + grid de proveedores */
+.supplier-container {
   display: grid;
   grid-template-columns: 1fr 3fr;
-  gap: 25px;
+  gap: 35px;
+  padding: 25px;
 }
 
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
+/* Caja de busqueda con icono */
 .search-box {
   position: relative;
   margin-bottom: 20px;
@@ -29,9 +17,17 @@
 .search-box input {
   width: 100%;
   padding: 12px 15px 12px 45px;
-  border-radius: 50px;
-  border: 1px solid var(--light-gray);
+  border-radius: 10px;
+  border: 2px solid #ced4da;
+  background: #ffffff;
   font-size: 1rem;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.search-box input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
 .search-box i {
@@ -42,41 +38,45 @@
   color: var(--gold-text);
 }
 
-.btn-nueva {
-  background: var(--primary);
+/* Boton Nuevo Proveedor - estilo igual a btn-nuevo-material */
+.btn-nuevo-proveedor {
+  background: var(--secondary);
   color: var(--gold-button);
-  border: 1px solid var(--gold-button);
-  padding: 10px 20px;
+  padding: 12px 25px;
   border-radius: 50px;
+  border: 1px solid var(--gold-button);
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   transition: var(--transition);
-  font-size: 0.9rem;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 15px;
 }
 
-.btn-nueva:hover {
+.btn-nuevo-proveedor:hover {
   background: var(--primary-dark);
-  color: var(--gold-button);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.3);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
 }
 
+/* Seccion de estadisticas */
 .stats-section {
   background: #ffffff;
-  border-radius: 15px;
-  padding: 25px;
+  border-radius: 12px;
+  padding: 16px;
   box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   position: relative;
+  margin-top: 16px;
 }
 
 .stats-section::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 15px;
+  border-radius: 12px;
   padding: 2px;
   background: var(--gold-gradient);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -86,38 +86,37 @@
 }
 
 .section-title {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: var(--gold-text);
-  margin-bottom: 20px;
-  padding-bottom: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
   border-bottom: 2px solid var(--gold-text);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stat-card {
   background: #ffffff;
   box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.08), 0px 2px 20px rgba(212, 175, 55, 0.25);
-  border-radius: 12px;
-  padding: 15px;
+  border-radius: 10px;
+  padding: 10px 8px;
   text-align: center;
   transition: var(--transition);
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 100px;
 }
 
 .stat-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 2px;
   background: var(--gold-gradient);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -127,34 +126,35 @@
 }
 
 .stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
 .stat-icon {
-  font-size: 2.8rem;
+  font-size: 1.5rem;
   color: var(--primary);
-  margin-bottom: 6px;
   line-height: 1;
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--primary);
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .stat-label {
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   color: var(--dark);
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
-.suppliers-container {
+/* Grid de tarjetas de proveedores responsive */
+.suppliers-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  align-items: stretch;
 }
 
 .supplier-card {
@@ -166,6 +166,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .supplier-card::before {
@@ -186,13 +187,16 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
-.supplier-card.inhabilitado::before {
-  display: none;
-}
-
+/* Estado inhabilitado */
 .supplier-card.inhabilitado {
   transform: scale(0.98);
   border: 2px solid var(--danger);
+  box-shadow: 0 4px 20px rgba(244, 67, 54, 0.35);
+  position: relative;
+}
+
+.supplier-card.inhabilitado::before {
+  display: none;
 }
 
 .supplier-card.inhabilitado::after {
@@ -205,6 +209,10 @@
   pointer-events: none;
 }
 
+.supplier-card.inhabilitado:hover {
+  transform: scale(0.98);
+}
+
 .supplier-card.inhabilitado .supplier-body,
 .supplier-card.inhabilitado .supplier-actions {
   position: relative;
@@ -214,6 +222,21 @@
 .supplier-card.inhabilitado .supplier-header {
   position: relative;
   z-index: 3;
+}
+
+.supplier-card.inhabilitado .edit-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.supplier-card.inhabilitado .toggle-btn {
+  background-color: var(--success);
+  color: white;
+}
+
+.supplier-card.inhabilitado .toggle-btn:hover {
+  background-color: #388e3c;
+  color: white;
 }
 
 .supplier-header {
@@ -324,18 +347,18 @@
   color: var(--accent);
 }
 
+.edit-btn:hover {
+  background-color: var(--accent);
+  color: white;
+}
+
 .toggle-btn {
   background-color: rgba(244, 67, 54, 0.1);
   color: var(--danger);
 }
 
-.supplier-card.inhabilitado .toggle-btn {
-  background-color: var(--success);
-  color: white;
-}
-
-.supplier-card.inhabilitado .toggle-btn:hover {
-  background-color: #388e3c;
+.toggle-btn:hover {
+  background-color: var(--danger);
   color: white;
 }
 
@@ -343,17 +366,14 @@
   transform: translateY(-2px);
 }
 
-.supplier-modal {
-  max-width: 550px;
-}
-
+/* Supplier select wrap (reusado desde materials) */
 .supplier-select-wrap {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.supplier-select-wrap .form-select {
+.supplier-select-wrap .form-control {
   flex: 1;
 }
 
@@ -393,56 +413,52 @@
   letter-spacing: 0.5px;
   margin-bottom: 8px;
 }
+
 .supplier-type-badge.fijo {
   background: rgba(40, 167, 69, 0.12);
   color: #28a745;
 }
+
 .supplier-type-badge.comodin {
   background: rgba(255, 193, 7, 0.15);
   color: #b8860b;
 }
+
 .subtype-label {
   font-size: 0.8rem;
   color: var(--gray);
   margin-bottom: 6px;
   padding-left: 2px;
 }
+
 .subtype-label i {
   margin-right: 4px;
   color: var(--gold);
 }
 
-@media (max-width: 576px) {
-  .supplier-modal {
-    max-width: 95%;
-  }
-  .supplier-modal .modal-body {
-    padding: 12px 14px;
-  }
-  .supplier-modal .form-row {
+/* Responsive - apila el layout en pantallas medianas (como materials) */
+@media (max-width: 1024px) {
+  .supplier-container {
     grid-template-columns: 1fr;
   }
-}
-
-@media (max-width: 992px) {
-  .material-layout {
-    grid-template-columns: 1fr;
+  .filters-section {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
   }
-  .left-column {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+  .stats-section {
+    margin-top: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .left-column {
-    grid-template-columns: 1fr;
+  .suppliers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
 }
 
 @media (max-width: 480px) {
-  .suppliers-container {
+  .suppliers-grid {
     grid-template-columns: 1fr;
   }
 }

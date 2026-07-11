@@ -5,9 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Proveedores - Bet-El Creativa</title>
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
+
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/supplierStyle.css">
-    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
 
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fonts/poppins/poppins.css">
@@ -26,7 +27,8 @@
             </div>
             <div class="user-container">
                 <div class="imagenfoto">
-                    <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
+                    <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
+                    <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
                 <div class="user-details">
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
@@ -37,7 +39,7 @@
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settingsDropdown">
-                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
+                    <a href="<?php echo APP_URL; ?>admin-settings" class="dropdown-item">
                         <i class="fas fa-user"></i> Cuenta
                     </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
@@ -74,8 +76,7 @@
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="submenu-dropdown" id="almacenSubmenu">
-                    <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item"><i class="fas fa-truck-loading"></i> Distribución</a>
-                    <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
+                <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
                 </div>
             </div>
             <a href="<?php echo APP_URL; ?>customers" class="menu-item">
@@ -98,24 +99,22 @@
             <?php endif; ?>
         </nav>
 
-        <div class="main-content">
-            <div class="material-layout">
-                <div class="left-column">
-                    <section class="filters-section">
-                        <div class="filters-header">
-                            <h2>Buscar</h2>
-                            <div>
-                                <button class="btn-nueva" id="newSupplierBtn">
-                                    <i class="fas fa-plus"></i> Nuevo Proveedor
-                                </button>
-                            </div>
-                        </div>
+        <div>
+            <div class="supplier-container">
+                <section class="filters-section">
+                    <div class="filters-header">
+                        <h2>Filtros</h2>
+                        <button class="btn-limpiar" id="btnLimpiarProveedores">Limpiar</button>
+                    </div>
 
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" id="searchInput" placeholder="Buscar proveedores...">
-                        </div>
-                    </section>
+                    <button class="btn-nuevo-proveedor" id="newSupplierBtn">
+                        <i class="fas fa-plus"></i> Nuevo Proveedor
+                    </button>
+
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar proveedores...">
+                    </div>
 
                     <section class="stats-section">
                         <h2 class="section-title">Estadísticas</h2>
@@ -142,78 +141,80 @@
                             </div>
                         </div>
                     </section>
-                </div>
+                </section>
 
-                <div class="suppliers-container" id="suppliersContainer">
-                </div>
+                <section>
+                    <div class="suppliers-grid" id="suppliersContainer">
+                    </div>
+                </section>
             </div>
         </div>
 
-        <div class="modal-overlay" id="supplierModal">
-            <div class="supplier-modal">
-                <div class="modal-header">
-                    <h2 id="modalTitle"><i class="fas fa-plus-circle"></i> Nuevo Proveedor</h2>
-                    <button class="close-btn" id="closeModalBtn">&times;</button>
-                </div>
-
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="supplierCompany" class="form-label">Nombre de la Empresa</label>
-                        <input type="text" id="supplierCompany" class="form-control" placeholder="Ej: Proveedora de Globos C.A.">
+        <div class="modal" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true">
+            <div class="modal-wrapper">
+                <div class="modal-content" style="flex:0 0 auto;width:480px;">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="supplierModalLabel">Nuevo Proveedor</h1>
+                        <button type="button" class="btn-close" data-modal-dismiss="supplierModal" aria-label="Close"></button>
                     </div>
-
-                    <div class="form-group">
-                        <label for="supplierType" class="form-label">Tipo de Proveedor</label>
-                        <select id="supplierType" class="form-control">
-                            <option value="fijo">Fijo</option>
-                            <option value="comodin">Comodín</option>
-                        </select>
-                    </div>
-
-                    <div id="fijoFields">
-                        <div class="form-group">
-                            <label for="supplierContact" class="form-label">Persona de Contacto</label>
-                            <input type="text" id="supplierContact" class="form-control" placeholder="Ej: María Pérez">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="supplierCompany" class="form-label">Nombre de la Empresa</label>
+                            <input type="text" id="supplierCompany" class="form-control" placeholder="Ej: Proveedora de Globos C.A.">
                         </div>
 
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="supplierPhone" class="form-label">Teléfono</label>
-                                <input type="text" id="supplierPhone" class="form-control" placeholder="Ej: 0412-1234567">
-                            </div>
-                            <div class="form-group">
-                                <label for="supplierEmail" class="form-label">Correo Electrónico</label>
-                                <input type="email" id="supplierEmail" class="form-control" placeholder="Ej: contacto@proveedora.com">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="supplierAddress" class="form-label">Dirección</label>
-                            <textarea id="supplierAddress" class="form-control" rows="2" placeholder="Dirección física del proveedor..."></textarea>
-                        </div>
-                    </div>
-
-                    <div id="comodinFields" style="display:none;">
-                        <div class="form-group">
-                            <label for="supplierSubtype" class="form-label">Subtipo</label>
-                            <select id="supplierSubtype" class="form-control">
-                                <option value="">Seleccionar subtipo</option>
-                                <option value="Compras al Detal">Compras al Detal</option>
-                                <option value="Caja Chica">Caja Chica</option>
-                                <option value="Proveedores Eventuales">Proveedores Eventuales</option>
-                                <option value="Ocacionales">Ocacionales</option>
+                        <div class="mb-3">
+                            <label for="supplierType" class="form-label">Tipo de Proveedor</label>
+                            <select id="supplierType" class="form-control">
+                                <option value="fijo">Fijo</option>
+                                <option value="comodin">Comodín</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label for="supplierNotes" class="form-label">Nota</label>
-                            <textarea id="supplierNotes" class="form-control" rows="2" placeholder="Nota sobre este proveedor comodín..."></textarea>
+
+                        <div id="fijoFields">
+                            <div class="mb-3">
+                                <label for="supplierContact" class="form-label">Persona de Contacto</label>
+                                <input type="text" id="supplierContact" class="form-control" placeholder="Ej: María Pérez">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="mb-3" style="flex:1;">
+                                    <label for="supplierPhone" class="form-label">Teléfono</label>
+                                    <input type="text" id="supplierPhone" class="form-control" placeholder="Ej: 0412-1234567">
+                                </div>
+                                <div class="mb-3" style="flex:1;">
+                                    <label for="supplierEmail" class="form-label">Correo Electrónico</label>
+                                    <input type="email" id="supplierEmail" class="form-control" placeholder="Ej: contacto@proveedora.com">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="supplierAddress" class="form-label">Dirección</label>
+                                <textarea id="supplierAddress" class="form-control" rows="2" placeholder="Dirección física del proveedor..."></textarea>
+                            </div>
+                        </div>
+
+                        <div id="comodinFields" style="display:none;">
+                            <div class="mb-3">
+                                <label for="supplierSubtype" class="form-label">Subtipo</label>
+                                <select id="supplierSubtype" class="form-control">
+                                    <option value="">Seleccionar subtipo</option>
+                                    <option value="Compras al Detal">Compras al Detal</option>
+                                    <option value="Caja Chica">Caja Chica</option>
+                                    <option value="Proveedores Eventuales">Proveedores Eventuales</option>
+                                    <option value="Ocacionales">Ocacionales</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="supplierNotes" class="form-label">Nota</label>
+                                <textarea id="supplierNotes" class="form-control" rows="2" placeholder="Nota sobre este proveedor comodín..."></textarea>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button class="btn-modal btn-cancel" id="cancelModalBtn">Cancelar</button>
-                    <button class="btn-modal btn-save" id="saveSupplierBtn">Guardar Proveedor</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-modal-dismiss="supplierModal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="saveSupplierBtn">Guardar Proveedor</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -237,6 +238,7 @@
             document.getElementById('almacenSubmenu')?.classList.remove('show');
         });
     </script>
+    <script src="<?php echo APP_URL; ?>Public/js/modal.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/toast.js"></script>
     <script src="<?php echo APP_URL; ?>Public/js/suppliers.js"></script>
 </body>

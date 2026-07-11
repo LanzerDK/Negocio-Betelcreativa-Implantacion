@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facturación - Bet-El Creativa</title>
-
-    <link rel="icon" type="image/png" href="<?php echo APP_URL; ?>Public/images/favicon.png">
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/facturasStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/fontawesome/css/all.min.css">
@@ -25,7 +24,8 @@
             </div>
             <div class="user-container">
                 <div class="imagenfoto">
-                    <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
+                    <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
+                    <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
                 </div>
                 <div class="user-details">
                     <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
@@ -36,7 +36,7 @@
                         <i class="fas fa-cog"></i>
                     </button>
                     <div class="settings-dropdown" id="settingsDropdown">
-                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
+                    <a href="<?php echo APP_URL; ?>admin-settings" class="dropdown-item">
                         <i class="fas fa-user"></i> Cuenta
                     </a>
                         <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
@@ -73,8 +73,7 @@
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="submenu-dropdown" id="almacenSubmenu">
-                    <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item"><i class="fas fa-truck-loading"></i> Distribución</a>
-                    <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
+                <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item"><i class="fas fa-clipboard-list"></i> Inventario</a>
                 </div>
             </div>
             <a href="<?php echo APP_URL; ?>customers" class="menu-item">
@@ -158,6 +157,7 @@
                     </div>
                     <div class="factura-card-body">
                         <div class="info-row"><span class="info-label">Cliente:</span><span id="card1-cliente" class="info-value">—</span></div>
+                        <div class="info-row"><span class="info-label">Cita #:</span><span id="card1-cita-id" class="info-value">—</span></div>
                         <div class="info-row"><span class="info-label">Cédula:</span><span id="card1-cedula" class="info-value">—</span></div>
                         <div class="info-row"><span class="info-label">Teléfono:</span><span id="card1-telefono" class="info-value">—</span></div>
                         <div class="info-row"><span class="info-label">Fecha:</span><span id="card1-fecha" class="info-value">—</span></div>
@@ -167,6 +167,10 @@
                         <div class="info-row atendido-row" id="card1-atendido-row" style="display:none;">
                             <span class="info-label">Atendido por:</span>
                             <span id="card1-atendido" class="info-value">—</span>
+                        </div>
+                        <div class="info-row" id="card1-notas-row" style="display:none;">
+                            <span class="info-label">Notas:</span>
+                            <span id="card1-notas" class="info-value">—</span>
                         </div>
                     </div>
                 </div>
@@ -246,18 +250,19 @@
 
                     <div class="pago-status" id="status-pago"></div>
 
-                    <h4 style="margin:15px 0 8px;font-size:0.9rem;color:var(--gray);">Historial de Abonos</h4>
+                    <h4 style="margin:15px 0 8px;font-size:0.9rem;color:var(--gray);">Facturas Asociadas</h4>
                     <table class="historial-table">
                         <thead>
                             <tr>
+                                <th>Nro Factura</th>
                                 <th>Fecha</th>
                                 <th class="text-right">Monto (Bs)</th>
-                                <th>Método</th>
-                                <th class="text-right">Tasa</th>
+                                <th>Tipo</th>
+                                <th class="text-center">Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-pagos">
-                            <tr><td colspan="4" class="text-center" style="color:var(--gray);padding:15px;">Sin pagos registrados</td></tr>
+                        <tbody id="tabla-facturas-asociadas">
+                            <tr><td colspan="5" class="text-center" style="color:var(--gray);padding:15px;">Sin facturas asociadas</td></tr>
                         </tbody>
                     </table>
 
@@ -347,9 +352,13 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Monto</label>
-                    <input type="number" step="0.01" min="0" class="form-input" id="pagoMontoVes" placeholder="0.00">
+                    <label class="form-label" id="pagoLabel">Monto (Bs)</label>
+                    <input type="number" step="0.01" min="0" class="form-input" id="pagoMontoVes" placeholder="0,00">
                     <small style="color:var(--gray);" id="pagoInputHint">Ingrese el monto en Bolívares</small>
+                </div>
+                <div class="form-group" id="pagoRefGroup" style="display:none;">
+                    <label class="form-label">Referencia (Pago Móvil)</label>
+                    <input type="text" class="form-input" id="pagoReferencia" placeholder="Nro de referencia completo" pattern="[0-9]{10,12}" title="Solo números, entre 10 y 12 dígitos">
                 </div>
                 <div id="pagoConversionRow" style="margin-top:8px;padding:10px;background:#f0f9ff;border-radius:6px;font-size:0.85rem;display:none;">
                     <span id="pagoConversionText"></span>
@@ -409,6 +418,10 @@
                                 <option value="divisas">Dólar $</option>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-group" id="genRefGroup" style="display:none;">
+                        <label class="form-label">Referencia (Pago Móvil)</label>
+                        <input type="text" class="form-input" id="genReferencia" placeholder="Nro de referencia completo" pattern="[0-9]{10,12}" title="Solo números, entre 10 y 12 dígitos">
                     </div>
                     <div id="genConversionRow" class="gen-conversion" style="display:none;">
                         <span id="genConversionText"></span>

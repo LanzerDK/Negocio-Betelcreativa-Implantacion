@@ -18,6 +18,7 @@ $stmt = $db->prepare(
             f.notas_cuota AS notasCuota, f.estado, f.created_at AS createdAt,
             f.created_by_name AS createdByName, f.descripcion_servicio AS descripcionServicio,
             f.plan_tipo AS planTipo, f.plan_cuotas_total AS planCuotasTotal,
+            f.tipo, f.factura_origen_id,
             CONCAT(cust.first_name, ' ', cust.last_name) AS clienteNombre,
             cust.id_number AS clienteCedula, cust.phone AS clienteTelefono, cust.email AS clienteEmail,
             c.fecha_hora_inicio AS fechaCita, c.ubicacion,
@@ -33,6 +34,23 @@ $f = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$f) { echo '<p style="text-align:center;margin-top:50px;color:red;">Factura no encontrada.</p>'; exit; }
 if ($f['estado'] === 'anulada') { echo '<p style="text-align:center;margin-top:50px;color:red;">Esta factura fue anulada.</p>'; exit; }
 
+$esRecibo = ($f['tipo'] ?? 'factura') === 'recibo';
+$parentFacturaId = $esRecibo ? (int)($f['factura_origen_id'] ?? 0) : $facturaId;
+
+// For recibos, get the parent factura total for Estado de Cuenta
+$totalContrato = (float)$f['totalFactura'];
+if ($esRecibo && $parentFacturaId) {
+    $pStmt = $db->prepare("SELECT total_factura, descripcion_servicio, created_at FROM facturas WHERE id = :id");
+    $pStmt->execute([':id' => $parentFacturaId]);
+    $parent = $pStmt->fetch(PDO::FETCH_ASSOC);
+    if ($parent) {
+        $totalContrato = (float)$parent['total_factura'];
+        $parentFecha = $parent['created_at'];
+    }
+}
+
+$conceptoPago = ($f['descripcionServicio'] ?? '') ?: ($esRecibo ? 'Abono registrado' : 'Servicio de decoración');
+
 $stmtMat = $db->prepare(
     "SELECT m.material_code AS codigo, m.name AS nombre, cm.cantidad_utilizada AS cantidad,
             COALESCE(cm.precio_unitario, m.price, 0) AS precio_unitario
@@ -45,7 +63,7 @@ $stmtMat->execute([':id' => $facturaId]);
 $materiales = $stmtMat->fetchAll(PDO::FETCH_ASSOC);
 
 $stmtPagos = $db->prepare(
-    "SELECT p.monto, p.metodo_pago, p.tasa_usada, p.fecha
+    "SELECT p.monto, p.metodo_pago, p.tasa_usada, p.Ref_PagoMovil AS refPagoMovil, p.fecha
      FROM pagos_factura p
      LEFT JOIN facturas r ON p.factura_id = r.id
      WHERE p.factura_id = :id1 OR r.factura_origen_id = :id2
@@ -63,6 +81,20 @@ $totalPagadoVes = 0;
 foreach ($pagos as $p) $totalPagadoVes += (float)$p['monto'] * (float)$p['tasa_usada'];
 $saldoPendienteVes = $totalConIva - $totalPagadoVes;
 $cambio = $totalPagadoVes > $totalConIva ? $totalPagadoVes - $totalConIva : 0;
+
+// For Estado de Cuenta: total abonado across all facturas/recibos of this cita
+$totalAbonadoHistory = $totalPagadoVes;
+if ($esRecibo) {
+    $taStmt = $db->prepare(
+        "SELECT COALESCE(SUM(p.monto * p.tasa_usada), 0)
+         FROM pagos_factura p
+         JOIN facturas r ON p.factura_id = r.id
+         WHERE r.cita_id = (SELECT cita_id FROM facturas WHERE id = :id)"
+    );
+    $taStmt->execute([':id' => $facturaId]);
+    $totalAbonadoHistory = (float)$taStmt->fetchColumn();
+}
+
 $esCopia = !empty($_GET['copia']);
 
 function fmt($v) { return number_format($v, 2, ',', '.'); }
@@ -78,6 +110,7 @@ function line($l, $r) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recibo #<?= str_pad($f['facturaId'], 8, '0', STR_PAD_LEFT) ?> — Bet-El Creativa</title>
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Courier New',Courier,monospace; background:#fff; padding:30px; color:#000; font-size:12px; line-height:1.5; }
@@ -115,7 +148,7 @@ function line($l, $r) {
         <div class="hdr">
             <img src="<?php echo (defined('APP_URL') ? APP_URL : '../') . 'Public/images/logoBN.png'; ?>" alt="Bet-El Creativa" class="logo-recibo">
             <div class="hdr-right">
-                <div class="t">Factura</div>
+                <div class="t"><?= $esRecibo ? 'Recibo de Abono' : 'Factura' ?></div>
                 <div style="font-size:11px;line-height:1.6;">
                     <strong>Negocio BetEl-Creativa 2020</strong><br>
                     V-173970451<br>
@@ -126,8 +159,13 @@ function line($l, $r) {
         </div>
         <hr class="sep">
 
+        <?php if ($esRecibo && $parentFacturaId): $parentFechaStr = isset($parentFecha) ? date('d/m/Y', strtotime($parentFecha)) : '—'; ?>
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;"><span style="font-weight:600;">Nro Recibo: <?= str_pad($parentFacturaId, 8, '0', STR_PAD_LEFT) ?></span><span style="font-weight:600;">Fecha: <?= $parentFechaStr ?></span></div>
+        <div style="display:flex;justify-content:space-between;flex-wrap:wrap;"><span style="font-weight:600;">Nro Abono: <?= str_pad($f['facturaId'], 8, '0', STR_PAD_LEFT) ?></span><span style="font-weight:600;">Fecha: <?= date('d/m/Y', strtotime($f['createdAt'])) ?></span></div>
+        <?php else: ?>
         <div><?= line('Nro:', str_pad($f['facturaId'], 8, '0', STR_PAD_LEFT)) ?></div>
         <div><?= line('Fecha:', date('d/m/Y', strtotime($f['createdAt']))) ?></div>
+        <?php endif; ?>
         <div><?= line('Atendido por:', htmlspecialchars($f['createdByName'] ?? '—')) ?></div>
         <div><?= line('Cliente:', htmlspecialchars($f['clienteNombre'])) ?></div>
         <div><?= line('C.I:', htmlspecialchars($f['clienteCedula'] ?? '—')) ?></div>
@@ -137,6 +175,11 @@ function line($l, $r) {
         <div><?= line('Evento:', htmlspecialchars($f['eventType'])) ?></div>
         <hr class="sep">
 
+        <?php if ($esRecibo): ?>
+        <div class="st">CONCEPTO DE PAGO:</div>
+        <div style="margin:2px 0 6px;"><?= htmlspecialchars($conceptoPago) ?></div>
+        <hr class="sep">
+        <?php else: ?>
         <div class="st">MATERIALES:</div>
         <?php if (!empty($materiales)): ?>
             <?php foreach ($materiales as $m):
@@ -156,7 +199,9 @@ function line($l, $r) {
             <div>Sin materiales asignados</div>
         <?php endif; ?>
         <hr class="sep">
+        <?php endif; ?>
 
+        <?php if (!$esRecibo): ?>
         <div class="st"></div>
         
         <?= line('Sub-Total:', fmt($totalMateriales) . ' Bs') ?>
@@ -165,8 +210,9 @@ function line($l, $r) {
         <hr class="sep">
         <div class="l" style="font-weight:700;font-size:13px;"><span>TOTAL:</span><span><?= fmt($totalConIva) ?> Bs</span></div>
         <hr class="sep">
+        <?php endif; ?>
 
-        <div class="st">FORMAS DE PAGO:</div>
+        <div class="st"><?= $esRecibo ? 'DETALLE DEL PAGO' : 'FORMAS DE PAGO' ?>:</div>
         <?php if (!empty($pagos)): ?>
             <?php foreach ($pagos as $p):
                 $monto = (float)$p['monto'];
@@ -174,7 +220,7 @@ function line($l, $r) {
                 $montoVes = $monto * $tasa;
                 $label = match ($p['metodo_pago']) {
                     'efectivo' => 'Efectivo',
-                    'pagomovil' => 'PagoMóvil',
+                    'pagomovil' => 'Pago Móvil',
                     'divisas' => 'Divisas',
                     default => htmlspecialchars($p['metodo_pago'])
                 };
@@ -182,12 +228,22 @@ function line($l, $r) {
             <div>
                 <?php if ($p['metodo_pago'] === 'divisas'): ?>
                     <?= line($label . ':  $' . fmt($monto), fmt($montoVes) . ' Bs') ?>
+                    <?= line('Tasa BCV:', fmt($tasa) . ' Bs/$') ?>
                 <?php else: ?>
-                    <?= line($label . ':', fmt($montoVes) . ' Bs') ?>
+                    <?php $lineLabel = $label . ':'; ?>
+                    <?php if ($p['metodo_pago'] === 'pagomovil' && !empty($p['refPagoMovil'])): ?>
+                        <?= line($lineLabel, fmt($montoVes) . ' Bs') ?>
+                        <?= line('Ref:', htmlspecialchars($p['refPagoMovil'])) ?>
+                    <?php else: ?>
+                        <?= line($lineLabel, fmt($montoVes) . ' Bs') ?>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
             <?php endforeach; ?>
             <hr class="sep">
+            <?php if ($esRecibo): ?>
+            <div class="l" style="font-weight:700;font-size:13px;"><span>MONTO RECIBIDO:</span><span><?= fmt($totalPagadoVes) ?> Bs</span></div>
+            <?php else: ?>
             <?= line('Total Pagado:', fmt($totalPagadoVes) . ' Bs') ?>
             <?php if ($cambio > 0): ?>
                 <?= line('Devolución:', fmt($cambio) . ' Bs') ?>
@@ -195,10 +251,23 @@ function line($l, $r) {
             <?php if ($saldoPendienteVes > 0.01): ?>
                 <?= line('Saldo Pendiente:', fmt($saldoPendienteVes) . ' Bs') ?>
             <?php endif; ?>
+            <?php endif; ?>
         <?php else: ?>
             <div>Sin pagos registrados</div>
         <?php endif; ?>
         <hr class="sep">
+
+        <?php if ($esRecibo): ?>
+        <div class="st">ESTADO DE CUENTA:</div>
+        <div><?= line('Total Contrato:', fmt($totalContrato) . ' Bs') ?></div>
+        <div><?= line('Total Abonado:', fmt($totalAbonadoHistory) . ' Bs') ?></div>
+        <?php $saldoFinal = $totalContrato - $totalAbonadoHistory; ?>
+        <div class="l" style="font-weight:700;font-size:13px;margin-top:4px;padding-top:4px;border-top:2px solid #000;">
+            <span>SALDO PENDIENTE:</span>
+            <span><?= $saldoFinal > 0.01 ? fmt($saldoFinal) . ' Bs' : 'PAGADO / SOLVENTE' ?></span>
+        </div>
+        <hr class="sep">
+        <?php endif; ?>
 
         <?php if ($f['notasCuota']): ?>
         <div style="margin-top:8px;font-size:11px;">Nota: <?= htmlspecialchars($f['notasCuota']) ?></div>
@@ -229,6 +298,9 @@ function line($l, $r) {
         <div class="footer">
             <p>Betel Creativa — Decoración de Eventos</p>
             <p>Este documento es un comprobante de pago.</p>
+            <?php if ($esRecibo): ?>
+            <p style="margin-top:6px;font-size:9px;color:#888;">Este recibo avala únicamente el monto reflejado. Los abonos no son reembolsables en caso de cancelación del evento.</p>
+            <?php endif; ?>
         </div>
     </div>
 </body>

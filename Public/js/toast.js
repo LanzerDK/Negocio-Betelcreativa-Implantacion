@@ -39,9 +39,10 @@
       throw new Error('Respuesta no válida del servidor.');
     }
     if (!res.ok) {
-      var err = new Error(data.message || 'HTTP ' + res.status);
-      err.errors = data.errors || null;
-      throw err;
+      data = data || {};
+      data.success = false;
+      data.message = data.message || 'HTTP ' + res.status;
+      return data;
     }
     return data;
   };

@@ -30,6 +30,7 @@ class FacturaRepository
                             c.ubicacion,
                             COALESCE(et.name, '—') AS eventType,
                             c.notas,
+                            c.motivo_sin_materiales AS motivoSinMateriales,
                             f.id AS facturaId,
                             f.tipo AS facturaTipo,
                             f.costo_servicio AS costoServicio,
@@ -67,14 +68,24 @@ class FacturaRepository
             $materiales = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $pagos = [];
+            $recibos = [];
             if ($general['facturaId']) {
                 $pagos = $this->getPagosByFacturaOrRecibos((int)$general['facturaId']);
+                $rStmt = $this->db->prepare(
+                    "SELECT id, total_factura AS totalFactura, created_at AS createdAt
+                     FROM facturas
+                     WHERE factura_origen_id = :fid AND tipo = 'recibo'
+                     ORDER BY created_at ASC"
+                );
+                $rStmt->execute([':fid' => (int)$general['facturaId']]);
+                $recibos = $rStmt->fetchAll(PDO::FETCH_ASSOC);
             }
 
             return [
                 'general'   => $general,
                 'materiales' => $materiales,
-                'pagos'     => $pagos
+                'pagos'     => $pagos,
+                'recibos'   => $recibos
             ];
         } catch (PDOException $e) {
             ApiResponse::error('Error al obtener detalle de facturación: ' . $e->getMessage(), 500);
@@ -86,7 +97,7 @@ class FacturaRepository
     {
         try {
             $stmt = $this->db->prepare(
-                "SELECT p.id, p.monto, p.metodo_pago AS metodoPago, p.tasa_usada AS tasaUsada, p.fecha,
+                "SELECT p.id, p.monto, p.metodo_pago AS metodoPago, p.tasa_usada AS tasaUsada, p.Ref_PagoMovil AS refPagoMovil, p.fecha,
                         r.id AS reciboId
                  FROM pagos_factura p
                  LEFT JOIN facturas r ON p.factura_id = r.id
@@ -148,7 +159,7 @@ class FacturaRepository
         }
     }
 
-    public function registrarPago(int $facturaId, float $monto, string $metodoPago, float $tasaUsada, bool $manageTransaction = true): int
+    public function registrarPago(int $facturaId, float $monto, string $metodoPago, float $tasaUsada, bool $manageTransaction = true, ?string $refPagoMovil = null): int
     {
         try {
             $ownTx = $manageTransaction && !$this->db->inTransaction();
@@ -183,14 +194,15 @@ class FacturaRepository
 
             // Registrar el pago contra el recibo
             $stmt = $this->db->prepare(
-                "INSERT INTO pagos_factura (factura_id, monto, metodo_pago, tasa_usada)
-                 VALUES (:factura_id, :monto, :metodo_pago, :tasa_usada)"
+                "INSERT INTO pagos_factura (factura_id, monto, metodo_pago, tasa_usada, Ref_PagoMovil)
+                 VALUES (:factura_id, :monto, :metodo_pago, :tasa_usada, :ref_pago_movil)"
             );
             $stmt->execute([
-                ':factura_id'  => $reciboId,
-                ':monto'       => $monto,
-                ':metodo_pago' => $metodoPago,
-                ':tasa_usada'  => $tasaUsada
+                ':factura_id'    => $reciboId,
+                ':monto'         => $monto,
+                ':metodo_pago'   => $metodoPago,
+                ':tasa_usada'    => $tasaUsada,
+                ':ref_pago_movil'=> $refPagoMovil
             ]);
 
             // M5: contar pagos del recibo, si es 1ra vez, actualizar estado cita
@@ -457,6 +469,7 @@ class FacturaRepository
                             c.ubicacion,
                             COALESCE(et.name, '—') AS eventType,
                             c.notas,
+                            c.motivo_sin_materiales AS motivoSinMateriales,
                             c.motivo_cancelacion AS motivoCancelacion,
                             f.id AS facturaId,
                             f.tipo AS facturaTipo,
@@ -521,6 +534,45 @@ class FacturaRepository
         } catch (PDOException $e) {
             ApiResponse::error('Error al obtener detalle de facturación: ' . $e->getMessage(), 500);
             return null;
+        }
+    }
+
+    /**
+     * Registrar el PRIMER pago al momento de crear la factura.
+     * A diferencia de registrarPago(), NO crea un recibo (tipo='recibo').
+     * El pago se vincula directamente a la factura.
+     * Además, hace la transición de la cita de Pendiente → En Proceso.
+     */
+    public function registrarPrimerPago(int $facturaId, float $monto, string $metodoPago, float $tasaUsada, ?string $refPagoMovil = null): void
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO pagos_factura (factura_id, monto, metodo_pago, tasa_usada, Ref_PagoMovil)
+                 VALUES (:factura_id, :monto, :metodo_pago, :tasa_usada, :ref_pago_movil)"
+            );
+            $stmt->execute([
+                ':factura_id'    => $facturaId,
+                ':monto'         => $monto,
+                ':metodo_pago'   => $metodoPago,
+                ':tasa_usada'    => $tasaUsada,
+                ':ref_pago_movil'=> $refPagoMovil
+            ]);
+
+            // Transicionar la cita de Pendiente → En Proceso
+            $citaStmt = $this->db->prepare(
+                "SELECT cita_id FROM facturas WHERE id = :fid"
+            );
+            $citaStmt->execute([':fid' => $facturaId]);
+            $citaId = (int)$citaStmt->fetchColumn();
+
+            if ($citaId) {
+                $updStmt = $this->db->prepare(
+                    "UPDATE citas SET estado = 'En Proceso' WHERE id = :cid AND estado = 'Pendiente'"
+                );
+                $updStmt->execute([':cid' => $citaId]);
+            }
+        } catch (PDOException $e) {
+            throw $e;
         }
     }
 }

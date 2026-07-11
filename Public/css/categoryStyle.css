@@ -1,5 +1,4 @@
-/* categoryStyle.css - Estilos específicos del módulo de Categorías */
-
+/* categoryStyle.css - Estilos especificos del modulo de Categorias */
 
 .app-header {
   background: linear-gradient(to right, var(--primary), var(--secondary));
@@ -9,33 +8,28 @@
   align-items: center;
   z-index: 100;
 }
-/* Layout de dos columnas para materiales/categorías */
-.material-layout {
+
+/* Contenedor principal con sidebar de filtros + grid de categorias */
+.category-container {
   display: grid;
   grid-template-columns: 1fr 3fr;
-  gap: 25px;
+  gap: 35px;
+  padding: 25px;
 }
 
-/* Columna izquierda con filtros y stats */
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
-/* Título de grupo de filtro */
+/* Grupo de filtro con titulo en color primary */
 .filter-group h3 {
   margin-bottom: 15px;
   color: var(--primary);
   font-size: 1.1rem;
 }
 
-/* Lista de categorías clickeables */
+/* Lista de categorias clickeables */
 .category-list {
   list-style: none;
 }
 
-/* Cada ítem de categoría con hover resaltado */
+/* Cada item de categoria con hover resaltado */
 .category-item {
   padding: 10px;
   margin-bottom: 8px;
@@ -53,7 +47,7 @@
   color: var(--primary);
 }
 
-/* Ícono circular de categoría */
+/* Icono circular de categoria */
 .category-icon {
   width: 30px;
   height: 30px;
@@ -65,7 +59,7 @@
   color: var(--primary);
 }
 
-/* Caja de búsqueda con ícono */
+/* Caja de busqueda con icono y borde redondeado */
 .search-box {
   position: relative;
   margin-bottom: 20px;
@@ -74,9 +68,17 @@
 .search-box input {
   width: 100%;
   padding: 12px 15px 12px 45px;
-  border-radius: 50px;
-  border: 1px solid var(--light-gray);
+  border-radius: 10px;
+  border: 2px solid #ced4da;
+  background: #ffffff;
   font-size: 1rem;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.search-box input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.15);
 }
 
 .search-box i {
@@ -87,16 +89,15 @@
   color: var(--gold-text);
 }
 
-/* Grid de tarjetas de categorías responsive */
-/* Grid de tarjetas de categorías responsive */
-.categories-container {
+/* Grid de tarjetas de categorias responsive */
+.categories-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
   align-items: stretch;
 }
 
-/* Tarjeta individual de categoría (mismo estilo que materiales) */
+/* Tarjeta individual de categoria */
 .category-card {
   background: #ffffff;
   border-radius: 10px;
@@ -191,7 +192,7 @@
   box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
 }
 
-/* Badge genérico flotante en tarjeta */
+/* Badge generico flotante en tarjeta */
 .card-badge {
   position: absolute;
   top: 15px;
@@ -217,7 +218,7 @@
   color: white;
 }
 
-/* Imagen de la categoría */
+/* Imagen de la categoria */
 .category-image {
   height: 180px;
   max-height: 180px;
@@ -242,7 +243,7 @@
   opacity: 0.6;
 }
 
-/* Preview de imagen antes de subir */
+/* Vista previa de imagen antes de subir */
 .category-image-preview {
   display: none;
   margin-top: 8px;
@@ -258,7 +259,7 @@
   display: block;
 }
 
-/* Información de la categoría */
+/* Informacion de la categoria */
 .category-info {
   padding: 20px;
   display: flex;
@@ -266,7 +267,7 @@
   flex: 1;
 }
 
-/* Título y estado en fila */
+/* Titulo y estado en fila */
 .category-title {
   display: flex;
   justify-content: space-between;
@@ -275,7 +276,7 @@
   gap: 10px;
 }
 
-/* Nombre de la categoría con límite de 2 líneas */
+/* Nombre de la categoria con limite de 2 lineas */
 .category-title h3 {
   color: #000;
   font-size: 1.1rem;
@@ -341,7 +342,7 @@
   padding-top: 15px;
 }
 
-/* Botón de acción base */
+/* Boton de accion base */
 .action-btn {
   flex: 1;
   padding: 10px;
@@ -391,43 +392,45 @@
   transform: translateY(-2px);
 }
 
-/* Botón Nueva Categoría - estilo azul con dorado brillante */
-.btn-nueva {
-  background: var(--primary);
+/* Boton Nueva Categoria - estilo igual a btn-nuevo-material */
+.btn-nuevo-categoria {
+  background: var(--secondary);
   color: var(--gold-button);
-  border: 1px solid var(--gold-button);
-  padding: 10px 20px;
+  padding: 12px 25px;
   border-radius: 50px;
+  border: 1px solid var(--gold-button);
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   transition: var(--transition);
-  font-size: 0.9rem;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 15px;
 }
 
-.btn-nueva:hover {
+.btn-nuevo-categoria:hover {
   background: var(--primary-dark);
-  color: var(--gold-button);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.3);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
 }
 
-/* Sección de estadísticas */
+/* Seccion de estadisticas */
 .stats-section {
   background: #ffffff;
-  border-radius: 15px;
-  padding: 25px;
+  border-radius: 12px;
+  padding: 16px;
   box-shadow: var(--shadow), 0px 2px 20px rgba(212, 175, 55, 0.25);
   position: relative;
+  margin-top: 16px;
 }
 
 .stats-section::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 15px;
+  border-radius: 12px;
   padding: 2px;
   background: var(--gold-gradient);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -436,42 +439,38 @@
   pointer-events: none;
 }
 
-/* Título de sección con línea decorativa */
 .section-title {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: var(--gold-text);
-  margin-bottom: 20px;
-  padding-bottom: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
   border-bottom: 2px solid var(--gold-text);
 }
 
-/* Grid de tarjetas de estadísticas */
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 
-/* Tarjeta de estadística */
 .stat-card {
   background: #ffffff;
   box-shadow: 0px 2px 20px rgba(0, 0, 0, 0.08), 0px 2px 20px rgba(212, 175, 55, 0.25);
-  border-radius: 12px;
-  padding: 15px;
+  border-radius: 10px;
+  padding: 10px 8px;
   text-align: center;
   transition: var(--transition);
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 100px;
 }
 
 .stat-card::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 2px;
   background: var(--gold-gradient);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -481,55 +480,63 @@
 }
 
 .stat-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1), 0px 2px 20px rgba(212, 175, 55, 0.3);
 }
 
 .stat-icon {
-  font-size: 2.8rem;
+  font-size: 1.5rem;
   color: var(--primary);
-  margin-bottom: 6px;
   line-height: 1;
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--primary);
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .stat-label {
-  font-size: 0.95rem;
+  font-size: 0.75rem;
   color: var(--dark);
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
-/* Contenedor del modal de categorías - hereda .modal-content de _base.css */
-.category-modal {
-  max-width: 500px;
-}
-
-/* Responsive específico */
-@media (max-width: 992px) {
-  .material-layout {
+/* Responsive - apila el layout en pantallas medianas (como materials) */
+@media (max-width: 1024px) {
+  .category-container {
     grid-template-columns: 1fr;
   }
-  .left-column {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+  .filters-section {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+  }
+  .stats-section {
+    margin-top: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .left-column {
-    grid-template-columns: 1fr;
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+  .category-image {
+    height: 150px;
+    min-height: 100px;
   }
 }
 
 @media (max-width: 480px) {
-  .categories-container {
+  .categories-grid {
+    grid-template-columns: 1fr;
+  }
+  .category-image {
+    height: 140px;
+    min-height: 100px;
+  }
+  .material-details {
     grid-template-columns: 1fr;
   }
 }

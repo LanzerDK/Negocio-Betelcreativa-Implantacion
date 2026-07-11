@@ -5,17 +5,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('newSupplierBtn').addEventListener('click', function () {
         editingSupplierId = null;
-        document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle"></i> Nuevo Proveedor';
+        document.getElementById('supplierModalLabel').textContent = 'Nuevo Proveedor';
         limpiarFormulario();
-        document.getElementById('supplierModal').style.display = 'flex';
-    });
-
-    document.getElementById('closeModalBtn').addEventListener('click', function () {
-        document.getElementById('supplierModal').style.display = 'none';
-    });
-
-    document.getElementById('cancelModalBtn').addEventListener('click', function () {
-        document.getElementById('supplierModal').style.display = 'none';
+        Modal.open('supplierModal');
     });
 
     document.getElementById('saveSupplierBtn').addEventListener('click', guardarProveedor);
@@ -24,6 +16,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('supplierType').addEventListener('change', function () {
         toggleSupplierFields(this.value);
+    });
+
+    document.getElementById('btnLimpiarProveedores')?.addEventListener('click', function () {
+        document.getElementById('searchInput').value = '';
+        filtrarProveedores();
     });
 });
 
@@ -176,7 +173,7 @@ function renderizarProveedores(proveedores, materiales) {
 
 function editarProveedor(sup) {
     editingSupplierId = sup.id;
-    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Proveedor';
+    document.getElementById('supplierModalLabel').textContent = 'Editar Proveedor';
     document.getElementById('supplierCompany').value = sup.company_name || '';
     document.getElementById('supplierContact').value = sup.contact_name || '';
     document.getElementById('supplierPhone').value = sup.phone || '';
@@ -186,7 +183,7 @@ function editarProveedor(sup) {
     document.getElementById('supplierSubtype').value = sup.subtype || '';
     document.getElementById('supplierNotes').value = sup.notes || '';
     toggleSupplierFields(sup.supplier_type || 'fijo');
-    document.getElementById('supplierModal').style.display = 'flex';
+    Modal.open('supplierModal');
 }
 
 function guardarProveedor() {
@@ -223,7 +220,7 @@ function guardarProveedor() {
     })
         .then(data => {
             if (data.success) {
-                document.getElementById('supplierModal').style.display = 'none';
+                Modal.close('supplierModal');
                 cargarProveedores();
             } else {
                 toast(data.message, 'error');

@@ -30,10 +30,14 @@ class StorageController
                     ApiResponse::success($result);
                 } elseif ($action === 'stock') {
                     $materialId = (int)($_GET['material_id'] ?? 0);
-                    if (!$materialId) {
-                        ApiResponse::error('ID de material requerido.');
+                    $locationId = (int)($_GET['location_id'] ?? 0);
+                    if ($materialId) {
+                        $stock = $repo->getStockByMaterial($materialId);
+                    } elseif ($locationId) {
+                        $stock = $repo->getStockByLocation($locationId);
+                    } else {
+                        ApiResponse::error('ID de material o ubicación requerido.');
                     }
-                    $stock = $repo->getStockByMaterial($materialId);
                     ApiResponse::success($stock);
                 } else {
                     ApiResponse::error('Acción no especificada. Use ?action=summary, history o stock.');
@@ -122,6 +126,18 @@ class StorageController
                     }
                     if (!in_array($reason, $allowedReasons, true)) {
                         ApiResponse::error('Motivo no válido.');
+                    }
+
+                    // Validar capacidad del destino
+                    $locRepo = new \BetelCreativa\Infrastructure\LocationRepository();
+                    $destLoc = $locRepo->findById($toLocationId);
+                    if (!$destLoc) {
+                        ApiResponse::error('Ubicación de destino no encontrada.', 404);
+                    }
+                    $maxCap = $destLoc->getMaxCapacity();
+                    $currentDestStock = $repo->getTotalStockAtLocation($toLocationId);
+                    if (($currentDestStock + $quantity) > $maxCap) {
+                        ApiResponse::error("La ubicación de destino no tiene capacidad suficiente. Capacidad máxima: {$maxCap}, ocupado actual: {$currentDestStock}, intentando mover: {$quantity}.", 400);
                     }
 
                     if ($repo->recordMove($materialId, $userId, $fromLocationId, $toLocationId, $quantity, $reason, $notes)) {

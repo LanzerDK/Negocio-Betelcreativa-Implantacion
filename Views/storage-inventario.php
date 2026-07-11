@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario - Bet-El Creativa</title>
+    <link rel="icon" href="<?php echo APP_URL; ?>Public/images/BetEl.png">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/_base.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/css/storageInventarioStyle.css">
     <link rel="stylesheet" href="<?php echo APP_URL; ?>Public/assets/bootstrap-icons/bootstrap-icons.min.css">
@@ -21,7 +22,8 @@
         </div>
         <div class="user-container">
             <div class="imagenfoto">
-                <img src="<?php echo APP_URL; ?>Public/images/BetEl.png" alt="Bet-El Creativa Logo">
+                <?php $headerImg = !empty($_SESSION['user_avatar']) ? APP_URL . 'Public/' . htmlspecialchars($_SESSION['user_avatar']) : systemLogoUrl(); ?>
+                <img src="<?php echo $headerImg; ?>" alt="Avatar de usuario">
             </div>
             <div class="user-details">
                 <h2><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Usuario'); ?></h2>
@@ -32,7 +34,7 @@
                     <i class="fas fa-cog"></i>
                 </button>
                 <div class="settings-dropdown" id="settingsDropdown">
-                    <a href="<?php echo APP_URL; ?><?php echo in_array(($_SESSION['user_role'] ?? ''), ['super_admin', 'admin']) ? 'admin-settings' : 'cuenta'; ?>" class="dropdown-item">
+                    <a href="<?php echo APP_URL; ?>admin-settings" class="dropdown-item">
                         <i class="fas fa-user"></i> Cuenta
                     </a>
                     <a href="<?php echo APP_URL; ?>logout" class="dropdown-item">
@@ -65,7 +67,6 @@
                 <i class="fas fa-chevron-down"></i>
             </button>
             <div class="submenu-dropdown" id="almacenSubmenu">
-                <a href="<?php echo APP_URL; ?>storage-distribucion" class="submenu-item"><i class="fas fa-truck-loading"></i> Distribución</a>
                 <a href="<?php echo APP_URL; ?>storage-inventario" class="submenu-item submenu-active"><i class="fas fa-clipboard-list"></i> Inventario</a>
             </div>
         </div>
@@ -278,56 +279,6 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-modal-dismiss="adjustModal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="guardarAjusteBtn">Guardar Ajuste</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Mover Material -->
-    <div class="modal" id="moveModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Mover Material</h5>
-                    <button type="button" class="btn-close" data-modal-dismiss="moveModal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="moveId">
-                    <div class="mb-3">
-                        <label class="form-label">Material</label>
-                        <select class="form-select" id="moveMaterialSelect" disabled></select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Ubicación Actual</label>
-                        <input type="text" class="form-control" id="moveCurrentLocation" disabled>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nueva Ubicación</label>
-                        <select class="form-select" id="moveNewLocation" required></select>
-                        <div class="invalid-feedback">Seleccione una ubicación de destino</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Cantidad a Mover</label>
-                        <input type="number" class="form-control" id="moveQuantity" required min="1">
-                        <div class="invalid-feedback">Ingrese una cantidad válida</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Motivo</label>
-                        <select class="form-select" id="moveReason" required>
-                            <option value="reorganizacion">Reorganización</option>
-                            <option value="preparacion">Preparación para evento</option>
-                            <option value="optimizacion">Optimización de espacio</option>
-                            <option value="otro">Otro</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notas</label>
-                        <textarea class="form-control" id="moveNotes" rows="3" placeholder="Detalles del movimiento"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-modal-dismiss="moveModal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="guardarMovimientoBtn">Mover Material</button>
                 </div>
             </div>
         </div>
